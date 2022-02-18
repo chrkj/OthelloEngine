@@ -12,6 +12,7 @@ namespace Othello.UI
         public Color darkColor = new Color(0.59f, 0.69f, 0.45f);
         public Color lightColor = new Color(0.93f, 0.93f, 0.82f);
         public Color highlightColor = new Color(1f, 0.55f, 0.56f);
+        
         private MeshRenderer[] _squareRenderers;
         private SpriteRenderer[] _pieceRenderers;
         private const float BoardOffset = -3.5f;
@@ -34,8 +35,7 @@ namespace Othello.UI
             square.name = _fileChars[file] + (rank + 1).ToString();
             square.position = new Vector3(file + BoardOffset, rank + BoardOffset, 0f);
 
-            var squareMaterial = new Material(Shader.Find("Unlit/Color"));
-            squareMaterial.color = color;
+            var squareMaterial = new Material(Shader.Find("Unlit/Color")) { color = color };
             _squareRenderers[Board.GetBoardIndex(file, rank)] = square.gameObject.GetComponent<MeshRenderer>();
             _squareRenderers[Board.GetBoardIndex(file, rank)].material = squareMaterial;
             
@@ -47,28 +47,24 @@ namespace Othello.UI
             _pieceRenderers[Board.GetBoardIndex(file, rank)] = pieceRenderer;
         }
 
-        public void UpdateUI(Board board)
+        public void UpdateBoardUI(Board board)
         {
             for (var rank = 0; rank < 8; rank++)
-            {
                 for (var file = 0; file < 8; file++)
                 {
                     var piece = board.GetPiece(file, rank);
-                    if (piece == Piece.Empty) continue;
-                    var sprite = pieceTheme.GetSprite(piece);
+                    var sprite = piece == Piece.Empty ? null : pieceTheme.GetSprite(piece);
                     var boardIndex = Board.GetBoardIndex(file, rank);
-                    var parentPosition = _pieceRenderers[boardIndex].transform.parent.position;
                     _pieceRenderers[boardIndex].sprite = sprite;
-                    _pieceRenderers[boardIndex].transform.position = new Vector3(parentPosition.x, parentPosition.y, pieceDepth);
+                    UnhighlightSquare(Board.GetBoardIndex(file, rank));
                 }
-            }
         }
 
         public void MakeMove(Move move, HashSet<int> captures)
         {
-            _pieceRenderers[move.TargetSquare].sprite = pieceTheme.GetSprite(move.Piece);
+            _pieceRenderers[move.targetSquare].sprite = pieceTheme.GetSprite(move.piece);
             foreach (var index in captures)
-                _pieceRenderers[index].sprite = pieceTheme.GetSprite(move.Piece);
+                _pieceRenderers[index].sprite = pieceTheme.GetSprite(move.piece);
         }
 
         public bool HasSprite(int index)

@@ -1,4 +1,5 @@
-﻿using Othello.UI;
+﻿using System;
+using Othello.UI;
 using UnityEngine;
 
 namespace Othello.Core
@@ -17,12 +18,16 @@ namespace Othello.Core
         public TMPro.TMP_Text blackPieceCountUI;
         public TMPro.TMP_Text whitePieceCountUI;
 
-
-        // TODO: CleanUp & Implement game over logic and UI
         // TODO: Implement new game functionality
-        private void Start()
+        // TODO: CleanUp & Implement game over logic and UI
+        private void Awake()
         {
             _boardUI = FindObjectOfType<BoardUI>();
+        }
+
+        private void Start()
+        {
+            MoveGenerator.PrecomputeData();
             _boardUI.InitBoard();
             NewGame();
         }
@@ -31,8 +36,7 @@ namespace Othello.Core
         {
             _board = new Board();
             _board.LoadStartPosition();
-
-            _boardUI.UpdateUI(_board);
+            _boardUI.UpdateBoardUI(_board);
             
             _whitePlayer = new HumanPlayer(_board, Piece.White);
             _blackPlayer = new HumanPlayer(_board, Piece.Black);
@@ -52,6 +56,8 @@ namespace Othello.Core
         {
             if (_gameState == State.Playing)
                 _playerTurn.Update();
+            if (Input.GetKeyDown(KeyCode.R))
+                NewGame();
         }
 
         private void MakeMove(Move move)

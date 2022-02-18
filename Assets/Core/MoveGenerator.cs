@@ -3,74 +3,53 @@ using System.Collections.Generic;
 
 namespace Othello.Core
 {
-    public class MoveGenerator
+    public static class MoveGenerator
     {
-        private static readonly int[][] NumSquaresToEdge = new int[64][];
-        private static readonly int[] AdjacentSquareOffsets = new[] { 8, -8, -1, 1, 7, -7, 9, -9 };
+        private static readonly int[][] SquaresToEdge = new int[64][];
+        private static readonly int[] DirectionOffsets = { 8, -8, -1, 1, 7, -7, 9, -9 };
 
-        public MoveGenerator()
-        {
-            PrecomputeMoveDate();
-        }
-        
-        private void PrecomputeMoveDate()
+        public static void PrecomputeData()
         {
             for (var file = 0; file < 8; file++)
-            {
                 for (var rank = 0; rank < 8; rank++)
                 {
                     var numSquaresUp = 7 - rank;
                     var numSquaresDown = rank;
                     var numSquaresLeft = file;
-                    var numSquaresLeftRight = 7 - file;
-
+                    var numSquaresRight = 7 - file;
                     var numSquaresUpLeft = Math.Min(numSquaresUp, numSquaresLeft);
-                    var numSquaresDownRight = Math.Min(numSquaresDown, numSquaresLeftRight);
-                    var numSquaresUpRight = Math.Min(numSquaresUp, numSquaresLeftRight);
+                    var numSquaresDownRight = Math.Min(numSquaresDown, numSquaresRight);
+                    var numSquaresUpRight = Math.Min(numSquaresUp, numSquaresRight);
                     var numSquaresDownLeft = Math.Min(numSquaresDown, numSquaresLeft);
                     
                     var squareIndex = Board.GetBoardIndex(file, rank);
-                    NumSquaresToEdge[squareIndex] = new []
-                        { 
-                            numSquaresUp, 
-                            numSquaresDown, 
-                            numSquaresLeft, 
-                            numSquaresLeftRight, 
-                            numSquaresUpLeft,
-                            numSquaresDownRight,
-                            numSquaresUpRight,
-                            numSquaresDownLeft
-                        };
+                    SquaresToEdge[squareIndex] = new [] { numSquaresUp, numSquaresDown, numSquaresLeft, numSquaresRight, numSquaresUpLeft, numSquaresDownRight, numSquaresUpRight, numSquaresDownLeft };
                 }
-            }
         }
         
-        public HashSet<Move> GenerateLegalMoves(Board board)
+        public static HashSet<Move> GenerateLegalMoves(Board board)
         {
             var legalMoves = new HashSet<Move>();
             var emptySquares = board.GetEmptySquares();
             foreach (var square in emptySquares)
-                for (var squareOffsetIndex = 0; squareOffsetIndex < 8; squareOffsetIndex++)
-                    GenerateLegalMovesForSquare(board, square, squareOffsetIndex, legalMoves);
+                for (var directionOffsetIndex = 0; directionOffsetIndex < 8; directionOffsetIndex++)
+                    GenerateLegalMovesForSquare(board, square, directionOffsetIndex, legalMoves);
             return legalMoves;
         }
 
-        private static void GenerateLegalMovesForSquare(Board board, int square, int squareOffsetIndex, HashSet<Move> legalMoves)
+        private static void GenerateLegalMovesForSquare(Board board, int square, int directionOffsetIndex, HashSet<Move> legalMoves)
         {
             var captureCount = 0;
-            var currentSquare = square + AdjacentSquareOffsets[squareOffsetIndex];
+            var currentSquare = square + DirectionOffsets[directionOffsetIndex];
             if (Board.IsOutOfBounds(currentSquare)) return;
 
-            var timesMoved = 0;
-            while (board.IsOpponentPiece(currentSquare) && timesMoved < NumSquaresToEdge[square][squareOffsetIndex])
+            for (var timesMoved = 1; timesMoved < SquaresToEdge[square][directionOffsetIndex]; timesMoved++)
             {
-                timesMoved++;
+                if (!board.IsOpponentPiece(currentSquare)) break;
+                currentSquare += DirectionOffsets[directionOffsetIndex];
                 captureCount++;
-                currentSquare += AdjacentSquareOffsets[squareOffsetIndex];
-                if (Board.IsOutOfBounds(currentSquare)) break;
             }
 
-            if (Board.IsOutOfBounds(currentSquare)) return;
             if (board.IsFriendlyPiece(currentSquare) && captureCount > 0)
                 legalMoves.Add(new Move(square, board.GetCurrentColorToMove()));
         }
@@ -78,28 +57,25 @@ namespace Othello.Core
         public static HashSet<int> GetCaptureIndices(Move move, Board board)
         {
             var captureIndices = new HashSet<int>();
-            for (var squareOffsetIndex = 0; squareOffsetIndex < 8; squareOffsetIndex++)
-                GenerateCapturesForSquare(move, board, squareOffsetIndex, captureIndices);
+            for (var directionOffsetIndex = 0; directionOffsetIndex < 8; directionOffsetIndex++)
+                GenerateCapturesForSquare(move, board, directionOffsetIndex, captureIndices);
             return captureIndices;
         }
 
-        private static void GenerateCapturesForSquare(Move move, Board board, int squareOffsetIndex, HashSet<int> captureIndices)
+        private static void GenerateCapturesForSquare(Move move, Board board, int directionOffsetIndex, HashSet<int> captureIndices)
         {
             var captures = new HashSet<int>();
-            var currentIndex = move.TargetSquare + AdjacentSquareOffsets[squareOffsetIndex];
-            if (Board.IsOutOfBounds(currentIndex)) return;
+            var currentSquare = move.targetSquare + DirectionOffsets[directionOffsetIndex];
+            if (Board.IsOutOfBounds(currentSquare)) return;
 
-            var timesMoved = 0;
-            while (board.IsOpponentPiece(currentIndex) && timesMoved < NumSquaresToEdge[move.TargetSquare][squareOffsetIndex])
+            for (var timesMoved = 1; timesMoved < SquaresToEdge[move.targetSquare][directionOffsetIndex]; timesMoved++)
             {
-                timesMoved++;
-                captures.Add(currentIndex);
-                currentIndex += AdjacentSquareOffsets[squareOffsetIndex];
-                if (Board.IsOutOfBounds(currentIndex)) break;
+                if (!board.IsOpponentPiece(currentSquare)) break;
+                captures.Add(currentSquare);
+                currentSquare += DirectionOffsets[directionOffsetIndex];
             }
-
-            if (Board.IsOutOfBounds(currentIndex)) return;
-            if (board.IsFriendlyPiece(currentIndex) && captures.Count > 0)
+            
+            if (board.IsFriendlyPiece(currentSquare) && captures.Count > 0)
                 captureIndices.UnionWith(captures);
         }
     }

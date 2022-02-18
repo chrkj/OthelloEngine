@@ -32,10 +32,10 @@ namespace Othello.Core
         public void MakeMove(Move move, HashSet<int> captures)
         {
             _history.Push(move);
-            _board[move.TargetSquare] = move.Piece;
+            _board[move.targetSquare] = move.piece;
             
             foreach (var index in captures)
-                _board[index] = move.Piece;
+                _board[index] = move.piece;
         }
 
         public Move GetLastMove()
@@ -64,6 +64,11 @@ namespace Othello.Core
         public static bool IsOutOfBounds(int index)
         {
             return index < 0 || index > 63;
+        }
+        
+        public static bool IsOutOfBounds(int file, int rank)
+        {
+            return IsOutOfBounds(GetBoardIndex(file, rank));
         }
 
         public bool IsOpponentPiece(int index)
