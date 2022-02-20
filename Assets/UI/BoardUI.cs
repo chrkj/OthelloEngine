@@ -108,8 +108,8 @@ namespace Othello.UI
         public void UpdateUI(Board board)
         {
             playerToMoveUI.text = "Player: " + board.CurrentPlayerAsString();
-            blackPieceCountUI.text = $"Black: {board.GetPieceCount(Piece.Black)}";
-            whitePieceCountUI.text = $"White: {board.GetPieceCount(Piece.White)}";
+            blackPieceCountUI.text = $"Black: {board.GetPieceCountAsString(Piece.Black)}";
+            whitePieceCountUI.text = $"White: {board.GetPieceCountAsString(Piece.White)}";
         }
 
         public bool HasSprite(int index)

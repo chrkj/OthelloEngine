@@ -1,9 +1,12 @@
+using Othello.Core;
+
 namespace Othello.AI
 {
     public class MonteCarloTreeSearch : ISearchEngine
     {
-        public void StartSearch()
+        public Move StartSearch(Board board)
         {
+            throw new System.NotImplementedException();
         }
     }
 }

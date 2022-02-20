@@ -1,17 +1,29 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace Othello.Core
 {
     public class Board
     {
-        private readonly int[] _board = new int[64];
+        private readonly int[] _board;
         private readonly Stack<Move> _history = new Stack<Move>();
         
         private bool _isWhiteToMove = true;
         private int _currentPlayerColor = Piece.White;
         private int _currentOpponentColor = Piece.Black;
 
+        public Board()
+        {
+            _board = new int[64];
+        }
+        
+        public Board(Board board)
+        {
+            _board = new int[64];
+            Array.Copy(board._board, _board, 64);
+        }
+        
         public void LoadStartPosition()
         {
             _board[27] = Piece.Black;
@@ -34,7 +46,6 @@ namespace Othello.Core
         {
             _history.Push(move);
             _board[move.targetSquare] = move.piece;
-            
             foreach (var index in move.captures)
                 _board[index] = move.piece;
         }
@@ -98,11 +109,26 @@ namespace Othello.Core
             return _currentPlayerColor;
         }
 
-        public string GetPieceCount(int color)
+        public string GetPieceCountAsString(int color)
         {
             var count = _board.Count(square => square == color);
             return count.ToString();
         }
+        
+        public int GetPieceCount(int color)
+        {
+            var count = _board.Count(square => square == color);
+            return count;
+        }
+        
 
+        public bool IsTerminalState(Board board)
+        {
+            var legalMovesCurrentPlayer = MoveGenerator.GenerateLegalMoves(board).Count;
+            ChangePlayer();
+            var legalMovesCurrentOpponent = MoveGenerator.GenerateLegalMoves(board).Count;
+            ChangePlayer();
+            return legalMovesCurrentPlayer == 0 & legalMovesCurrentOpponent == 0;
+        }
     }
 }

@@ -61,9 +61,9 @@ namespace Othello.Core
         {
             _board.MakeMove(move);
             _boardUI.MakeMove(move);
+            ChangePlayer();
             _boardUI.UpdateUI(_board);
             _lastPlayerHadNoMove = false;
-            ChangePlayer();
         }
 
         private void ChangePlayer()

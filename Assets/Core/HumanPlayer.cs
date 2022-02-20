@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using Othello.UI;
 using UnityEngine;
-using Object = UnityEngine.Object;
 
 namespace Othello.Core
 {
@@ -26,7 +23,7 @@ namespace Othello.Core
             legalMoves = MoveGenerator.GenerateLegalMoves(board);
             boardUI.HighlightLegalMoves(legalMoves);
             if (legalMoves.Count != 0) return;
-            MonoBehaviour.print("No legal move for " + board.GetCurrentColorToMove());
+            MonoBehaviour.print("No legal move for " + board.CurrentPlayerAsString());
             NoLegalMove();
         }
 

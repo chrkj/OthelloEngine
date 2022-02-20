@@ -1,7 +1,5 @@
-using System.Linq;
 using Othello.Core;
 using UnityEngine;
-using Random = System.Random;
 
 namespace Othello.AI
 {
@@ -13,7 +11,7 @@ namespace Othello.AI
         
         public AIPlayer(Board board, int color) : base(board, color)
         {
-            //_searchEngine = searchEngine;
+            _searchEngine = new MiniMax();
         }
         
         
@@ -33,15 +31,12 @@ namespace Othello.AI
             legalMoves = MoveGenerator.GenerateLegalMoves(board);
             if (legalMoves.Count == 0)
             {
-                MonoBehaviour.print("No legal move for " + board.GetCurrentColorToMove());
+                MonoBehaviour.print("No legal move for " + board.CurrentPlayerAsString());
                 NoLegalMove();
                 return;
             }
-            var rand = new Random();
-            var randIndex = rand.Next(0, legalMoves.Count - 1);
-            _chosenMove = new Move(legalMoves.Keys.ElementAt(randIndex), color, legalMoves.Values.ElementAt(randIndex));
+            _chosenMove = _searchEngine.StartSearch(board);
             _moveFound = true;
-            legalMoves = MoveGenerator.GenerateLegalMoves(board);
             boardUI.HighlightLegalMoves(legalMoves);
         }
     }
