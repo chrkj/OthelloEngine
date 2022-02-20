@@ -15,6 +15,7 @@ namespace Othello.UI
         public Color lightColor = new Color(0.93f, 0.93f, 0.82f);
         public Color darkColor = new Color(0.59f, 0.69f, 0.45f);
         public Color highlightColor = new Color(1f, 0.55f, 0.56f);
+        public Color lastMoveHighlightColor = new Color(0.47f, 0.55f, 1f);
         public TMPro.TMP_Text playerToMoveUI;
         public TMPro.TMP_Text blackPieceCountUI;
         public TMPro.TMP_Text whitePieceCountUI;
@@ -119,7 +120,7 @@ namespace Othello.UI
 
         public void HighlightSquare(int index)
         {
-            _squareRenderers[index].material.color = highlightColor;
+            _squareRenderers[index].material.color = lastMoveHighlightColor;
         }
 
         public void UnhighlightSquare(int index)
@@ -145,7 +146,7 @@ namespace Othello.UI
         {
             if (!highLightLegalMoves) return;
             foreach (var legalMove in legalMoves.Keys)
-                HighlightSquare(legalMove);
+                _squareRenderers[legalMove].material.color = highlightColor;;
         }
 
         public void UnhighlightLegalMoves(Dictionary<int, HashSet<int>> legalMoves)
