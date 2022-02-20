@@ -14,6 +14,7 @@ namespace Othello.Core
         private Player _playerTurn;
         private State _gameState;
         private BoardUI _boardUI;
+        // TODO: UI should not be here
         public TMPro.TMP_Text playerToMoveUI;
         public TMPro.TMP_Text blackPieceCountUI;
         public TMPro.TMP_Text whitePieceCountUI;
@@ -62,9 +63,8 @@ namespace Othello.Core
 
         private void MakeMove(Move move)
         {
-            var captures = MoveGenerator.GetCaptureIndices(move, _board);
-            _board.MakeMove(move, captures);
-            _boardUI.MakeMove(move, captures);
+            _board.MakeMove(move);
+            _boardUI.MakeMove(move);
             ChangePlayer();
         }
 

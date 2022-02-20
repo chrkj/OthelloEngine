@@ -29,12 +29,12 @@ namespace Othello.Core
             return _currentPlayerColor;
         }
         
-        public void MakeMove(Move move, HashSet<int> captures)
+        public void MakeMove(Move move)
         {
             _history.Push(move);
             _board[move.targetSquare] = move.piece;
             
-            foreach (var index in captures)
+            foreach (var index in move.captures)
                 _board[index] = move.piece;
         }
 

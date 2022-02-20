@@ -12,14 +12,14 @@ namespace Othello.Core
         private readonly Board _board;
         private readonly Camera _mainCam;
         private readonly BoardUI _boardUI;
-        private HashSet<Move> _legalMoves;
+        private Dictionary<int, HashSet<int>> _legalMoves;
 
         public HumanPlayer(Board board, int color)
         {
             _board = board;
-            _boardUI = Object.FindObjectOfType<BoardUI>();
-            _mainCam = Camera.main;
             _color = color;
+            _mainCam = Camera.main;
+            _boardUI = Object.FindObjectOfType<BoardUI>();
         }
 
         public override void Update()
@@ -30,6 +30,7 @@ namespace Othello.Core
         public override void NotifyTurnToMove()
         {
             _legalMoves = MoveGenerator.GenerateLegalMoves(_board);
+            _boardUI.HighlightLegalMoves(_legalMoves);
         }
 
         private void HandleInput()
@@ -45,7 +46,6 @@ namespace Othello.Core
             var selectedFile = (int) Math.Floor(mousePosition.x) + 4;
             var selectedRank = (int) Math.Floor(mousePosition.y) + 4;
             var selectedIndex = Board.GetBoardIndex(selectedFile, selectedRank);
-            var chosenMove = new Move(selectedIndex, _color);
             var lastMove = _board.GetLastMove();
             
             var isValidSquare = !Board.IsOutOfBounds(selectedFile, selectedRank) || _boardUI.HasSprite(selectedIndex);
@@ -58,23 +58,13 @@ namespace Othello.Core
                 return;
             }
 
-            //TODO
-            #region Handle highlighting (Refator to BoardUI)
-
-            if (lastMove != null) _boardUI.UnhighlightSquare(lastMove.targetSquare);
-            foreach (var legalMove in _legalMoves)
-                _boardUI.HighlightSquare(legalMove.targetSquare);
-
-            if (!_legalMoves.Contains(chosenMove)) return;
-
-            foreach (var legalMove in _legalMoves)
-                _boardUI.UnhighlightSquare(legalMove.targetSquare);
-
+            if (!_legalMoves.ContainsKey(selectedIndex)) return;
+            
+            _boardUI.UnhighlightLegalMoves(_legalMoves);
             if (lastMove != null) _boardUI.UnhighlightSquare(lastMove.targetSquare);
             _boardUI.HighlightSquare(selectedIndex);
 
-            #endregion
-
+            var chosenMove = new Move(selectedIndex, _color, _legalMoves[selectedIndex]);
             ChooseMove(chosenMove);
         }
         
