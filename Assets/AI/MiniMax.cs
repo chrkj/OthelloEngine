@@ -1,100 +1,162 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Othello.Core;
+using UnityEngine;
 
 namespace Othello.AI
 {
     public class MiniMax : ISearchEngine
     {
-        private const int DepthLimit = 6;
+        private const int MaxPlayer = Piece.Black;
+        private const int MinPlayer = Piece.White;
+        
+        private const int DepthLimit = 5;
+        private const int ParityWeight = 1;
+        private const int CornerWeight = 4;
+        
+        private string _log = "MiniMax move log: ";
         
         public Move StartSearch(Board board)
         {
             return DecideMove(board);
         }
-
+        
         private Move DecideMove(Board board)
         {
-            Move bestMove = null;
             int currentUtil;
+            Move bestMove = null;
             var currentPlayer = board.GetCurrentColorToMove();
-
-            if (currentPlayer == Piece.Black)
+            var start = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+            
+            if (currentPlayer == MaxPlayer)
             {
                 var highestUtil = int.MinValue;
-                foreach (var legalMove in MoveGenerator.GenerateLegalMoves(board))
+                foreach (var legalMove in MoveGenerator.GenerateLegalMoves(board)) 
                 {
-                    var possibleNextState = new Board(board);
-                    possibleNextState.MakeMove(new Move(legalMove.Key, board.GetColorToMove(), legalMove.Value));
+                    var possibleNextState = MakeMove(board, legalMove);
                     currentUtil = MinValue(possibleNextState, DepthLimit - 1, int.MinValue, int.MaxValue);
-
                     if (currentUtil <= highestUtil) continue;
                     highestUtil = currentUtil;
-                    bestMove = new Move(legalMove.Key, board.GetColorToMove(), legalMove.Value);
+                    bestMove = new Move(legalMove.Key, currentPlayer, legalMove.Value);
                 }
             }
             else
             {
                 var minUtil = int.MaxValue;
-                foreach (var legalMove in MoveGenerator.GenerateLegalMoves(board))
+                foreach (var legalMove in MoveGenerator.GenerateLegalMoves(board)) 
                 {
-                    var possibleNextState = new Board(board);
-                    possibleNextState.MakeMove(new Move(legalMove.Key, board.GetColorToMove(), legalMove.Value));
+                    var possibleNextState = MakeMove(board, legalMove);
                     currentUtil = MaxValue(possibleNextState, DepthLimit - 1, int.MinValue, int.MaxValue);
-
                     if (currentUtil >= minUtil) continue;
                     minUtil = currentUtil;
-                    bestMove = new Move(legalMove.Key, board.GetColorToMove(), legalMove.Value);
+                    bestMove = new Move(legalMove.Key, currentPlayer, legalMove.Value);;
                 }
             }
+
+            var stop = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+            _log += ((stop - start) + "ms, ");
+            MonoBehaviour.print(_log);
             return bestMove;
-        }
-        
-        private static int Utility(Board board)
-        {
-            return board.GetPieceCount(Piece.Black);
-        }
-        
-        private static bool TerminalTest(Board board)
-        {
-            return board.IsTerminalState(board);
-        }
-
-        private int MaxValue(Board board, int depth, int alpha, int beta)
-        {
-            if (TerminalTest(board) || depth == 0) return Utility(board);
-            var v = int.MinValue;
-
-            if (MoveGenerator.GenerateLegalMoves(board).Count == 0) v = Math.Max(v, MinValue(board, depth - 1, alpha, beta));
-
-            foreach (var legalMove in MoveGenerator.GenerateLegalMoves(board)) 
-            {
-                var possibleNextState = new Board(board);
-                possibleNextState.MakeMove(new Move(legalMove.Key, board.GetColorToMove(), legalMove.Value));
-                v = Math.Max(v, MinValue(possibleNextState, depth - 1, alpha, beta));
-
-                if (v >= beta) return v;
-                alpha = Math.Max(alpha, v);
-            }
-            return v;
         }
 
         private int MinValue(Board board, int depth, int alpha, int beta)
         {
-            if (TerminalTest(board) || depth == 0) return Utility(board);
-            var v = int.MaxValue;
-
-            if (MoveGenerator.GenerateLegalMoves(board).Count == 0) v = Math.Min(v, MaxValue(board, depth - 1, alpha, beta));
-
-            foreach (var legalMove in MoveGenerator.GenerateLegalMoves(board)) 
+            if (IsTerminal(board, depth))
+                return GetUtility(board);
+            
+            var minUtil = int.MaxValue - 1;
+            if (!HasLegalMove(board))
+                minUtil = Math.Min(minUtil, MaxValue(board, depth - 1, alpha, beta));
+            
+            foreach (var possibleNextState in MoveGenerator.GenerateLegalMoves(board).Select(legalMove => MakeMove(board, legalMove)))
             {
-                var possibleNextState = new Board(board);
-                possibleNextState.MakeMove(new Move(legalMove.Key, board.GetColorToMove(), legalMove.Value));
-                v = Math.Min(v, MaxValue(possibleNextState, depth - 1, alpha, beta));
-
-                if (v <= alpha) return v;
-                beta = Math.Min(beta, v);
+                minUtil = Math.Min(minUtil, MaxValue(possibleNextState, depth - 1, alpha, beta));
+                if (minUtil <= alpha) return minUtil;
+                beta = Math.Min(beta, minUtil);
             }
-            return v;
+            return minUtil;
+        }
+
+        private int MaxValue(Board board, int depth, int alpha, int beta)
+        {
+            if (IsTerminal(board, depth))
+                return GetUtility(board);
+
+            var maxUtil = int.MinValue + 1;
+            if (!HasLegalMove(board))
+                maxUtil = Math.Max(maxUtil, MinValue(board, depth - 1, alpha, beta));
+            
+            foreach (var possibleNextState in MoveGenerator.GenerateLegalMoves(board).Select(legalMove => MakeMove(board, legalMove)))
+            {
+                maxUtil = Math.Max(maxUtil, MinValue(possibleNextState, depth - 1, alpha, beta));
+                if (maxUtil >= beta) return maxUtil;
+                alpha = Math.Max(alpha, maxUtil);
+            }
+            return maxUtil;
+        }
+        
+        private static bool HasLegalMove(Board board)
+        {
+            return MoveGenerator.GenerateLegalMoves(board).Count != 0;
+        }
+
+        private static int GetUtility(Board board)
+        {
+            if (!board.IsTerminalBoardState(board)) return GetBoardUtility(board);
+            if (board.GetPieceCount(MaxPlayer) > board.GetPieceCount(MinPlayer)) return int.MaxValue - 1;
+            if (board.GetPieceCount(MaxPlayer) < board.GetPieceCount(MinPlayer)) return int.MinValue + 1;
+            return 0;
+        }
+
+        private static bool IsTerminal(Board board, int depth)
+        {
+            return board.IsTerminalBoardState(board) || depth == 0;
+        }
+        
+        private static Board MakeMove(Board board, KeyValuePair<int,HashSet<int>> legalMove)
+        {
+            var nextBoardState = new Board(board);
+            nextBoardState.MakeMove(new Move(legalMove.Key, board.GetColorToMove(), legalMove.Value));
+            return nextBoardState;
+        }
+        
+        private static int GetBoardUtility(Board board)
+        {
+            return ParityWeight * TokenParityValue(board) + CornerWeight * TokenCornerValue(board);
+        }
+        
+        private static int TokenParityValue(Board board)
+        {
+            return board.GetPieceCount(MaxPlayer);
+        }
+        
+        private static int TokenCornerValue(Board board)
+        {
+            var maxPlayerCornerValue = 0;
+            var minPlayerCornerValue = 0;
+
+            if (board.GetPiece(0, 0) == MaxPlayer)
+                maxPlayerCornerValue++;
+            else if (board.GetPiece(0, 0) == MinPlayer)
+                minPlayerCornerValue++;
+
+            if (board.GetPiece(0, 7) == MaxPlayer)
+                maxPlayerCornerValue++;
+            else if (board.GetPiece(0, 7) == MinPlayer)
+                minPlayerCornerValue++;
+
+            if (board.GetPiece(7, 0) == MaxPlayer)
+                maxPlayerCornerValue++;
+            else if (board.GetPiece(7, 0) == MinPlayer)
+                minPlayerCornerValue++;
+
+            if (board.GetPiece(7, 7) == MaxPlayer)
+                maxPlayerCornerValue++;
+            else if (board.GetPiece(7, 7) == MinPlayer)
+                minPlayerCornerValue++;
+            
+            return maxPlayerCornerValue - minPlayerCornerValue;
         }
     }
 }

@@ -22,8 +22,8 @@ namespace Othello.AI
             var lastMove = board.GetLastMove();
             if (lastMove != null) boardUI.UnhighlightSquare(lastMove.targetSquare);
             boardUI.HighlightSquare(_chosenMove.targetSquare);
-            ChooseMove(_chosenMove);
             _moveFound = false;
+            ChooseMove(_chosenMove);
         }
 
         public override void NotifyTurnToMove()

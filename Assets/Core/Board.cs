@@ -122,7 +122,7 @@ namespace Othello.Core
         }
         
 
-        public bool IsTerminalState(Board board)
+        public bool IsTerminalBoardState(Board board)
         {
             var legalMovesCurrentPlayer = MoveGenerator.GenerateLegalMoves(board).Count;
             ChangePlayer();
