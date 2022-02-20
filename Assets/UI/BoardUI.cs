@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using Othello.Core;
 using UnityEngine;
+using UnityEngine.Serialization;
+using UnityEngine.UI;
 
 namespace Othello.UI
 {
@@ -9,17 +11,20 @@ namespace Othello.UI
         public PieceTheme pieceTheme;
         public float pieceScale = 0.3f;
         public float pieceDepth = -0.1f;
-        public Color darkColor = new Color(0.59f, 0.69f, 0.45f);
+        public bool highLightLegalMoves = false;
         public Color lightColor = new Color(0.93f, 0.93f, 0.82f);
+        public Color darkColor = new Color(0.59f, 0.69f, 0.45f);
         public Color highlightColor = new Color(1f, 0.55f, 0.56f);
         
         private MeshRenderer[] _squareRenderers;
         private SpriteRenderer[] _pieceRenderers;
         private const float BoardOffset = -3.5f;
-        private readonly char[] _fileChars = { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'};
+        private readonly string[] _fileChars = { "A", "B", "C", "D", "E", "F", "G", "H"};
+        private Canvas _canvas;
 
         public void InitBoard()
         {
+            _canvas = FindObjectOfType<Canvas>();
             _squareRenderers = new MeshRenderer[64];
             _pieceRenderers = new SpriteRenderer[64];
             for (var rank = 0; rank < 8; rank++)
@@ -45,6 +50,35 @@ namespace Othello.UI
             pieceRendererTc.position = new Vector3(file + BoardOffset, rank + BoardOffset, pieceDepth);
             pieceRendererTc.localScale = new Vector3(pieceScale, pieceScale, 1);
             _pieceRenderers[Board.GetBoardIndex(file, rank)] = pieceRenderer;
+            
+            if (rank == 0) DrawFileChar(file);
+            if (file == 0) DrawRankChar(rank);
+        }
+
+        private void DrawRankChar(int rank)
+        {
+            var fileChar = new GameObject("FileChar" + rank).AddComponent<Text>();
+            var fileCharTc = fileChar.transform;
+            fileCharTc.SetParent(_canvas.transform);
+            fileCharTc.localScale = Vector3.one;
+            fileCharTc.position = new Vector3(BoardOffset - 1, BoardOffset + rank, 0);
+            fileChar.font = Font.CreateDynamicFontFromOSFont("Oswald-Bold.ttf", 20);
+            fileChar.fontSize = 20;
+            fileChar.alignment = TextAnchor.MiddleCenter;
+            fileChar.text = (rank + 1).ToString();
+        }
+
+        private void DrawFileChar(int file)
+        {
+            var fileChar = new GameObject("FileChar" + _fileChars[file]).AddComponent<Text>();
+            var fileCharTc = fileChar.transform;
+            fileCharTc.SetParent(_canvas.transform);
+            fileCharTc.localScale = Vector3.one;
+            fileCharTc.position = new Vector3(file + BoardOffset, BoardOffset - 1, 0);
+            fileChar.font = Font.CreateDynamicFontFromOSFont("Oswald-Bold.ttf", 20);
+            fileChar.fontSize = 20;
+            fileChar.alignment = TextAnchor.MiddleCenter;
+            fileChar.text = _fileChars[file];
         }
 
         public void UpdateBoardUI(Board board)
@@ -60,10 +94,10 @@ namespace Othello.UI
                 }
         }
 
-        public void MakeMove(Move move, HashSet<int> captures)
+        public void MakeMove(Move move)
         {
             _pieceRenderers[move.targetSquare].sprite = pieceTheme.GetSprite(move.piece);
-            foreach (var index in captures)
+            foreach (var index in move.captures)
                 _pieceRenderers[index].sprite = pieceTheme.GetSprite(move.piece);
         }
 
@@ -79,7 +113,7 @@ namespace Othello.UI
 
         public void UnhighlightSquare(int index)
         {
-            _squareRenderers[index].material.color = IsWhiteSquare(index) ? lightColor : darkColor;
+            _squareRenderers[index].material.color = IsWhiteSquare(index) ? darkColor : lightColor;
         }
 
         public static bool IsWhiteSquare(int index)
@@ -96,5 +130,17 @@ namespace Othello.UI
             return (file + rank) % 2 != 0;
         }
 
+        public void HighlightLegalMoves(Dictionary<int, HashSet<int>> legalMoves)
+        {
+            if (!highLightLegalMoves) return;
+            foreach (var legalMove in legalMoves.Keys)
+                HighlightSquare(legalMove);
+        }
+
+        public void UnhighlightLegalMoves(Dictionary<int, HashSet<int>> legalMoves)
+        {
+            foreach (var legalMove in legalMoves.Keys)
+                UnhighlightSquare(legalMove);
+        }
     }
 }
