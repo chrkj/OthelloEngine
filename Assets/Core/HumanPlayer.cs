@@ -31,6 +31,9 @@ namespace Othello.Core
         {
             _legalMoves = MoveGenerator.GenerateLegalMoves(_board);
             _boardUI.HighlightLegalMoves(_legalMoves);
+            if (_legalMoves.Count != 0) return;
+            MonoBehaviour.print("No legal move for " + _board.GetCurrentColorToMove());
+            NoLegalMove();
         }
 
         private void HandleInput()
@@ -50,13 +53,6 @@ namespace Othello.Core
             
             var isValidSquare = !Board.IsOutOfBounds(selectedFile, selectedRank) || _boardUI.HasSprite(selectedIndex);
             if (!isValidSquare) return;
-            
-            if (_legalMoves.Count == 0)
-            {
-                MonoBehaviour.print("No legal move for " + _board.GetCurrentColorToMove());
-                ChangePlayer();
-                return;
-            }
 
             if (!_legalMoves.ContainsKey(selectedIndex)) return;
             

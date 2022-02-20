@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 
 namespace Othello.Core
 {
@@ -40,8 +41,7 @@ namespace Othello.Core
 
         public Move GetLastMove()
         {
-            if (_history.Count == 0) return null;
-            return _history.Peek();
+            return _history.Count == 0 ? null : _history.Peek();
         }
         
         public static int GetBoardIndex(int file, int rank)
@@ -100,10 +100,7 @@ namespace Othello.Core
 
         public string GetPieceCount(int color)
         {
-            var count = 0;
-            foreach (var square in _board)
-                if (square == color)
-                    count++;
+            var count = _board.Count(square => square == color);
             return count.ToString();
         }
 

@@ -15,6 +15,9 @@ namespace Othello.UI
         public Color lightColor = new Color(0.93f, 0.93f, 0.82f);
         public Color darkColor = new Color(0.59f, 0.69f, 0.45f);
         public Color highlightColor = new Color(1f, 0.55f, 0.56f);
+        public TMPro.TMP_Text playerToMoveUI;
+        public TMPro.TMP_Text blackPieceCountUI;
+        public TMPro.TMP_Text whitePieceCountUI;
         
         private MeshRenderer[] _squareRenderers;
         private SpriteRenderer[] _pieceRenderers;
@@ -92,6 +95,7 @@ namespace Othello.UI
                     _pieceRenderers[boardIndex].sprite = sprite;
                     UnhighlightSquare(Board.GetBoardIndex(file, rank));
                 }
+            UpdateUI(board);
         }
 
         public void MakeMove(Move move)
@@ -99,6 +103,13 @@ namespace Othello.UI
             _pieceRenderers[move.targetSquare].sprite = pieceTheme.GetSprite(move.piece);
             foreach (var index in move.captures)
                 _pieceRenderers[index].sprite = pieceTheme.GetSprite(move.piece);
+        }
+
+        public void UpdateUI(Board board)
+        {
+            playerToMoveUI.text = "Player: " + board.CurrentPlayerAsString();
+            blackPieceCountUI.text = $"Black: {board.GetPieceCount(Piece.Black)}";
+            whitePieceCountUI.text = $"White: {board.GetPieceCount(Piece.White)}";
         }
 
         public bool HasSprite(int index)
@@ -142,5 +153,6 @@ namespace Othello.UI
             foreach (var legalMove in legalMoves.Keys)
                 UnhighlightSquare(legalMove);
         }
+        
     }
 }

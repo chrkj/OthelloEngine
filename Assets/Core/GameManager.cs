@@ -9,18 +9,14 @@ namespace Othello.Core
         private enum State { Playing, Over }
 
         private Board _board;
-        private Player _whitePlayer;
-        private Player _blackPlayer;
-        private Player _playerTurn;
-        private State _gameState;
         private BoardUI _boardUI;
-        // TODO: UI should not be here
-        public TMPro.TMP_Text playerToMoveUI;
-        public TMPro.TMP_Text blackPieceCountUI;
-        public TMPro.TMP_Text whitePieceCountUI;
+        private State _gameState;
+        private Player _playerTurn;
+        private Player _blackPlayer;
+        private Player _whitePlayer;
+        private bool _lastPlayerHadNoMove;
 
-        // TODO: Implement new game functionality
-        // TODO: CleanUp & Implement game over logic and UI
+
         private void Awake()
         {
             _boardUI = FindObjectOfType<BoardUI>();
@@ -38,7 +34,7 @@ namespace Othello.Core
             _board = new Board();
             _board.LoadStartPosition();
             _boardUI.UpdateBoardUI(_board);
-            
+
             _whitePlayer = new HumanPlayer(_board, Piece.White);
             _blackPlayer = new HumanPlayer(_board, Piece.Black);
             _playerTurn = _whitePlayer;
@@ -46,11 +42,10 @@ namespace Othello.Core
             
             _whitePlayer.ONMoveChosen += MakeMove;
             _blackPlayer.ONMoveChosen += MakeMove;
-            _whitePlayer.ONNoLegalMove += ChangePlayer;
-            _blackPlayer.ONNoLegalMove += ChangePlayer;
+            _whitePlayer.ONNoLegalMove += NoLegalMove;
+            _blackPlayer.ONNoLegalMove += NoLegalMove;
             
             _playerTurn.NotifyTurnToMove();
-            UpdateUI();
         }
 
         private void Update()
@@ -65,23 +60,34 @@ namespace Othello.Core
         {
             _board.MakeMove(move);
             _boardUI.MakeMove(move);
+            _boardUI.UpdateUI(_board);
+            _lastPlayerHadNoMove = false;
             ChangePlayer();
         }
 
         private void ChangePlayer()
         {
             _board.ChangePlayer();
-            if (_gameState == State.Playing)
-                _playerTurn = (_board.GetColorToMove() == Piece.White) ? _whitePlayer : _blackPlayer;
-            _playerTurn.NotifyTurnToMove();
-            UpdateUI();
+            switch (_gameState)
+            {
+                case State.Playing:
+                    _playerTurn = (_board.GetColorToMove() == Piece.White) ? _whitePlayer : _blackPlayer;
+                    _playerTurn.NotifyTurnToMove();
+                    break;
+                case State.Over:
+                    // Handle winning animation
+                    print("GameOver");
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
         }
 
-        private void UpdateUI()
+        private void NoLegalMove()
         {
-            playerToMoveUI.text = "Player: " + _board.CurrentPlayerAsString();
-            blackPieceCountUI.text = $"Black: {_board.GetPieceCount(Piece.Black)}";
-            whitePieceCountUI.text = $"White: {_board.GetPieceCount(Piece.White)}";
+            if (_lastPlayerHadNoMove) _gameState = State.Over;
+            _lastPlayerHadNoMove = true;
+            ChangePlayer();
         }
 
     }

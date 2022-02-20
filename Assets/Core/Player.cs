@@ -14,7 +14,7 @@ namespace Othello.Core
             ONMoveChosen?.Invoke(move);
         }
         
-        protected void ChangePlayer()
+        protected void NoLegalMove()
         {
             ONNoLegalMove?.Invoke();
         }
