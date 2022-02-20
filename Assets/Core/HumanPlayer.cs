@@ -8,18 +8,12 @@ namespace Othello.Core
 {
     public class HumanPlayer : Player
     {
-        private readonly int _color;
-        private readonly Board _board;
+        
         private readonly Camera _mainCam;
-        private readonly BoardUI _boardUI;
-        private Dictionary<int, HashSet<int>> _legalMoves;
 
-        public HumanPlayer(Board board, int color)
+        public HumanPlayer(Board board, int color) : base(board, color)
         {
-            _board = board;
-            _color = color;
             _mainCam = Camera.main;
-            _boardUI = Object.FindObjectOfType<BoardUI>();
         }
 
         public override void Update()
@@ -29,10 +23,10 @@ namespace Othello.Core
 
         public override void NotifyTurnToMove()
         {
-            _legalMoves = MoveGenerator.GenerateLegalMoves(_board);
-            _boardUI.HighlightLegalMoves(_legalMoves);
-            if (_legalMoves.Count != 0) return;
-            MonoBehaviour.print("No legal move for " + _board.GetCurrentColorToMove());
+            legalMoves = MoveGenerator.GenerateLegalMoves(board);
+            boardUI.HighlightLegalMoves(legalMoves);
+            if (legalMoves.Count != 0) return;
+            MonoBehaviour.print("No legal move for " + board.GetCurrentColorToMove());
             NoLegalMove();
         }
 
@@ -49,18 +43,18 @@ namespace Othello.Core
             var selectedFile = (int) Math.Floor(mousePosition.x) + 4;
             var selectedRank = (int) Math.Floor(mousePosition.y) + 4;
             var selectedIndex = Board.GetBoardIndex(selectedFile, selectedRank);
-            var lastMove = _board.GetLastMove();
+            var lastMove = board.GetLastMove();
             
-            var isValidSquare = !Board.IsOutOfBounds(selectedFile, selectedRank) || _boardUI.HasSprite(selectedIndex);
+            var isValidSquare = !Board.IsOutOfBounds(selectedFile, selectedRank) || boardUI.HasSprite(selectedIndex);
             if (!isValidSquare) return;
 
-            if (!_legalMoves.ContainsKey(selectedIndex)) return;
+            if (!legalMoves.ContainsKey(selectedIndex)) return;
             
-            _boardUI.UnhighlightLegalMoves(_legalMoves);
-            if (lastMove != null) _boardUI.UnhighlightSquare(lastMove.targetSquare);
-            _boardUI.HighlightSquare(selectedIndex);
+            boardUI.UnhighlightLegalMoves(legalMoves);
+            if (lastMove != null) boardUI.UnhighlightSquare(lastMove.targetSquare);
+            boardUI.HighlightSquare(selectedIndex);
 
-            var chosenMove = new Move(selectedIndex, _color, _legalMoves[selectedIndex]);
+            var chosenMove = new Move(selectedIndex, color, legalMoves[selectedIndex]);
             ChooseMove(chosenMove);
         }
         

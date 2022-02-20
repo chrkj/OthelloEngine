@@ -1,4 +1,5 @@
 ﻿using System;
+using Othello.AI;
 using Othello.UI;
 using UnityEngine;
 
@@ -36,7 +37,7 @@ namespace Othello.Core
             _boardUI.UpdateBoardUI(_board);
 
             _whitePlayer = new HumanPlayer(_board, Piece.White);
-            _blackPlayer = new HumanPlayer(_board, Piece.Black);
+            _blackPlayer = new AIPlayer(_board, Piece.Black);
             _playerTurn = _whitePlayer;
             _gameState = State.Playing;
             

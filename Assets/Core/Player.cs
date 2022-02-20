@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
+using Othello.UI;
+using Object = UnityEngine.Object;
 
 namespace Othello.Core
 {
@@ -6,6 +9,18 @@ namespace Othello.Core
     {
         public event Action ONNoLegalMove;
         public event Action<Move> ONMoveChosen;
+        
+        protected readonly int color;
+        protected readonly Board board;
+        protected readonly BoardUI boardUI;
+        protected Dictionary<int, HashSet<int>> legalMoves;
+
+        protected Player(Board board, int color)
+        {
+            this.board = board;
+            this.color = color;
+            boardUI = Object.FindObjectOfType<BoardUI>();
+        }
         
         public abstract void Update();
 
@@ -19,6 +34,7 @@ namespace Othello.Core
             ONNoLegalMove?.Invoke();
         }
         
+        // TODO: Calc legalmoves here
         public abstract void NotifyTurnToMove();
     }
 }

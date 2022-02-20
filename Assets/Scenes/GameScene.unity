@@ -520,7 +520,7 @@ GameObject:
   - component: {fileID: 1290393053}
   - component: {fileID: 1290393052}
   m_Layer: 5
-  m_Name: WhitePieceCount
+  m_Name: BlackPieceCount
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -671,9 +671,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3de4c57b5d1d4fc786ff5163f1c25712, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playerToMoveUI: {fileID: 1173139318}
-  blackPieceCountUI: {fileID: 2071401135}
-  whitePieceCountUI: {fileID: 1290393052}
 --- !u!4 &1372094001
 Transform:
   m_ObjectHideFlags: 0
@@ -720,9 +717,13 @@ MonoBehaviour:
   pieceTheme: {fileID: 11400000, guid: 078d97bc9c8546e4b951fc90fd4d153e, type: 2}
   pieceScale: 1.5
   pieceDepth: -0.1
-  darkColor: {r: 0.59, g: 0.69, b: 0.45, a: 1}
+  highLightLegalMoves: 1
   lightColor: {r: 0.93, g: 0.93, b: 0.82, a: 1}
+  darkColor: {r: 0.59, g: 0.69, b: 0.45, a: 1}
   highlightColor: {r: 1, g: 0.55, b: 0.56, a: 1}
+  playerToMoveUI: {fileID: 1173139318}
+  blackPieceCountUI: {fileID: 1290393052}
+  whitePieceCountUI: {fileID: 2071401135}
 --- !u!4 &1755557661
 Transform:
   m_ObjectHideFlags: 0
@@ -749,7 +750,7 @@ GameObject:
   - component: {fileID: 2071401136}
   - component: {fileID: 2071401135}
   m_Layer: 5
-  m_Name: BlackPieceCount
+  m_Name: WhitePieceCount
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
