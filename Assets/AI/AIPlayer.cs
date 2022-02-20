@@ -1,3 +1,4 @@
+using System.Threading;
 using Othello.Core;
 using UnityEngine;
 
@@ -9,9 +10,9 @@ namespace Othello.AI
         private Move _chosenMove;
         private readonly ISearchEngine _searchEngine;
         
-        public AIPlayer(Board board, int color) : base(board, color)
+        public AIPlayer(Board board, int color, ISearchEngine searchEngine) : base(board, color)
         {
-            _searchEngine = new MiniMax();
+            _searchEngine = searchEngine;
         }
         
         
@@ -35,9 +36,15 @@ namespace Othello.AI
                 NoLegalMove();
                 return;
             }
+            var engineThread = new Thread(StartSearch);
+            engineThread.Start ();
+            boardUI.HighlightLegalMoves(legalMoves);
+        }
+
+        private void StartSearch()
+        {
             _chosenMove = _searchEngine.StartSearch(board);
             _moveFound = true;
-            boardUI.HighlightLegalMoves(legalMoves);
         }
     }
 }

@@ -37,7 +37,7 @@ namespace Othello.Core
             _boardUI.UpdateBoardUI(_board);
 
             _whitePlayer = new HumanPlayer(_board, Piece.White);
-            _blackPlayer = new AIPlayer(_board, Piece.Black);
+            _blackPlayer = new AIPlayer(_board, Piece.Black, new MiniMax());
             _playerTurn = _whitePlayer;
             _gameState = State.Playing;
             
