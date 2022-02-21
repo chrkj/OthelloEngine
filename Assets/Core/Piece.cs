@@ -12,21 +12,11 @@
         {
             return (piece & Mask) == Black;
         }
-        
-        public static bool IsWhite(int piece)
-        {
-            return (piece & Mask) == White;
-        }
-        
+
         public static bool IsSameColor(int piece1, int piece2)
         {
             return (piece1 & Mask) == (piece2 & Mask);
         }
 
-        public static bool IsEmpty(int piece)
-        {
-            return (piece & Mask) == Empty;
-        }
-        
     }
 }

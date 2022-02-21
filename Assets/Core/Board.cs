@@ -9,10 +9,11 @@ namespace Othello.Core
         private readonly int[] _board;
         private readonly Stack<Move> _history = new Stack<Move>();
         
-        private bool _isWhiteToMove = true;
+        private bool _isWhiteToMove;
 
-        public Board()
+        public Board(int startingPlayer)
         {
+            _isWhiteToMove = startingPlayer == Piece.White;
             _board = new int[64];
         }
         
@@ -70,7 +71,7 @@ namespace Othello.Core
             var emptyIndices = new HashSet<int>();
             for (var file = 0; file < 8; file++){
                 for (var rank = 0; rank < 8; rank++){
-                    if ( GetPiece(file, rank) == Piece.Empty )
+                    if (GetPiece(file, rank) == Piece.Empty)
                         emptyIndices.Add(GetBoardIndex(file, rank));
                 }
             }

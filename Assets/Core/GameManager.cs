@@ -7,7 +7,7 @@ namespace Othello.Core
 {
     public class GameManager : MonoBehaviour
     {
-        private enum State { Playing, Over }
+        private enum State { Playing, GameOver }
 
         private Board _board;
         private BoardUI _boardUI;
@@ -32,13 +32,14 @@ namespace Othello.Core
         
         private void NewGame()
         {
-            _board = new Board();
+            var startingPlayer = Piece.Black;
+            _board = new Board(startingPlayer);
             _board.LoadStartPosition();
             _boardUI.UpdateBoardUI(_board);
 
             _whitePlayer = new AIPlayer(_board, Piece.White, new MiniMax(5));
-            _blackPlayer = new AIPlayer(_board, Piece.Black, new MiniMax(2));
-            _playerTurn = _whitePlayer;
+            _blackPlayer = new AIPlayer(_board, Piece.Black, new MiniMax(5));
+            _playerTurn = startingPlayer == Piece.White ? _whitePlayer : _blackPlayer;
             _gameState = State.Playing;
             
             _whitePlayer.ONMoveChosen += MakeMove;
@@ -75,7 +76,7 @@ namespace Othello.Core
                     _playerTurn = (_board.GetCurrentPlayer() == Piece.White) ? _whitePlayer : _blackPlayer;
                     _playerTurn.NotifyTurnToMove();
                     break;
-                case State.Over:
+                case State.GameOver:
                     // Handle winning animation
                     print("GameOver");
                     break;
@@ -86,7 +87,7 @@ namespace Othello.Core
 
         private void NoLegalMove()
         {
-            if (_lastPlayerHadNoMove) _gameState = State.Over;
+            if (_lastPlayerHadNoMove) _gameState = State.GameOver;
             _lastPlayerHadNoMove = true;
             ChangePlayer();
         }

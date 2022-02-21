@@ -1,6 +1,8 @@
 using System.Threading;
+using System.Threading.Tasks;
 using Othello.Core;
 using UnityEngine;
+using ThreadPriority = System.Threading.ThreadPriority;
 
 namespace Othello.AI
 {
@@ -37,7 +39,7 @@ namespace Othello.AI
                 return;
             }
             var engineThread = new Thread(StartSearch);
-            engineThread.Start ();
+            engineThread.Start();
             boardUI.HighlightLegalMoves(legalMoves);
         }
 

@@ -1,45 +1,46 @@
 using System;
 using System.Collections.Generic;
-using Othello.Core;
 using UnityEngine;
+using Othello.Core;
 
 namespace Othello.AI
 {
     public class MiniMax : ISearchEngine
     {
-        private const int MaxPlayer = Piece.Black;
-        private const int MinPlayer = Piece.White;
+        private readonly int _depthLimit;
         
-        private int DepthLimit;
         private const int ParityWeight = 1;
         private const int CornerWeight = 4;
         
-        private string _log = "MiniMax move log: ";
+        private const int MaxPlayer = Piece.Black;
+        private const int MinPlayer = Piece.White;
+
+        private static int positions;
 
         public MiniMax(int depth)
         {
-            DepthLimit = depth;
+            _depthLimit = depth;
         }
         
         public Move StartSearch(Board board)
         {
-            return DecideMove(board);
+            return CalculateMove(board);
         }
         
-        private Move DecideMove(Board board)
+        private Move CalculateMove(Board board)
         {
+            positions = 0;
             var currentUtil = 0;
             Move bestMove = null;
             var currentPlayer = board.GetCurrentPlayer();
-            var start = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-            
+
             if (currentPlayer == MaxPlayer)
             {
                 var highestUtil = int.MinValue;
                 foreach (var legalMove in MoveGenerator.GenerateLegalMoves(board)) 
                 {
                     var possibleNextState = MakeMove(board, legalMove);
-                    currentUtil = MinValue(possibleNextState, DepthLimit - 1, int.MinValue, int.MaxValue);
+                    currentUtil = MinValue(possibleNextState, _depthLimit - 1, int.MinValue, int.MaxValue);
                     if (currentUtil <= highestUtil) continue;
                     highestUtil = currentUtil;
                     bestMove = new Move(legalMove.Key, currentPlayer, legalMove.Value);
@@ -47,20 +48,19 @@ namespace Othello.AI
             }
             else
             {
+                var start = DateTimeOffset.Now.ToUnixTimeMilliseconds();
                 var minUtil = int.MaxValue;
                 foreach (var legalMove in MoveGenerator.GenerateLegalMoves(board)) 
                 {
                     var possibleNextState = MakeMove(board, legalMove);
-                    currentUtil = MaxValue(possibleNextState, DepthLimit - 1, int.MinValue, int.MaxValue);
+                    currentUtil = MaxValue(possibleNextState, _depthLimit - 1, int.MinValue, int.MaxValue);
                     if (currentUtil >= minUtil) continue;
                     minUtil = currentUtil;
                     bestMove = new Move(legalMove.Key, currentPlayer, legalMove.Value);;
                 }
+                var end = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+                MonoBehaviour.print("Time taken: " + (end - start) + "ms for " + positions + " positions");
             }
-
-            var stop = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-            _log += currentUtil + ", ";
-            MonoBehaviour.print(_log);
             return bestMove;
         }
 
@@ -109,6 +109,7 @@ namespace Othello.AI
 
         private static int GetUtility(Board board)
         {
+            positions++;
             if (!board.IsTerminalBoardState(board)) return GetBoardUtility(board);
             if (board.GetPieceCount(MaxPlayer) > board.GetPieceCount(MinPlayer)) return int.MaxValue - 1;
             if (board.GetPieceCount(MaxPlayer) < board.GetPieceCount(MinPlayer)) return int.MinValue + 1;
