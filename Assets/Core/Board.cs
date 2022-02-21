@@ -129,5 +129,16 @@ namespace Othello.Core
             ChangePlayer();
             return legalMovesCurrentPlayer == 0 & legalMovesCurrentOpponent == 0;
         }
+
+        public bool IsWinner(int currentPlayer)
+        {
+            return GetPieceCount(currentPlayer) > GetPieceCount(GetCurrentOpponent());
+        }
+        
+        public int CheckStatus()
+        {
+            if (!IsTerminalBoardState(this)) return -1;
+            return IsWinner(Piece.Black) ? Piece.Black : Piece.White;
+        }
     }
 }

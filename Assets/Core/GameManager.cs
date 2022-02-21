@@ -37,8 +37,8 @@ namespace Othello.Core
             _board.LoadStartPosition();
             _boardUI.UpdateBoardUI(_board);
 
-            _whitePlayer = new AIPlayer(_board, Piece.White, new MiniMax(5));
-            _blackPlayer = new AIPlayer(_board, Piece.Black, new MiniMax(5));
+            _whitePlayer = new AIPlayer(_board, Piece.White, new MonteCarloTreeSearch(100));
+            _blackPlayer = new AIPlayer(_board, Piece.Black, new MiniMax(2));
             _playerTurn = startingPlayer == Piece.White ? _whitePlayer : _blackPlayer;
             _gameState = State.Playing;
             

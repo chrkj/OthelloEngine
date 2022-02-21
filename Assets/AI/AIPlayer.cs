@@ -1,8 +1,6 @@
 using System.Threading;
-using System.Threading.Tasks;
 using Othello.Core;
 using UnityEngine;
-using ThreadPriority = System.Threading.ThreadPriority;
 
 namespace Othello.AI
 {
@@ -20,6 +18,7 @@ namespace Othello.AI
         
         public override void Update()
         {
+            //if (!Input.GetButtonDown("Fire1")) return;
             if (!_moveFound) return;
             boardUI.UnhighlightLegalMoves(legalMoves);
             var lastMove = board.GetLastMove();
