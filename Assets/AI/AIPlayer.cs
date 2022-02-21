@@ -7,7 +7,7 @@ namespace Othello.AI
     public class AIPlayer : Player
     {
         private bool _moveFound;
-        private Move _chosenMove;
+        private int _chosenMove;
         private readonly ISearchEngine _searchEngine;
         
         public AIPlayer(Board board, int color, ISearchEngine searchEngine) : base(board, color)
@@ -22,8 +22,8 @@ namespace Othello.AI
             if (!_moveFound) return;
             boardUI.UnhighlightLegalMoves(legalMoves);
             var lastMove = board.GetLastMove();
-            if (lastMove != null) boardUI.UnhighlightSquare(lastMove.targetSquare);
-            boardUI.HighlightSquare(_chosenMove.targetSquare);
+            if (lastMove != -1) boardUI.UnhighlightSquare(lastMove);
+            boardUI.HighlightSquare(_chosenMove);
             _moveFound = false;
             ChooseMove(_chosenMove);
         }

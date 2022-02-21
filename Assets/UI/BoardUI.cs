@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using Othello.Core;
 using UnityEngine;
-using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace Othello.UI
@@ -19,12 +18,19 @@ namespace Othello.UI
         public TMPro.TMP_Text playerToMoveUI;
         public TMPro.TMP_Text blackPieceCountUI;
         public TMPro.TMP_Text whitePieceCountUI;
+        public Material darkSquareMaterial;
+        public Material lightSquareMaterial;
         
         private MeshRenderer[] _squareRenderers;
         private SpriteRenderer[] _pieceRenderers;
         private const float BoardOffset = -3.5f;
         private readonly string[] _fileChars = { "A", "B", "C", "D", "E", "F", "G", "H"};
         private Canvas _canvas;
+
+        private void Awake()
+        {
+            InitBoard();
+        }
 
         public void InitBoard()
         {
@@ -38,13 +44,13 @@ namespace Othello.UI
 
         private void DrawSquare(int file, int rank)
         {
-            var color = (file + rank) % 2 == 0 ? lightColor : darkColor;
+            var squareColor = (file + rank) % 2 == 0 ? lightColor : darkColor;
             var square = GameObject.CreatePrimitive(PrimitiveType.Quad).transform;
             square.parent = transform;
             square.name = _fileChars[file] + (rank + 1).ToString();
             square.position = new Vector3(file + BoardOffset, rank + BoardOffset, 0f);
 
-            var squareMaterial = new Material(Shader.Find("Unlit/Color")) { color = color };
+            var squareMaterial = squareColor == lightColor ? lightSquareMaterial : darkSquareMaterial;
             _squareRenderers[Board.GetBoardIndex(file, rank)] = square.gameObject.GetComponent<MeshRenderer>();
             _squareRenderers[Board.GetBoardIndex(file, rank)].material = squareMaterial;
             
@@ -99,11 +105,11 @@ namespace Othello.UI
             UpdateUI(board);
         }
 
-        public void MakeMove(Move move)
+        public void MakeMove(int move, HashSet<int> captures, Board board)
         {
-            _pieceRenderers[move.targetSquare].sprite = pieceTheme.GetSprite(move.piece);
-            foreach (var index in move.captures)
-                _pieceRenderers[index].sprite = pieceTheme.GetSprite(move.piece);
+            _pieceRenderers[move].sprite = pieceTheme.GetSprite(board.GetCurrentPlayer());
+            foreach (var capture in captures)
+                _pieceRenderers[capture].sprite = pieceTheme.GetSprite(board.GetCurrentPlayer());
         }
 
         public void UpdateUI(Board board)
@@ -142,16 +148,16 @@ namespace Othello.UI
             return (file + rank) % 2 != 0;
         }
 
-        public void HighlightLegalMoves(Dictionary<int, HashSet<int>> legalMoves)
+        public void HighlightLegalMoves(List<int> legalMoves)
         {
             if (!highLightLegalMoves) return;
-            foreach (var legalMove in legalMoves.Keys)
+            foreach (var legalMove in legalMoves)
                 _squareRenderers[legalMove].material.color = highlightColor;;
         }
 
-        public void UnhighlightLegalMoves(Dictionary<int, HashSet<int>> legalMoves)
+        public void UnhighlightLegalMoves(List<int> legalMoves)
         {
-            foreach (var legalMove in legalMoves.Keys)
+            foreach (var legalMove in legalMoves)
                 UnhighlightSquare(legalMove);
         }
         

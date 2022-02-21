@@ -19,12 +19,12 @@ namespace Othello.AI
             m_iterations = iterations;
         }
 
-        public Move StartSearch(Board board)
+        public int StartSearch(Board board)
         {
             return CalculateMove(board);
         }
         
-        private Move CalculateMove(Board board)
+        private int CalculateMove(Board board)
         {
             m_player = board.GetCurrentPlayer();
             m_opponent = board.GetCurrentOpponent();
@@ -167,7 +167,7 @@ namespace Othello.AI
                 foreach (var legalMove in MoveGenerator.GenerateLegalMoves(board))
                 {
                     var newBoard = new Board(board);
-                    newBoard.MakeMove(new Move(legalMove.Key, board.GetCurrentPlayer(), legalMove.Value));
+                    newBoard.MakeMove(legalMove, MoveGenerator.GetCaptureIndices(legalMove, newBoard));
                     newBoard.ChangePlayer();
                     var newState = new State { board = newBoard };
                     states.Add(newState);
@@ -184,7 +184,7 @@ namespace Othello.AI
                     return;
                 }
                 var randomMove = legalMoves.ElementAt(rand.Next(0, legalMoves.Count));
-                board.MakeMove(new Move(randomMove.Key, board.GetCurrentPlayer(), randomMove.Value));
+                board.MakeMove(randomMove, MoveGenerator.GetCaptureIndices(randomMove, board));
                 board.ChangePlayer();
             }
             

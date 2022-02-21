@@ -7,7 +7,7 @@ namespace Othello.Core
     public class Board
     {
         private readonly int[] _board;
-        private readonly Stack<Move> _history = new Stack<Move>();
+        private readonly Stack<int> _history = new Stack<int>();
         
         private bool _isWhiteToMove;
 
@@ -48,17 +48,17 @@ namespace Othello.Core
         }
         
         
-        public void MakeMove(Move move)
+        public void MakeMove(int move, HashSet<int> captures)
         {
             _history.Push(move);
-            _board[move.targetSquare] = move.piece;
-            foreach (var index in move.captures)
-                _board[index] = move.piece;
+            _board[move] = GetCurrentPlayer();
+            foreach (var capture in captures)
+                _board[capture] = GetCurrentPlayer();
         }
 
-        public Move GetLastMove()
+        public int GetLastMove()
         {
-            return _history.Count == 0 ? null : _history.Peek();
+            return _history.Count == 0 ? -1 : _history.Peek();
         }
         
         public static int GetBoardIndex(int file, int rank)
@@ -66,9 +66,9 @@ namespace Othello.Core
             return rank * 8 + file;
         }
         
-        public HashSet<int> GetEmptySquares()
+        public List<int> GetEmptySquares()
         {
-            var emptyIndices = new HashSet<int>();
+            var emptyIndices = new List<int>();
             for (var file = 0; file < 8; file++){
                 for (var rank = 0; rank < 8; rank++){
                     if (GetPiece(file, rank) == Piece.Empty)

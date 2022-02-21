@@ -683,7 +683,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 2
+  m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1755557659
 GameObject:
@@ -696,7 +696,7 @@ GameObject:
   - component: {fileID: 1755557661}
   - component: {fileID: 1755557660}
   m_Layer: 0
-  m_Name: Board
+  m_Name: BoardUI
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -721,9 +721,12 @@ MonoBehaviour:
   lightColor: {r: 0.93, g: 0.93, b: 0.82, a: 1}
   darkColor: {r: 0.59, g: 0.69, b: 0.45, a: 1}
   highlightColor: {r: 1, g: 0.55, b: 0.56, a: 1}
+  lastMoveHighlightColor: {r: 0.47, g: 0.55, b: 1, a: 1}
   playerToMoveUI: {fileID: 1173139318}
   blackPieceCountUI: {fileID: 1290393052}
   whitePieceCountUI: {fileID: 2071401135}
+  darkSquareMaterial: {fileID: 2100000, guid: 811a759897298bf4fa992b20b57d5693, type: 2}
+  lightSquareMaterial: {fileID: 2100000, guid: 8f07ecb04d61b8d46b953f1acf726684, type: 2}
 --- !u!4 &1755557661
 Transform:
   m_ObjectHideFlags: 0
@@ -736,7 +739,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 1
+  m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2071401133
 GameObject:

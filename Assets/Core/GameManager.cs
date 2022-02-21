@@ -17,16 +17,10 @@ namespace Othello.Core
         private Player _whitePlayer;
         private bool _lastPlayerHadNoMove;
 
-
-        private void Awake()
-        {
-            _boardUI = FindObjectOfType<BoardUI>();
-        }
-
         private void Start()
         {
+            _boardUI = FindObjectOfType<BoardUI>();
             MoveGenerator.PrecomputeData();
-            _boardUI.InitBoard();
             NewGame();
         }
         
@@ -37,8 +31,8 @@ namespace Othello.Core
             _board.LoadStartPosition();
             _boardUI.UpdateBoardUI(_board);
 
-            _whitePlayer = new AIPlayer(_board, Piece.White, new MonteCarloTreeSearch(100));
-            _blackPlayer = new AIPlayer(_board, Piece.Black, new MiniMax(2));
+            _whitePlayer = new AIPlayer(_board, Piece.White, new MonteCarloTreeSearch(10000));
+            _blackPlayer = new AIPlayer(_board, Piece.Black, new MiniMax(6));
             _playerTurn = startingPlayer == Piece.White ? _whitePlayer : _blackPlayer;
             _gameState = State.Playing;
             
@@ -58,10 +52,11 @@ namespace Othello.Core
                 NewGame();
         }
 
-        private void MakeMove(Move move)
+        private void MakeMove(int move)
         {
-            _board.MakeMove(move);
-            _boardUI.MakeMove(move);
+            var captures = MoveGenerator.GetCaptureIndices(move, _board);
+            _board.MakeMove(move, captures);
+            _boardUI.MakeMove(move, captures, _board);
             ChangePlayer();
             _boardUI.UpdateUI(_board);
             _lastPlayerHadNoMove = false;

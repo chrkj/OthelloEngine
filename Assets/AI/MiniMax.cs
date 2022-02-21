@@ -22,16 +22,16 @@ namespace Othello.AI
             _depthLimit = depth;
         }
         
-        public Move StartSearch(Board board)
+        public int StartSearch(Board board)
         {
             return CalculateMove(board);
         }
         
-        private Move CalculateMove(Board board)
+        private int CalculateMove(Board board)
         {
+            int bestMove = -1;
             positions = 0;
             var currentUtil = 0;
-            Move bestMove = null;
             var currentPlayer = board.GetCurrentPlayer();
 
             if (currentPlayer == MaxPlayer)
@@ -43,7 +43,7 @@ namespace Othello.AI
                     currentUtil = MinValue(possibleNextState, _depthLimit - 1, int.MinValue, int.MaxValue);
                     if (currentUtil <= highestUtil) continue;
                     highestUtil = currentUtil;
-                    bestMove = new Move(legalMove.Key, currentPlayer, legalMove.Value);
+                    bestMove = legalMove;
                 }
             }
             else
@@ -56,7 +56,7 @@ namespace Othello.AI
                     currentUtil = MaxValue(possibleNextState, _depthLimit - 1, int.MinValue, int.MaxValue);
                     if (currentUtil >= minUtil) continue;
                     minUtil = currentUtil;
-                    bestMove = new Move(legalMove.Key, currentPlayer, legalMove.Value);;
+                    bestMove = legalMove;
                 }
                 var end = DateTimeOffset.Now.ToUnixTimeMilliseconds();
                 MonoBehaviour.print("Time taken: " + (end - start) + "ms for " + positions + " positions");
@@ -121,10 +121,10 @@ namespace Othello.AI
             return board.IsTerminalBoardState(board) || depth == 0;
         }
         
-        private static Board MakeMove(Board board, KeyValuePair<int,HashSet<int>> legalMove)
+        private static Board MakeMove(Board board, int legalMove)
         {
             var nextBoardState = new Board(board);
-            nextBoardState.MakeMove(new Move(legalMove.Key, board.GetCurrentPlayer(), legalMove.Value));
+            nextBoardState.MakeMove(legalMove, MoveGenerator.GetCaptureIndices(legalMove, nextBoardState));
             nextBoardState.ChangePlayer();
             return nextBoardState;
         }

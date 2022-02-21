@@ -45,13 +45,13 @@ namespace Othello.Core
             var isValidSquare = !Board.IsOutOfBounds(selectedFile, selectedRank) || boardUI.HasSprite(selectedIndex);
             if (!isValidSquare) return;
 
-            if (!legalMoves.ContainsKey(selectedIndex)) return;
+            if (!legalMoves.Contains(selectedIndex)) return;
             
             boardUI.UnhighlightLegalMoves(legalMoves);
-            if (lastMove != null) boardUI.UnhighlightSquare(lastMove.targetSquare);
+            if (lastMove != -1) boardUI.UnhighlightSquare(lastMove);
             boardUI.HighlightSquare(selectedIndex);
 
-            var chosenMove = new Move(selectedIndex, color, legalMoves[selectedIndex]);
+            var chosenMove = selectedIndex;
             ChooseMove(chosenMove);
         }
         

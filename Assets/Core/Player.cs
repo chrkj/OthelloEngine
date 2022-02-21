@@ -8,12 +8,12 @@ namespace Othello.Core
     public abstract class Player
     {
         public event Action ONNoLegalMove;
-        public event Action<Move> ONMoveChosen;
+        public event Action<int> ONMoveChosen;
         
         protected readonly int color;
         protected readonly Board board;
         protected readonly BoardUI boardUI;
-        protected Dictionary<int, HashSet<int>> legalMoves;
+        protected List<int> legalMoves;
 
         protected Player(Board board, int color)
         {
@@ -24,7 +24,7 @@ namespace Othello.Core
         
         public abstract void Update();
 
-        protected void ChooseMove(Move move)
+        protected void ChooseMove(int move)
         {
             ONMoveChosen?.Invoke(move);
         }
