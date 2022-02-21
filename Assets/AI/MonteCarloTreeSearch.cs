@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using Othello.Core;
+using UnityEngine.UI;
 using Random = System.Random;
 
 namespace Othello.AI

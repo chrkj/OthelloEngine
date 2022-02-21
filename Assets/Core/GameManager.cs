@@ -2,37 +2,47 @@
 using Othello.AI;
 using Othello.UI;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace Othello.Core
 {
     public class GameManager : MonoBehaviour
     {
-        private enum State { Playing, GameOver }
-
+        public Toggle showLegalMoves;
+        public Dropdown whitePiecePlayer;
+        public Dropdown blackPiecePlayer;
+        public InputField blackAiDepth;
+        public InputField whiteAiDepth;
         private Board _board;
         private BoardUI _boardUI;
         private State _gameState;
         private Player _playerTurn;
         private Player _blackPlayer;
         private Player _whitePlayer;
+        private Player _whitePlayerNextGame;
+        private Player _blackPlayerNextGame;
         private bool _lastPlayerHadNoMove;
+        private enum State { Playing, GameOver }
+        private enum PlayerType { Human = 0, Minimax = 1, MCTS = 2 }
 
         private void Start()
         {
             _boardUI = FindObjectOfType<BoardUI>();
             MoveGenerator.PrecomputeData();
             NewGame();
+            _gameState = State.GameOver;
+            GameSetup();
         }
         
-        private void NewGame()
+        public void NewGame()
         {
             var startingPlayer = Piece.Black;
             _board = new Board(startingPlayer);
             _board.LoadStartPosition();
             _boardUI.UpdateBoardUI(_board);
 
-            _whitePlayer = new AIPlayer(_board, Piece.White, new MonteCarloTreeSearch(10000));
-            _blackPlayer = new AIPlayer(_board, Piece.Black, new MiniMax(6));
+            _whitePlayer = new HumanPlayer(_board, Piece.White);
+            _blackPlayer = new HumanPlayer(_board, Piece.Black);
             _playerTurn = startingPlayer == Piece.White ? _whitePlayer : _blackPlayer;
             _gameState = State.Playing;
             
@@ -46,10 +56,49 @@ namespace Othello.Core
 
         private void Update()
         {
-            if (_gameState == State.Playing)
-                _playerTurn.Update();
-            if (Input.GetKeyDown(KeyCode.R))
-                NewGame();
+
+            switch (_gameState)
+            {
+                case State.Playing:
+                    _playerTurn.Update();
+                    break;
+                case State.GameOver:
+                    //TODO
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+
+        private void GameSetup()
+        {
+            whitePiecePlayer.onValueChanged.AddListener(delegate { HandlePlayerSelection(whitePiecePlayer.value, Piece.White); });
+
+        }
+        
+        void HandlePlayerSelection(int playerType, int pieceType)
+        {
+            switch (playerType)
+            {
+                case (int)PlayerType.Human:
+                    if (pieceType == Piece.White) 
+                        _whitePlayerNextGame = new HumanPlayer(_board, pieceType);
+                    else 
+                        _blackPlayerNextGame = new HumanPlayer(_board, pieceType);
+                    break;
+                case (int)PlayerType.Minimax:
+                    if (pieceType == Piece.White) 
+                        _whitePlayerNextGame = new AIPlayer(_board, pieceType, new MiniMax(5));
+                    else 
+                        _blackPlayerNextGame = new AIPlayer(_board, pieceType, new MiniMax(5));
+                    break;
+                case (int)PlayerType.MCTS:
+                    if (pieceType == Piece.White) 
+                        _whitePlayerNextGame = new AIPlayer(_board, pieceType, new MonteCarloTreeSearch(500));
+                    else 
+                        _blackPlayerNextGame = new AIPlayer(_board, pieceType, new MonteCarloTreeSearch(500));
+                    break;
+            }
         }
 
         private void MakeMove(int move)
