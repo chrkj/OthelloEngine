@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Othello.Core;
 using UnityEngine;
 
@@ -11,11 +10,16 @@ namespace Othello.AI
         private const int MaxPlayer = Piece.Black;
         private const int MinPlayer = Piece.White;
         
-        private const int DepthLimit = 5;
+        private int DepthLimit;
         private const int ParityWeight = 1;
         private const int CornerWeight = 4;
         
         private string _log = "MiniMax move log: ";
+
+        public MiniMax(int depth)
+        {
+            DepthLimit = depth;
+        }
         
         public Move StartSearch(Board board)
         {
@@ -24,9 +28,9 @@ namespace Othello.AI
         
         private Move DecideMove(Board board)
         {
-            int currentUtil;
+            var currentUtil = 0;
             Move bestMove = null;
-            var currentPlayer = board.GetCurrentColorToMove();
+            var currentPlayer = board.GetCurrentPlayer();
             var start = DateTimeOffset.Now.ToUnixTimeMilliseconds();
             
             if (currentPlayer == MaxPlayer)
@@ -55,7 +59,7 @@ namespace Othello.AI
             }
 
             var stop = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-            _log += ((stop - start) + "ms, ");
+            _log += currentUtil + ", ";
             MonoBehaviour.print(_log);
             return bestMove;
         }
@@ -69,9 +73,10 @@ namespace Othello.AI
             if (!HasLegalMove(board))
                 minUtil = Math.Min(minUtil, MaxValue(board, depth - 1, alpha, beta));
             
-            foreach (var possibleNextState in MoveGenerator.GenerateLegalMoves(board).Select(legalMove => MakeMove(board, legalMove)))
+            foreach (var legalMove in MoveGenerator.GenerateLegalMoves(board))
             {
-                minUtil = Math.Min(minUtil, MaxValue(possibleNextState, depth - 1, alpha, beta));
+                var nextState = MakeMove(board, legalMove);
+                minUtil = Math.Min(minUtil, MaxValue(nextState, depth - 1, alpha, beta));
                 if (minUtil <= alpha) return minUtil;
                 beta = Math.Min(beta, minUtil);
             }
@@ -87,9 +92,10 @@ namespace Othello.AI
             if (!HasLegalMove(board))
                 maxUtil = Math.Max(maxUtil, MinValue(board, depth - 1, alpha, beta));
             
-            foreach (var possibleNextState in MoveGenerator.GenerateLegalMoves(board).Select(legalMove => MakeMove(board, legalMove)))
+            foreach (var legalMove in MoveGenerator.GenerateLegalMoves(board))
             {
-                maxUtil = Math.Max(maxUtil, MinValue(possibleNextState, depth - 1, alpha, beta));
+                var nextState = MakeMove(board, legalMove);
+                maxUtil = Math.Max(maxUtil, MinValue(nextState, depth - 1, alpha, beta));
                 if (maxUtil >= beta) return maxUtil;
                 alpha = Math.Max(alpha, maxUtil);
             }
@@ -117,7 +123,8 @@ namespace Othello.AI
         private static Board MakeMove(Board board, KeyValuePair<int,HashSet<int>> legalMove)
         {
             var nextBoardState = new Board(board);
-            nextBoardState.MakeMove(new Move(legalMove.Key, board.GetColorToMove(), legalMove.Value));
+            nextBoardState.MakeMove(new Move(legalMove.Key, board.GetCurrentPlayer(), legalMove.Value));
+            nextBoardState.ChangePlayer();
             return nextBoardState;
         }
         

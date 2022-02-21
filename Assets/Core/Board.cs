@@ -10,8 +10,6 @@ namespace Othello.Core
         private readonly Stack<Move> _history = new Stack<Move>();
         
         private bool _isWhiteToMove = true;
-        private int _currentPlayerColor = Piece.White;
-        private int _currentOpponentColor = Piece.Black;
 
         public Board()
         {
@@ -22,6 +20,7 @@ namespace Othello.Core
         {
             _board = new int[64];
             Array.Copy(board._board, _board, 64);
+            _isWhiteToMove = board._isWhiteToMove;
         }
         
         public void LoadStartPosition()
@@ -37,10 +36,16 @@ namespace Othello.Core
             return _board[GetBoardIndex(file, rank)];
         }
 
-        public int GetColorToMove()
+        public int GetCurrentPlayer()
         {
-            return _currentPlayerColor;
+            return _isWhiteToMove ? Piece.White : Piece.Black;
         }
+
+        public int GetCurrentOpponent()
+        {
+            return _isWhiteToMove ? Piece.Black : Piece.White;
+        }
+        
         
         public void MakeMove(Move move)
         {
@@ -84,29 +89,22 @@ namespace Othello.Core
 
         public bool IsOpponentPiece(int index)
         {
-            return Piece.IsSameColor(_board[index], _currentOpponentColor);
+            return Piece.IsSameColor(_board[index], GetCurrentOpponent());
         }
         
         public bool IsFriendlyPiece(int index)
         {
-            return Piece.IsSameColor(_board[index], _currentPlayerColor);
+            return Piece.IsSameColor(_board[index], GetCurrentPlayer());
         }
 
         public void ChangePlayer()
         {
             _isWhiteToMove = !_isWhiteToMove;
-            _currentPlayerColor = (_isWhiteToMove) ? Piece.White : Piece.Black;
-            _currentOpponentColor = (_isWhiteToMove) ? Piece.Black : Piece.White;
         }
 
         public string CurrentPlayerAsString()
         {
             return _isWhiteToMove ? "White" : "Black";
-        }
-        
-        public int GetCurrentColorToMove()
-        {
-            return _currentPlayerColor;
         }
 
         public string GetPieceCountAsString(int color)

@@ -36,8 +36,8 @@ namespace Othello.Core
             _board.LoadStartPosition();
             _boardUI.UpdateBoardUI(_board);
 
-            _whitePlayer = new HumanPlayer(_board, Piece.White);
-            _blackPlayer = new AIPlayer(_board, Piece.Black, new MiniMax());
+            _whitePlayer = new AIPlayer(_board, Piece.White, new MiniMax(5));
+            _blackPlayer = new AIPlayer(_board, Piece.Black, new MiniMax(2));
             _playerTurn = _whitePlayer;
             _gameState = State.Playing;
             
@@ -72,7 +72,7 @@ namespace Othello.Core
             switch (_gameState)
             {
                 case State.Playing:
-                    _playerTurn = (_board.GetColorToMove() == Piece.White) ? _whitePlayer : _blackPlayer;
+                    _playerTurn = (_board.GetCurrentPlayer() == Piece.White) ? _whitePlayer : _blackPlayer;
                     _playerTurn.NotifyTurnToMove();
                     break;
                 case State.Over:

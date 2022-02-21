@@ -15,17 +15,5 @@ namespace Othello.Core
             this.targetSquare = targetSquare;
         }
 
-        public override bool Equals(object other)
-        {
-            if (other is Move move)
-                return targetSquare == move.targetSquare;
-            return false;
-        }
-        
-        public override int GetHashCode()
-        {
-            return targetSquare.GetHashCode();
-        }
-        
     }
 }
