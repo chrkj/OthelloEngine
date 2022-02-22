@@ -13,7 +13,7 @@
 
 <h3 align="center">Othello Engine</h3>
   <a href="https://github.com/chrkj/OthelloEngine">
-    <img src="/Example.png" width="525" height="250">
+    <img src="/Example.png" width="600" height="338">
   </a>
   <p align="center">
     A simple othello engine
