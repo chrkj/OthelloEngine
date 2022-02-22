@@ -45,12 +45,13 @@ Frameworks/libraries used for the project:
 ## Roadmap
 
 Optimization:
-- ⬜ Multithreading for MCTS
+- ⬜ Implement multithreading for MCTS
+- ⬜ Implement iterative deepening for MiniMax
 
 UI:
 - ⬜ Prettier UI
-- ⬜ Winning animation
-- ⬜ Algorithm diagnostics
+- ⬜ Implement winning animation
+- ⬜ Implement search algorithm diagnostics
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
