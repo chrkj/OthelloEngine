@@ -10,7 +10,6 @@ namespace Othello.UI
         public PieceTheme pieceTheme;
         public float pieceScale = 0.3f;
         public float pieceDepth = -0.1f;
-        public bool highLightLegalMoves = false;
         public Color lightColor = new Color(0.93f, 0.93f, 0.82f);
         public Color darkColor = new Color(0.59f, 0.69f, 0.45f);
         public Color highlightColor = new Color(1f, 0.55f, 0.56f);
@@ -21,11 +20,13 @@ namespace Othello.UI
         public Material darkSquareMaterial;
         public Material lightSquareMaterial;
         
+        private Canvas _canvas;
+        private const float BoardOffset = -3.5f;
+        private bool highLightLegalMoves = false;
         private MeshRenderer[] _squareRenderers;
         private SpriteRenderer[] _pieceRenderers;
-        private const float BoardOffset = -3.5f;
+        private List<int> currentLegalMoves = new List<int>();
         private readonly string[] _fileChars = { "A", "B", "C", "D", "E", "F", "G", "H"};
-        private Canvas _canvas;
 
         private void Awake()
         {
@@ -150,6 +151,7 @@ namespace Othello.UI
 
         public void HighlightLegalMoves(List<int> legalMoves)
         {
+            currentLegalMoves = legalMoves;
             if (!highLightLegalMoves) return;
             foreach (var legalMove in legalMoves)
                 _squareRenderers[legalMove].material.color = highlightColor;;
@@ -160,6 +162,21 @@ namespace Othello.UI
             foreach (var legalMove in legalMoves)
                 UnhighlightSquare(legalMove);
         }
-        
+
+        public void ToggleLegalMoves(bool isOn)
+        {
+            highLightLegalMoves = isOn;
+            if (!highLightLegalMoves) UnhighlightAll();
+            else HighlightLegalMoves(currentLegalMoves);
+
+        }
+
+        private void UnhighlightAll()
+        {
+            for (int i = 0; i < _squareRenderers.Length; i++)
+            {
+                _squareRenderers[i].material.color = IsWhiteSquare(i) ? darkColor : lightColor;
+            }
+        }
     }
 }

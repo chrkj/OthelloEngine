@@ -11,94 +11,142 @@ namespace Othello.Core
         public Toggle showLegalMoves;
         public Dropdown whitePiecePlayer;
         public Dropdown blackPiecePlayer;
-        public InputField blackAiDepth;
-        public InputField whiteAiDepth;
+        public Dropdown playerToStart;
+        public InputField blackAiDepthMinimax;
+        public InputField whiteAiDepthMinimax;
+        public InputField blackAiIterationsMcts;
+        public InputField whiteAiIterationsMcts;
         private Board _board;
         private BoardUI _boardUI;
         private State _gameState;
-        private Player _playerTurn;
+        private Player _playerToMove;
         private Player _blackPlayer;
         private Player _whitePlayer;
         private Player _whitePlayerNextGame;
         private Player _blackPlayerNextGame;
+        private int _playerToStartNextGame;
         private bool _lastPlayerHadNoMove;
-        private enum State { Playing, GameOver }
+        private enum State { Playing, GameOver, Idle }
         private enum PlayerType { Human = 0, Minimax = 1, MCTS = 2 }
 
         private void Start()
         {
             _boardUI = FindObjectOfType<BoardUI>();
             MoveGenerator.PrecomputeData();
-            NewGame();
-            _gameState = State.GameOver;
-            GameSetup();
+            Setup();
         }
-        
-        public void NewGame()
+
+        private void Setup()
         {
-            var startingPlayer = Piece.Black;
-            _board = new Board(startingPlayer);
+            _playerToStartNextGame = Piece.Black;
+            _board = new Board(_playerToStartNextGame);
             _board.LoadStartPosition();
             _boardUI.UpdateBoardUI(_board);
 
-            _whitePlayer = new HumanPlayer(_board, Piece.White);
-            _blackPlayer = new HumanPlayer(_board, Piece.Black);
-            _playerTurn = startingPlayer == Piece.White ? _whitePlayer : _blackPlayer;
+            blackAiDepthMinimax.text = "5";
+            whiteAiDepthMinimax.text = "5";
+            blackAiIterationsMcts.text = "500";
+            whiteAiIterationsMcts.text = "500";
+            PlayerSelection(ref _whitePlayerNextGame, (int)PlayerType.Human, Piece.White);
+            PlayerSelection(ref _blackPlayerNextGame, (int)PlayerType.Human, Piece.Black);
+            whitePiecePlayer.onValueChanged.AddListener(delegate
+            {
+                PlayerSelection(ref _whitePlayerNextGame, whitePiecePlayer.value, Piece.White);
+            });
+            blackPiecePlayer.onValueChanged.AddListener(delegate
+            {
+                PlayerSelection(ref _blackPlayerNextGame, blackPiecePlayer.value, Piece.Black);
+            });
+            whiteAiDepthMinimax.onValueChanged.AddListener(delegate
+            {
+                PlayerSelection(ref _whitePlayerNextGame, whitePiecePlayer.value, Piece.White);
+            });
+            blackAiDepthMinimax.onValueChanged.AddListener(delegate
+            {
+                PlayerSelection(ref _blackPlayerNextGame, blackPiecePlayer.value, Piece.Black);
+            });
+            whiteAiIterationsMcts.onValueChanged.AddListener(delegate
+            {
+                PlayerSelection(ref _whitePlayerNextGame, whitePiecePlayer.value, Piece.White);
+            });
+            blackAiIterationsMcts.onValueChanged.AddListener(delegate
+            {
+                PlayerSelection(ref _blackPlayerNextGame, blackPiecePlayer.value, Piece.Black);
+            });
+            showLegalMoves.onValueChanged.AddListener(delegate { ToggleLegalMoves(showLegalMoves.isOn); });
+            playerToStart.onValueChanged.AddListener(delegate { SetStartingPlayer(playerToStart.value); });
+            _gameState = State.Idle;
+        }
+
+        public void NewGame()
+        {
+            _board.ResetBoard();
+            _board.LoadStartPosition();
+            _board.SetStartingPlayer(_playerToStartNextGame);
+            _boardUI.UpdateBoardUI(_board);
+            _whitePlayer = (Player)_whitePlayerNextGame.Clone();
+            _blackPlayer = (Player)_blackPlayerNextGame.Clone();
+            _playerToMove = _playerToStartNextGame == Piece.White ? _whitePlayer : _blackPlayer;
             _gameState = State.Playing;
-            
-            _whitePlayer.ONMoveChosen += MakeMove;
-            _blackPlayer.ONMoveChosen += MakeMove;
-            _whitePlayer.ONNoLegalMove += NoLegalMove;
-            _blackPlayer.ONNoLegalMove += NoLegalMove;
-            
-            _playerTurn.NotifyTurnToMove();
+            _playerToMove.NotifyTurnToMove();
         }
 
         private void Update()
         {
-
             switch (_gameState)
             {
                 case State.Playing:
-                    _playerTurn.Update();
+                    _playerToMove.Update();
                     break;
                 case State.GameOver:
-                    //TODO
+                    // TODO: Add gameover animation
+                    break;
+                case State.Idle:
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
         }
 
-        private void GameSetup()
+        private void PlayerSelection(ref Player player, int playerType, int playerColor)
         {
-            whitePiecePlayer.onValueChanged.AddListener(delegate { HandlePlayerSelection(whitePiecePlayer.value, Piece.White); });
-
-        }
-        
-        void HandlePlayerSelection(int playerType, int pieceType)
-        {
+            if (player != null)
+            {
+                player.ONMoveChosen -= MakeMove;
+                player.ONNoLegalMove -= NoLegalMove;
+            }
+            var inputFieldMCTS = playerColor == Piece.Black ? blackAiIterationsMcts : whiteAiIterationsMcts;
+            var inputFieldMinimax = playerColor == Piece.Black ? blackAiDepthMinimax : whiteAiDepthMinimax;
+            if (inputFieldMCTS.text.Length == 0) inputFieldMCTS.text = "1";
+            if (inputFieldMinimax.text.Length == 0) inputFieldMinimax.text = "1";
             switch (playerType)
             {
                 case (int)PlayerType.Human:
-                    if (pieceType == Piece.White) 
-                        _whitePlayerNextGame = new HumanPlayer(_board, pieceType);
-                    else 
-                        _blackPlayerNextGame = new HumanPlayer(_board, pieceType);
+                    player = new HumanPlayer(_board, playerColor);
+                    inputFieldMCTS.gameObject.SetActive(false);
+                    inputFieldMinimax.gameObject.SetActive(false);
+                    print("Player Type: Human, Player color: " + Piece.GetPlayerAsString(playerColor));
                     break;
                 case (int)PlayerType.Minimax:
-                    if (pieceType == Piece.White) 
-                        _whitePlayerNextGame = new AIPlayer(_board, pieceType, new MiniMax(5));
-                    else 
-                        _blackPlayerNextGame = new AIPlayer(_board, pieceType, new MiniMax(5));
+                    var depth = Int32.Parse(inputFieldMinimax.text);
+                    if (depth < 1) depth = 1;
+                    player = new AIPlayer(_board, playerColor, new MiniMax(depth));
+                    inputFieldMinimax.gameObject.SetActive(true);
+                    inputFieldMCTS.gameObject.SetActive(false);
+                    print("Player Type: AIMinimax, Player color: " + Piece.GetPlayerAsString(playerColor) + ", depth = " + depth);
                     break;
                 case (int)PlayerType.MCTS:
-                    if (pieceType == Piece.White) 
-                        _whitePlayerNextGame = new AIPlayer(_board, pieceType, new MonteCarloTreeSearch(500));
-                    else 
-                        _blackPlayerNextGame = new AIPlayer(_board, pieceType, new MonteCarloTreeSearch(500));
+                    var iterations = Int32.Parse(inputFieldMCTS.text);
+                    if (iterations < 1) iterations = 1;
+                    player = new AIPlayer(_board, playerColor, new MonteCarloTreeSearch(iterations));
+                    inputFieldMCTS.gameObject.SetActive(true);
+                    inputFieldMinimax.gameObject.SetActive(false);
+                    print("Player Type: AIMCTS, Player color: " + Piece.GetPlayerAsString(playerColor) + ", iterations = " + iterations);
                     break;
             }
+            if (player == null) return;
+            player.ONMoveChosen += MakeMove;
+            player.ONNoLegalMove += NoLegalMove;
         }
 
         private void MakeMove(int move)
@@ -117,12 +165,14 @@ namespace Othello.Core
             switch (_gameState)
             {
                 case State.Playing:
-                    _playerTurn = (_board.GetCurrentPlayer() == Piece.White) ? _whitePlayer : _blackPlayer;
-                    _playerTurn.NotifyTurnToMove();
+                    _playerToMove = (_board.GetCurrentPlayer() == Piece.White) ? _whitePlayer : _blackPlayer;
+                    _playerToMove.NotifyTurnToMove();
                     break;
                 case State.GameOver:
                     // Handle winning animation
                     print("GameOver");
+                    break;
+                case State.Idle:
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -134,6 +184,16 @@ namespace Othello.Core
             if (_lastPlayerHadNoMove) _gameState = State.GameOver;
             _lastPlayerHadNoMove = true;
             ChangePlayer();
+        }
+        
+        private void ToggleLegalMoves(bool isOn)
+        {
+            _boardUI.ToggleLegalMoves(isOn);
+        }
+        
+        private void SetStartingPlayer(int value)
+        {
+            _playerToStartNextGame = value == 0 ? Piece.Black : Piece.White;
         }
 
     }

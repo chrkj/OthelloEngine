@@ -39,6 +39,7 @@ namespace Othello.Core
             
             var selectedFile = (int) Math.Floor(mousePosition.x) + 4;
             var selectedRank = (int) Math.Floor(mousePosition.y) + 4;
+            if (Board.IsOutOfBounds(selectedFile, selectedRank)) return;
             var selectedIndex = Board.GetBoardIndex(selectedFile, selectedRank);
             var lastMove = board.GetLastMove();
             

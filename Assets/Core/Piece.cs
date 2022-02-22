@@ -18,5 +18,10 @@
             return (piece1 & Mask) == (piece2 & Mask);
         }
 
+        public static string GetPlayerAsString(int playerColor)
+        {
+            return playerColor == Piece.White ? "White" : "Black";
+        }
+
     }
 }

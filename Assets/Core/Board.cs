@@ -23,13 +23,20 @@ namespace Othello.Core
             Array.Copy(board._board, _board, 64);
             _isWhiteToMove = board._isWhiteToMove;
         }
+
+        public void ResetBoard()
+        {
+            for (int i = 0; i < _board.Length; i++)
+                _board[i] = Piece.Empty;
+            _history.Clear();
+        }
         
         public void LoadStartPosition()
         {
             _board[27] = Piece.Black;
+            _board[36] = Piece.Black;
             _board[28] = Piece.White;
             _board[35] = Piece.White;
-            _board[36] = Piece.Black;
         }
 
         public int GetPiece(int file, int rank)
@@ -85,7 +92,7 @@ namespace Othello.Core
         
         public static bool IsOutOfBounds(int file, int rank)
         {
-            return IsOutOfBounds(GetBoardIndex(file, rank));
+            return file < 0 || file > 7 && rank < 0 || rank > 7;
         }
 
         public bool IsOpponentPiece(int index)
@@ -107,7 +114,7 @@ namespace Othello.Core
         {
             return _isWhiteToMove ? "White" : "Black";
         }
-
+        
         public string GetPieceCountAsString(int color)
         {
             var count = _board.Count(square => square == color);
@@ -139,6 +146,11 @@ namespace Othello.Core
         {
             if (!IsTerminalBoardState(this)) return -1;
             return IsWinner(Piece.Black) ? Piece.Black : Piece.White;
+        }
+
+        public void SetStartingPlayer(int player)
+        {
+            _isWhiteToMove = player == Piece.White; 
         }
     }
 }

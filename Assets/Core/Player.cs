@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Othello.UI;
 using Object = UnityEngine.Object;
 
 namespace Othello.Core
 {
-    public abstract class Player
+    public abstract class Player : ICloneable
     {
         public event Action ONNoLegalMove;
         public event Action<int> ONMoveChosen;
@@ -34,7 +35,11 @@ namespace Othello.Core
             ONNoLegalMove?.Invoke();
         }
         
-        // TODO: Calc legalmoves here
         public abstract void NotifyTurnToMove();
+
+        public object Clone()
+        {
+            return MemberwiseClone();
+        }
     }
 }
