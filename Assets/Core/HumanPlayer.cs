@@ -23,7 +23,7 @@ namespace Othello.Core
             legalMoves = MoveGenerator.GenerateLegalMoves(board);
             boardUI.HighlightLegalMoves(legalMoves);
             if (legalMoves.Count != 0) return;
-            MonoBehaviour.print("No legal move for " + board.CurrentPlayerAsString());
+            MonoBehaviour.print("No legal move for " + board.GetCurrentPlayerAsString());
             NoLegalMove();
         }
 

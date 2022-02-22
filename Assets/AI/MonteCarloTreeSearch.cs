@@ -2,7 +2,6 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using Othello.Core;
-using UnityEngine.UI;
 using Random = System.Random;
 
 namespace Othello.AI
@@ -10,11 +9,11 @@ namespace Othello.AI
     public class MonteCarloTreeSearch : ISearchEngine
     {
         private int m_player;
-        private int m_opponent;
+        private int m_oppenent;
+        private Tree cachedTree;
         private readonly int m_iterations;
+        private const int IsRunning = -1;
         
-        private const int WinningScore = 10;
-
         public MonteCarloTreeSearch(int iterations)
         {
             m_iterations = iterations;
@@ -28,10 +27,18 @@ namespace Othello.AI
         private int CalculateMove(Board board)
         {
             m_player = board.GetCurrentPlayer();
-            m_opponent = board.GetCurrentOpponent();
+            m_oppenent = board.GetCurrentOpponent();
             var tree = new Tree();
+            if (cachedTree != null) // Only checking 1 depth in cachedTree atm
+            {
+                foreach (var node in cachedTree.root.childArray)
+                    if (node.state.board.Equals(board)) tree.root = node;
+            }
+            else
+            {
+                tree.root.state.board = board.Copy();
+            }
             var rootNode = tree.root;
-            rootNode.state.board = new Board(board);
 
             for (int i = 0; i < m_iterations; i++)
             {
@@ -47,15 +54,15 @@ namespace Othello.AI
                 BackPropogation(nodeToExplore, winningPlayer);
             }
 
-            var bestNode = rootNode.GetChildWithMaxScore();
+            var bestNode = rootNode.GetChildWithHighestScore();
+            cachedTree = new Tree() { root = bestNode };
             return bestNode.state.board.GetLastMove();
         }
         
-        private static Node Selection(Node rootNode) 
+        private Node Selection(Node rootNode) 
         {
             var node = rootNode;
-            while (node.childArray.Count != 0)
-                node = UCT.FindBestNodeWithUCT(node);
+            while (node.childArray.Count != 0) node = SelectNodeWithUct(node);
             return node;
         }
         
@@ -69,56 +76,58 @@ namespace Othello.AI
             }
         }
         
-        private void BackPropogation(Node nodeToExplore, int playerNo) 
+        private void BackPropogation(Node nodeToExplore, int winningPlayer)
         {
-            var tempNode = nodeToExplore;
-            while (tempNode != null) 
+            var currentNode = nodeToExplore;
+            int simulationScore;
+            if (winningPlayer == 0) simulationScore = 0;
+            else simulationScore = m_player == winningPlayer ? 1 : 0;
+            while (currentNode != null) 
             {
-                tempNode.state.visitCount++;
-                if (m_player == playerNo) 
-                    tempNode.state.winScore += WinningScore;
-                tempNode = tempNode.parent;
+                if (winningPlayer == m_player) currentNode.win++;
+                if (winningPlayer == m_oppenent) currentNode.loss++;
+                if (winningPlayer == 0) currentNode.draw++;
+                currentNode.state.noVisites++;
+                currentNode.state.noWins += simulationScore;
+                currentNode = currentNode.parent;
             }
         }
         
-        private int Simulation(Node node) 
+        private static int Simulation(Node node) 
         {
             Node tempNode = new Node(node);
             State tempState = tempNode.state;
-            int boardStatus = tempState.board.CheckStatus();
-            if (boardStatus == m_opponent) 
-            {
-                tempNode.parent.state.winScore = int.MinValue;
-                return boardStatus;
-            }
-            while (boardStatus == -1) 
+            int winningPlayer = tempState.board.GetBoardState();
+            while (winningPlayer == IsRunning)
             {
                 tempState.RandomPlay();
-                boardStatus = tempState.board.CheckStatus();
+                winningPlayer = tempState.board.GetBoardState();
             }
-            return boardStatus;
+            return winningPlayer;
         }
         
-        private static class UCT 
+        
+        private static double CalculateUct(int totalVisit, double noWins, int noVisits) 
         {
-            private static double uctValue(int totalVisit, double nodeWinScore, int nodeVisit) {
-                if (nodeVisit == 0) return int.MaxValue;
-                return (nodeWinScore / nodeVisit) + 1.41 * Math.Sqrt(Math.Log(totalVisit) / nodeVisit);
-            }
-            
-            public static Node FindBestNodeWithUCT(Node node) 
-            {
-                int parentVisit = node.state.visitCount;
-                return node.childArray.OrderByDescending(c => uctValue(parentVisit, c.state.winScore, c.state.visitCount)).First();
-            }
+            if (noVisits == 0) return int.MaxValue;
+            return (noWins / noVisits) + (Math.Sqrt(2) * Math.Sqrt(Math.Log(totalVisit) / noVisits));
         }
-            
-        private class Node 
+        
+        public Node SelectNodeWithUct(Node node) 
+        {
+            return node.childArray.OrderByDescending(currentNode => CalculateUct(currentNode.parent.state.noVisites, currentNode.state.noWins, currentNode.state.noVisites)).First();
+        }
+
+
+        public class Node 
         {
             public State state = new State();
             public Node parent;
             public readonly List<Node> childArray = new List<Node>(); 
             private readonly Random random = new Random();
+            public int win;
+            public int loss;
+            public int draw;
 
             public Node()
             {
@@ -126,12 +135,12 @@ namespace Othello.AI
             
             public Node(Node node)
             {
-                this.state = new State()
+                state = new State()
                 {
-                    board = new Board(node.state.board), visitCount = node.state.visitCount, winScore = node.state.visitCount
+                    board = node.state.board.Copy(), 
+                    noVisites = node.state.noVisites, 
+                    noWins = node.state.noVisites
                 };
-                this.parent = node.parent;
-                this.childArray.AddRange(node.childArray);
             }
 
             public Node GetRandomChildNode()
@@ -139,35 +148,34 @@ namespace Othello.AI
                 return childArray[random.Next(childArray.Count)];
             }
 
-            public Node GetChildWithMaxScore()
+            public Node GetChildWithHighestScore()
             {
-                return childArray.OrderByDescending(c => c.state.winScore).First();
+                return childArray.OrderByDescending(node => node.state.noWins / (node.state.noVisites == 0 ? Int32.MaxValue : node.state.noVisites)).First();
             }
         }
         
         private class Tree
         {
-            public readonly Node root;
+            public Node root;
 
             public Tree()
             {
                 root = new Node();
             }
         }
-        
-        private class State 
+
+        public class State 
         {
             public Board board;
-            public int visitCount;
-            public double winScore;
-            private readonly Random rand = new Random();
+            public int noVisites;
+            public int noWins;
 
             public List<State> GetAllPossibleStates()
             {
                 var states = new List<State>();
                 foreach (var legalMove in MoveGenerator.GenerateLegalMoves(board))
                 {
-                    var newBoard = new Board(board);
+                    var newBoard = board.Copy();
                     newBoard.MakeMove(legalMove, MoveGenerator.GetCaptureIndices(legalMove, newBoard));
                     newBoard.ChangePlayer();
                     var newState = new State { board = newBoard };
@@ -184,8 +192,10 @@ namespace Othello.AI
                     board.ChangePlayer();
                     return;
                 }
-                var randomMove = legalMoves.ElementAt(rand.Next(0, legalMoves.Count));
-                board.MakeMove(randomMove, MoveGenerator.GetCaptureIndices(randomMove, board));
+                var rand = new Random();
+                var randomMove = legalMoves[rand.Next(legalMoves.Count)];
+                var captures = MoveGenerator.GetCaptureIndices(randomMove, board);
+                board.MakeMove(randomMove, captures);
                 board.ChangePlayer();
             }
             

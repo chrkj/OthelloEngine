@@ -80,9 +80,8 @@ namespace Othello.Core
 
         public void NewGame()
         {
-            _board.ResetBoard();
+            _board.ResetBoard(_playerToStartNextGame);
             _board.LoadStartPosition();
-            _board.SetStartingPlayer(_playerToStartNextGame);
             _boardUI.UpdateBoardUI(_board);
             _whitePlayer = (Player)_whitePlayerNextGame.Clone();
             _blackPlayer = (Player)_blackPlayerNextGame.Clone();

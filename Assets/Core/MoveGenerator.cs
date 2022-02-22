@@ -32,26 +32,29 @@ namespace Othello.Core
             var legalMoves = new List<int>();
             var emptySquares = board.GetEmptySquares();
             foreach (var square in emptySquares)
-                for (var directionOffsetIndex = 0; directionOffsetIndex < 8; directionOffsetIndex++)
-                    GenerateLegalMovesForSquare(board, square, directionOffsetIndex, legalMoves);
+                GenerateLegalMovesForSquare(board, square, legalMoves);
             return legalMoves;
         }
 
-        private static void GenerateLegalMovesForSquare(Board board, int square, int directionOffsetIndex, List<int>legalMoves)
+        private static void GenerateLegalMovesForSquare(Board board, int square, ICollection<int> legalMoves)
         {
-            var captureCount = 0;
-            var currentSquare = square + DirectionOffsets[directionOffsetIndex];
-            if (Board.IsOutOfBounds(currentSquare)) return;
-
-            for (var timesMoved = 1; timesMoved < SquaresToEdge[square][directionOffsetIndex]; timesMoved++)
+            for (var directionOffsetIndex = 0; directionOffsetIndex < 8; directionOffsetIndex++)
             {
-                if (!board.IsOpponentPiece(currentSquare)) break;
-                currentSquare += DirectionOffsets[directionOffsetIndex];
-                captureCount++;
-            }
+                var captureCount = 0;
+                var currentSquare = square + DirectionOffsets[directionOffsetIndex];
+                if (Board.IsOutOfBounds(currentSquare)) return;
 
-            if (board.IsFriendlyPiece(currentSquare) && captureCount > 0)
+                for (var timesMoved = 1; timesMoved < SquaresToEdge[square][directionOffsetIndex]; timesMoved++)
+                {
+                    if (!board.IsOpponentPiece(currentSquare)) break;
+                    currentSquare += DirectionOffsets[directionOffsetIndex];
+                    captureCount++;
+                }
+
+                if (!board.IsFriendlyPiece(currentSquare) || captureCount <= 0) continue;
                 legalMoves.Add(square);
+                break;
+            }
         }
 
         public static HashSet<int> GetCaptureIndices(int move, Board board)

@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 using Othello.Core;
 
@@ -9,13 +8,11 @@ namespace Othello.AI
     {
         private readonly int _depthLimit;
         
+        private static int positions;
         private const int ParityWeight = 1;
         private const int CornerWeight = 4;
-        
         private const int MaxPlayer = Piece.Black;
         private const int MinPlayer = Piece.White;
-
-        private static int positions;
 
         public MiniMax(int depth)
         {
@@ -123,7 +120,7 @@ namespace Othello.AI
         
         private static Board MakeMove(Board board, int legalMove)
         {
-            var nextBoardState = new Board(board);
+            var nextBoardState = board.Copy();
             nextBoardState.MakeMove(legalMove, MoveGenerator.GetCaptureIndices(legalMove, nextBoardState));
             nextBoardState.ChangePlayer();
             return nextBoardState;
@@ -144,24 +141,24 @@ namespace Othello.AI
             var maxPlayerCornerValue = 0;
             var minPlayerCornerValue = 0;
 
-            if (board.GetPiece(0, 0) == MaxPlayer)
+            if (board.GetPieceColor(0, 0) == MaxPlayer)
                 maxPlayerCornerValue++;
-            else if (board.GetPiece(0, 0) == MinPlayer)
+            else if (board.GetPieceColor(0, 0) == MinPlayer)
                 minPlayerCornerValue++;
 
-            if (board.GetPiece(0, 7) == MaxPlayer)
+            if (board.GetPieceColor(0, 7) == MaxPlayer)
                 maxPlayerCornerValue++;
-            else if (board.GetPiece(0, 7) == MinPlayer)
+            else if (board.GetPieceColor(0, 7) == MinPlayer)
                 minPlayerCornerValue++;
 
-            if (board.GetPiece(7, 0) == MaxPlayer)
+            if (board.GetPieceColor(7, 0) == MaxPlayer)
                 maxPlayerCornerValue++;
-            else if (board.GetPiece(7, 0) == MinPlayer)
+            else if (board.GetPieceColor(7, 0) == MinPlayer)
                 minPlayerCornerValue++;
 
-            if (board.GetPiece(7, 7) == MaxPlayer)
+            if (board.GetPieceColor(7, 7) == MaxPlayer)
                 maxPlayerCornerValue++;
-            else if (board.GetPiece(7, 7) == MinPlayer)
+            else if (board.GetPieceColor(7, 7) == MinPlayer)
                 minPlayerCornerValue++;
             
             return maxPlayerCornerValue - minPlayerCornerValue;

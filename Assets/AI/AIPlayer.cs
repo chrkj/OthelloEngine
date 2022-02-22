@@ -33,7 +33,7 @@ namespace Othello.AI
             legalMoves = MoveGenerator.GenerateLegalMoves(board);
             if (legalMoves.Count == 0)
             {
-                MonoBehaviour.print("No legal move for " + board.CurrentPlayerAsString());
+                MonoBehaviour.print("No legal move for " + board.GetCurrentPlayerAsString());
                 NoLegalMove();
                 return;
             }

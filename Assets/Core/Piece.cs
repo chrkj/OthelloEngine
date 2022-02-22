@@ -6,7 +6,7 @@
         public const byte Black = 0b01;
         public const byte White = 0b10;
 
-        private const byte Mask = 0b11;
+        private const int Mask = 0b11;
 
         public static bool IsBlack(int piece)
         {

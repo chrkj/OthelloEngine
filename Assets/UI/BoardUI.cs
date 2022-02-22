@@ -97,7 +97,7 @@ namespace Othello.UI
             for (var rank = 0; rank < 8; rank++)
                 for (var file = 0; file < 8; file++)
                 {
-                    var piece = board.GetPiece(file, rank);
+                    var piece = board.GetPieceColor(file, rank);
                     var sprite = piece == Piece.Empty ? null : pieceTheme.GetSprite(piece);
                     var boardIndex = Board.GetBoardIndex(file, rank);
                     _pieceRenderers[boardIndex].sprite = sprite;
@@ -115,7 +115,7 @@ namespace Othello.UI
 
         public void UpdateUI(Board board)
         {
-            playerToMoveUI.text = "Player: " + board.CurrentPlayerAsString();
+            playerToMoveUI.text = "Player: " + board.GetCurrentPlayerAsString();
             blackPieceCountUI.text = $"Black: {board.GetPieceCountAsString(Piece.Black)}";
             whitePieceCountUI.text = $"White: {board.GetPieceCountAsString(Piece.White)}";
         }
