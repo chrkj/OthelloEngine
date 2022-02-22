@@ -12,7 +12,9 @@
 <div align="center">
 
 <h3 align="center">Othello Engine</h3>
-
+  <a href="https://github.com/chrkj/OthelloEngine">
+    <img src="/Example.png" width="525" height="250">
+  </a>
   <p align="center">
     A simple othello engine
     <br />
@@ -27,16 +29,28 @@
 
 <!-- ABOUT THE PROJECT -->
 ## About The Project
-Coming soon...
+This is an implementation of the game Othello (also known as Reversi) strategy board game for two players, played on an 8 x 8 board.
+I originally created the project to learn more about game AI's of which the game currently supports two.
+Firstly the [MiniMax algorithm](https://en.wikipedia.org/wiki/Minimax) and secondly the [Monte Carlo Tree Search Algorithm](https://en.wikipedia.org/wiki/Monte_Carlo_tree_search).
 <p align="right">(<a href="#top">back to top</a>)</p>
-
 
 
 ### Built With
 
 Frameworks/libraries used for the project:
 
-* Coming soon...
+* [Unity](https://unity.com/)
+
+<!-- ROADMAP -->
+## Roadmap
+
+Optimization:
+- ⬜ Multithreading for MCTS
+
+UI:
+- ⬜ Prettier UI
+- ⬜ Winning animation
+- ⬜ Algorithm diagnostics
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
