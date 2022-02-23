@@ -27,7 +27,7 @@ namespace Othello.Core
         private int _playerToStartNextGame;
         private bool _lastPlayerHadNoMove;
         private enum State { Playing, GameOver, Idle }
-        private enum PlayerType { Human = 0, Minimax = 1, MCTS = 2 }
+        private enum PlayerType { Human = 0, Minimax = 1, Mcts = 2, Random = 3 }
 
         private void Start()
         {
@@ -127,20 +127,26 @@ namespace Othello.Core
                     print("Player Type: Human, Player color: " + Piece.GetPlayerAsString(playerColor));
                     break;
                 case (int)PlayerType.Minimax:
-                    var depth = Int32.Parse(inputFieldMinimax.text);
+                    var depth = int.Parse(inputFieldMinimax.text);
                     if (depth < 1) depth = 1;
-                    player = new AIPlayer(_board, playerColor, new MiniMax(depth));
+                    player = new AIPlayer(_board, playerColor, new RandomPlay());
                     inputFieldMinimax.gameObject.SetActive(true);
                     inputFieldMCTS.gameObject.SetActive(false);
-                    print("Player Type: AIMinimax, Player color: " + Piece.GetPlayerAsString(playerColor) + ", depth = " + depth);
+                    print("Player Type: AI-Minimax, Player color: " + Piece.GetPlayerAsString(playerColor) + ", depth = " + depth);
                     break;
-                case (int)PlayerType.MCTS:
-                    var iterations = Int32.Parse(inputFieldMCTS.text);
+                case (int)PlayerType.Mcts:
+                    var iterations = int.Parse(inputFieldMCTS.text);
                     if (iterations < 1) iterations = 1;
                     player = new AIPlayer(_board, playerColor, new MonteCarloTreeSearch(iterations));
                     inputFieldMCTS.gameObject.SetActive(true);
                     inputFieldMinimax.gameObject.SetActive(false);
-                    print("Player Type: AIMCTS, Player color: " + Piece.GetPlayerAsString(playerColor) + ", iterations = " + iterations);
+                    print("Player Type: AI-MCTS, Player color: " + Piece.GetPlayerAsString(playerColor) + ", iterations = " + iterations);
+                    break;
+                case (int)PlayerType.Random:
+                    player = new AIPlayer(_board, playerColor, new RandomPlay());
+                    inputFieldMCTS.gameObject.SetActive(false);
+                    inputFieldMinimax.gameObject.SetActive(false);
+                    print("Player Type: AI-Random, Player color: " + Piece.GetPlayerAsString(playerColor));
                     break;
             }
             if (player == null) return;
