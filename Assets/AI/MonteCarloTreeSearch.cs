@@ -24,22 +24,15 @@ namespace Othello.AI
         private int CalculateMove(Board board)
         {
             m_player = board.GetCurrentPlayer();
+            
             var tree = new Tree();
-            if (m_cachedTree != null) // Only checking 1 depth in cachedTree atm
-            {
-                foreach (var node in m_cachedTree.Root.ChildArray)
-                    if (node.State.Board.Equals(board)) tree.Root = node;
-            }
-            else
-            {
-                tree.Root.State.Board = board.Copy();
-            }
+            SetCachedTreeIfPossible(board, tree);
+            
             var rootNode = tree.Root;
-
             for (var i = 0; i < m_iterations; i++)
             {
                 var promisingNode = Selection(rootNode);
-                if (!promisingNode.State.Board.IsTerminalBoardState(promisingNode.State.Board)) 
+                if (!promisingNode.State.Board.IsTerminalBoardState()) 
                     Expansion(promisingNode);
 
                 var nodeToExplore = promisingNode;
@@ -54,7 +47,18 @@ namespace Othello.AI
             m_cachedTree = new Tree() { Root = bestNode };
             return bestNode.State.Board.GetLastMove();
         }
-        
+
+        private void SetCachedTreeIfPossible(Board board, Tree tree)
+        {
+            if (m_cachedTree != null) // Only checking 1 depth in cachedTree atm
+            {
+                foreach (var node in m_cachedTree.Root.ChildArray)
+                    if (node.State.Board.Equals(board))
+                        tree.Root = node;
+            }
+            tree.Root.State.Board ??= board.Copy();
+        }
+
         private static Node Selection(Node rootNode) 
         {
             var node = rootNode;
