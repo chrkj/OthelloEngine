@@ -69,7 +69,7 @@ namespace Othello.Core
         public List<int> GetEmptySquares()
         {
             var emptySquares = new List<int>();
-            for (int i = 0; i < m_board.Length; i++)
+            for (var i = 0; i < m_board.Length; i++)
                 if (m_board[i] == Piece.Empty) emptySquares.Add(i);
             return emptySquares;
         }

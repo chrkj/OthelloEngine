@@ -42,11 +42,11 @@ namespace Othello.Core
             {
                 var captureCount = 0;
                 var currentSquare = square + DirectionOffsets[directionOffsetIndex];
-                if (Board.IsOutOfBounds(currentSquare)) return;
+                if (Board.IsOutOfBounds(currentSquare)) continue;
 
                 for (var timesMoved = 1; timesMoved < SquaresToEdge[square][directionOffsetIndex]; timesMoved++)
                 {
-                    if (!board.IsOpponentPiece(currentSquare)) break;
+                    if (!board.IsOpponentPiece(currentSquare)) continue;
                     currentSquare += DirectionOffsets[directionOffsetIndex];
                     captureCount++;
                 }
