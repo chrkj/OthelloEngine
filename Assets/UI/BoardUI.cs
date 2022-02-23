@@ -52,15 +52,15 @@ namespace Othello.UI
             square.position = new Vector3(file + BoardOffset, rank + BoardOffset, 0f);
 
             var squareMaterial = squareColor == lightColor ? lightSquareMaterial : darkSquareMaterial;
-            _squareRenderers[Board.GetBoardIndex(file, rank)] = square.gameObject.GetComponent<MeshRenderer>();
-            _squareRenderers[Board.GetBoardIndex(file, rank)].material = squareMaterial;
+            _squareRenderers[Board.GetIndex(file, rank)] = square.gameObject.GetComponent<MeshRenderer>();
+            _squareRenderers[Board.GetIndex(file, rank)].material = squareMaterial;
             
             var pieceRenderer = new GameObject("Piece").AddComponent<SpriteRenderer>();
             var pieceRendererTc = pieceRenderer.transform;
             pieceRendererTc.parent = square;
             pieceRendererTc.position = new Vector3(file + BoardOffset, rank + BoardOffset, pieceDepth);
             pieceRendererTc.localScale = new Vector3(pieceScale, pieceScale, 1);
-            _pieceRenderers[Board.GetBoardIndex(file, rank)] = pieceRenderer;
+            _pieceRenderers[Board.GetIndex(file, rank)] = pieceRenderer;
             
             if (rank == 0) DrawFileChar(file);
             if (file == 0) DrawRankChar(rank);
@@ -99,9 +99,9 @@ namespace Othello.UI
                 {
                     var piece = board.GetPieceColor(file, rank);
                     var sprite = piece == Piece.Empty ? null : pieceTheme.GetSprite(piece);
-                    var boardIndex = Board.GetBoardIndex(file, rank);
+                    var boardIndex = Board.GetIndex(file, rank);
                     _pieceRenderers[boardIndex].sprite = sprite;
-                    UnhighlightSquare(Board.GetBoardIndex(file, rank));
+                    UnhighlightSquare(Board.GetIndex(file, rank));
                 }
             UpdateUI(board);
         }

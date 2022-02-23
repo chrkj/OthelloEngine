@@ -107,7 +107,7 @@ namespace Othello.AI
         private static int GetUtility(Board board)
         {
             positions++;
-            if (!board.IsTerminalBoardState(board)) return GetBoardUtility(board);
+            if (!board.IsTerminalBoardState()) return GetBoardUtility(board);
             if (board.GetPieceCount(MaxPlayer) > board.GetPieceCount(MinPlayer)) return int.MaxValue - 1;
             if (board.GetPieceCount(MaxPlayer) < board.GetPieceCount(MinPlayer)) return int.MinValue + 1;
             return 0;
@@ -115,7 +115,7 @@ namespace Othello.AI
 
         private static bool IsTerminal(Board board, int depth)
         {
-            return board.IsTerminalBoardState(board) || depth == 0;
+            return board.IsTerminalBoardState() || depth == 0;
         }
         
         private static Board MakeMove(Board board, int legalMove)

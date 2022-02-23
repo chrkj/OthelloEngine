@@ -22,7 +22,7 @@ namespace Othello.Core
                     var numSquaresUpRight = Math.Min(numSquaresUp, numSquaresRight);
                     var numSquaresDownLeft = Math.Min(numSquaresDown, numSquaresLeft);
                     
-                    var squareIndex = Board.GetBoardIndex(file, rank);
+                    var squareIndex = Board.GetIndex(file, rank);
                     SquaresToEdge[squareIndex] = new [] { numSquaresUp, numSquaresDown, numSquaresLeft, numSquaresRight, numSquaresUpLeft, numSquaresDownRight, numSquaresUpRight, numSquaresDownLeft };
                 }
         }
@@ -46,9 +46,9 @@ namespace Othello.Core
 
                 for (var timesMoved = 1; timesMoved < SquaresToEdge[square][directionOffsetIndex]; timesMoved++)
                 {
-                    if (!board.IsOpponentPiece(currentSquare)) continue;
-                    currentSquare += DirectionOffsets[directionOffsetIndex];
+                    if (!board.IsOpponentPiece(currentSquare)) break;
                     captureCount++;
+                    currentSquare += DirectionOffsets[directionOffsetIndex];
                 }
 
                 if (!board.IsFriendlyPiece(currentSquare) || captureCount <= 0) continue;
@@ -73,8 +73,9 @@ namespace Othello.Core
                     currentSquare += DirectionOffsets[directionOffsetIndex];
                 }
 
-                if (board.IsFriendlyPiece(currentSquare) && currentCaptures.Count > 0)
-                    allCaptures.UnionWith(currentCaptures);
+                if (!board.IsFriendlyPiece(currentSquare) || currentCaptures.Count <= 0) continue;
+                allCaptures.UnionWith(currentCaptures);
+                break;
             }
             return allCaptures;
         }
