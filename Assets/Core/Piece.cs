@@ -6,16 +6,16 @@
         public const byte Black = 0b01;
         public const byte White = 0b10;
 
-        private const int Mask = 0b11;
+        private const int m_Mask = 0b11;
 
         public static bool IsBlack(int piece)
         {
-            return (piece & Mask) == Black;
+            return (piece & m_Mask) == Black;
         }
 
         public static bool IsSameColor(int piece1, int piece2)
         {
-            return (piece1 & Mask) == (piece2 & Mask);
+            return (piece1 & m_Mask) == (piece2 & m_Mask);
         }
 
         public static string GetPlayerAsString(int playerColor)

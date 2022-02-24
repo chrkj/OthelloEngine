@@ -1,38 +1,35 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using Othello.UI;
+using System.Collections.Generic;
 using Object = UnityEngine.Object;
 
 namespace Othello.Core
 {
     public abstract class Player : ICloneable
     {
-        public event Action ONNoLegalMove;
-        public event Action<int> ONMoveChosen;
+        public event Action OnNoLegalMove;
+        public event Action<Move> OnMoveChosen;
         
-        protected readonly int color;
-        protected readonly Board board;
-        protected readonly BoardUI boardUI;
-        protected List<int> legalMoves;
+        protected List<Move> m_legalMoves;
+        protected readonly Board m_Board;
+        protected readonly BoardUI m_BoardUI;
 
-        protected Player(Board board, int color)
+        protected Player(Board board)
         {
-            this.board = board;
-            this.color = color;
-            boardUI = Object.FindObjectOfType<BoardUI>();
+            m_Board = board;
+            m_BoardUI = Object.FindObjectOfType<BoardUI>();
         }
         
         public abstract void Update();
 
-        protected void ChooseMove(int move)
+        protected void ChooseMove(Move move)
         {
-            ONMoveChosen?.Invoke(move);
+            OnMoveChosen?.Invoke(move);
         }
         
         protected void NoLegalMove()
         {
-            ONNoLegalMove?.Invoke();
+            OnNoLegalMove?.Invoke();
         }
         
         public abstract void NotifyTurnToMove();
@@ -42,4 +39,5 @@ namespace Othello.Core
             return MemberwiseClone();
         }
     }
+    
 }

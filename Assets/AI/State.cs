@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+
 using Othello.Core;
 
 namespace Othello.AI

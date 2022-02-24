@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+
 using Othello.Core;
 
 namespace Othello.AI
@@ -9,19 +10,19 @@ namespace Othello.AI
         private int m_player;
         private Tree m_cachedTree;
         private readonly int m_iterations;
-        private const int IsRunning = -1;
+        private const int m_IsRunning = -1;
         
         public MonteCarloTreeSearch(int iterations)
         {
             m_iterations = iterations;
         }
 
-        public int StartSearch(Board board)
+        public Move StartSearch(Board board)
         {
             return CalculateMove(board);
         }
         
-        private int CalculateMove(Board board)
+        private Move CalculateMove(Board board)
         {
             m_player = board.GetCurrentPlayer();
             
@@ -93,7 +94,7 @@ namespace Othello.AI
             var tempNode = new Node(node);
             var tempState = tempNode.State;
             var winningPlayer = tempState.Board.GetBoardState();
-            while (winningPlayer == IsRunning)
+            while (winningPlayer == m_IsRunning)
             {
                 tempState.RandomPlay();
                 winningPlayer = tempState.Board.GetBoardState();

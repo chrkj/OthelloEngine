@@ -16,86 +16,86 @@ namespace Othello.Core
         public InputField whiteAiDepthMinimax;
         public InputField blackAiIterationsMcts;
         public InputField whiteAiIterationsMcts;
-        private Board _board;
-        private BoardUI _boardUI;
-        private State _gameState;
-        private Player _playerToMove;
-        private Player _blackPlayer;
-        private Player _whitePlayer;
-        private Player _whitePlayerNextGame;
-        private Player _blackPlayerNextGame;
-        private int _playerToStartNextGame;
-        private bool _lastPlayerHadNoMove;
+        private Board m_board;
+        private BoardUI m_boardUI;
+        private State m_gameState;
+        private Player m_playerToMove;
+        private Player m_blackPlayer;
+        private Player m_whitePlayer;
+        private Player m_whitePlayerNextGame;
+        private Player m_blackPlayerNextGame;
+        private int m_playerToStartNextGame;
+        private bool m_lastPlayerHadNoMove;
         private enum State { Playing, GameOver, Idle }
         private enum PlayerType { Human = 0, Minimax = 1, Mcts = 2, Random = 3 }
 
         private void Start()
         {
-            _boardUI = FindObjectOfType<BoardUI>();
+            m_boardUI = FindObjectOfType<BoardUI>();
             MoveGenerator.PrecomputeData();
             Setup();
         }
 
         private void Setup()
         {
-            _playerToStartNextGame = Piece.Black;
-            _board = new Board(_playerToStartNextGame);
-            _board.LoadStartPosition();
-            _boardUI.UpdateBoardUI(_board);
+            m_playerToStartNextGame = Piece.Black;
+            m_board = new Board(m_playerToStartNextGame);
+            m_board.LoadStartPosition();
+            m_boardUI.UpdateBoardUI(m_board);
 
             blackAiDepthMinimax.text = "5";
             whiteAiDepthMinimax.text = "5";
             blackAiIterationsMcts.text = "500";
             whiteAiIterationsMcts.text = "500";
-            PlayerSelection(ref _whitePlayerNextGame, (int)PlayerType.Human, Piece.White);
-            PlayerSelection(ref _blackPlayerNextGame, (int)PlayerType.Human, Piece.Black);
+            PlayerSelection(ref m_whitePlayerNextGame, (int)PlayerType.Human, Piece.White);
+            PlayerSelection(ref m_blackPlayerNextGame, (int)PlayerType.Human, Piece.Black);
             whitePiecePlayer.onValueChanged.AddListener(delegate
             {
-                PlayerSelection(ref _whitePlayerNextGame, whitePiecePlayer.value, Piece.White);
+                PlayerSelection(ref m_whitePlayerNextGame, whitePiecePlayer.value, Piece.White);
             });
             blackPiecePlayer.onValueChanged.AddListener(delegate
             {
-                PlayerSelection(ref _blackPlayerNextGame, blackPiecePlayer.value, Piece.Black);
+                PlayerSelection(ref m_blackPlayerNextGame, blackPiecePlayer.value, Piece.Black);
             });
             whiteAiDepthMinimax.onValueChanged.AddListener(delegate
             {
-                PlayerSelection(ref _whitePlayerNextGame, whitePiecePlayer.value, Piece.White);
+                PlayerSelection(ref m_whitePlayerNextGame, whitePiecePlayer.value, Piece.White);
             });
             blackAiDepthMinimax.onValueChanged.AddListener(delegate
             {
-                PlayerSelection(ref _blackPlayerNextGame, blackPiecePlayer.value, Piece.Black);
+                PlayerSelection(ref m_blackPlayerNextGame, blackPiecePlayer.value, Piece.Black);
             });
             whiteAiIterationsMcts.onValueChanged.AddListener(delegate
             {
-                PlayerSelection(ref _whitePlayerNextGame, whitePiecePlayer.value, Piece.White);
+                PlayerSelection(ref m_whitePlayerNextGame, whitePiecePlayer.value, Piece.White);
             });
             blackAiIterationsMcts.onValueChanged.AddListener(delegate
             {
-                PlayerSelection(ref _blackPlayerNextGame, blackPiecePlayer.value, Piece.Black);
+                PlayerSelection(ref m_blackPlayerNextGame, blackPiecePlayer.value, Piece.Black);
             });
             showLegalMoves.onValueChanged.AddListener(delegate { ToggleLegalMoves(showLegalMoves.isOn); });
             playerToStart.onValueChanged.AddListener(delegate { SetStartingPlayer(playerToStart.value); });
-            _gameState = State.Idle;
+            m_gameState = State.Idle;
         }
 
         public void NewGame()
         {
-            _board.ResetBoard(_playerToStartNextGame);
-            _board.LoadStartPosition();
-            _boardUI.UpdateBoardUI(_board);
-            _whitePlayer = (Player)_whitePlayerNextGame.Clone();
-            _blackPlayer = (Player)_blackPlayerNextGame.Clone();
-            _playerToMove = _playerToStartNextGame == Piece.White ? _whitePlayer : _blackPlayer;
-            _gameState = State.Playing;
-            _playerToMove.NotifyTurnToMove();
+            m_board.ResetBoard(m_playerToStartNextGame);
+            m_board.LoadStartPosition();
+            m_boardUI.UpdateBoardUI(m_board);
+            m_whitePlayer = (Player)m_whitePlayerNextGame.Clone();
+            m_blackPlayer = (Player)m_blackPlayerNextGame.Clone();
+            m_playerToMove = m_playerToStartNextGame == Piece.White ? m_whitePlayer : m_blackPlayer;
+            m_gameState = State.Playing;
+            m_playerToMove.NotifyTurnToMove();
         }
 
         private void Update()
         {
-            switch (_gameState)
+            switch (m_gameState)
             {
                 case State.Playing:
-                    _playerToMove.Update();
+                    m_playerToMove.Update();
                     break;
                 case State.GameOver:
                     // TODO: Add gameover animation
@@ -111,8 +111,8 @@ namespace Othello.Core
         {
             if (player != null)
             {
-                player.ONMoveChosen -= MakeMove;
-                player.ONNoLegalMove -= NoLegalMove;
+                player.OnMoveChosen -= MakeMove;
+                player.OnNoLegalMove -= NoLegalMove;
             }
             var inputFieldMCTS = playerColor == Piece.Black ? blackAiIterationsMcts : whiteAiIterationsMcts;
             var inputFieldMinimax = playerColor == Piece.Black ? blackAiDepthMinimax : whiteAiDepthMinimax;
@@ -121,7 +121,7 @@ namespace Othello.Core
             switch (playerType)
             {
                 case (int)PlayerType.Human:
-                    player = new HumanPlayer(_board, playerColor);
+                    player = new HumanPlayer(m_board);
                     inputFieldMCTS.gameObject.SetActive(false);
                     inputFieldMinimax.gameObject.SetActive(false);
                     print("Player Type: Human, Player color: " + Piece.GetPlayerAsString(playerColor));
@@ -129,7 +129,7 @@ namespace Othello.Core
                 case (int)PlayerType.Minimax:
                     var depth = int.Parse(inputFieldMinimax.text);
                     if (depth < 1) depth = 1;
-                    player = new AIPlayer(_board, playerColor, new RandomPlay());
+                    player = new AIPlayer(m_board, new MiniMax(depth));
                     inputFieldMinimax.gameObject.SetActive(true);
                     inputFieldMCTS.gameObject.SetActive(false);
                     print("Player Type: AI-Minimax, Player color: " + Piece.GetPlayerAsString(playerColor) + ", depth = " + depth);
@@ -137,41 +137,41 @@ namespace Othello.Core
                 case (int)PlayerType.Mcts:
                     var iterations = int.Parse(inputFieldMCTS.text);
                     if (iterations < 1) iterations = 1;
-                    player = new AIPlayer(_board, playerColor, new MonteCarloTreeSearch(iterations));
+                    player = new AIPlayer(m_board, new MonteCarloTreeSearch(iterations));
                     inputFieldMCTS.gameObject.SetActive(true);
                     inputFieldMinimax.gameObject.SetActive(false);
                     print("Player Type: AI-MCTS, Player color: " + Piece.GetPlayerAsString(playerColor) + ", iterations = " + iterations);
                     break;
                 case (int)PlayerType.Random:
-                    player = new AIPlayer(_board, playerColor, new RandomPlay());
+                    player = new AIPlayer(m_board, new RandomPlay());
                     inputFieldMCTS.gameObject.SetActive(false);
                     inputFieldMinimax.gameObject.SetActive(false);
                     print("Player Type: AI-Random, Player color: " + Piece.GetPlayerAsString(playerColor));
                     break;
             }
             if (player == null) return;
-            player.ONMoveChosen += MakeMove;
-            player.ONNoLegalMove += NoLegalMove;
+            player.OnMoveChosen += MakeMove;
+            player.OnNoLegalMove += NoLegalMove;
         }
 
-        private void MakeMove(int move)
+        private void MakeMove(Move move)
         {
-            var captures = MoveGenerator.GetCaptureIndices(move, _board);
-            _board.MakeMove(move, captures);
-            _boardUI.MakeMove(move, captures, _board);
+            var captures = MoveGenerator.GetCaptureIndices(move, m_board);
+            m_board.MakeMove(move, captures);
+            m_boardUI.MakeMove(move, captures, m_board);
             ChangePlayer();
-            _boardUI.UpdateUI(_board);
-            _lastPlayerHadNoMove = false;
+            m_boardUI.UpdateUI(m_board);
+            m_lastPlayerHadNoMove = false;
         }
 
         private void ChangePlayer()
         {
-            _board.ChangePlayer();
-            switch (_gameState)
+            m_board.ChangePlayer();
+            switch (m_gameState)
             {
                 case State.Playing:
-                    _playerToMove = (_board.GetCurrentPlayer() == Piece.White) ? _whitePlayer : _blackPlayer;
-                    _playerToMove.NotifyTurnToMove();
+                    m_playerToMove = (m_board.GetCurrentPlayer() == Piece.White) ? m_whitePlayer : m_blackPlayer;
+                    m_playerToMove.NotifyTurnToMove();
                     break;
                 case State.GameOver:
                     // Handle winning animation
@@ -186,19 +186,19 @@ namespace Othello.Core
 
         private void NoLegalMove()
         {
-            if (_lastPlayerHadNoMove) _gameState = State.GameOver;
-            _lastPlayerHadNoMove = true;
+            if (m_lastPlayerHadNoMove) m_gameState = State.GameOver;
+            m_lastPlayerHadNoMove = true;
             ChangePlayer();
         }
         
         private void ToggleLegalMoves(bool isOn)
         {
-            _boardUI.ToggleLegalMoves(isOn);
+            m_boardUI.ToggleLegalMoves(isOn);
         }
         
-        private void SetStartingPlayer(int value)
+        private void SetStartingPlayer(int player)
         {
-            _playerToStartNextGame = value == 0 ? Piece.Black : Piece.White;
+            m_playerToStartNextGame = player == 0 ? Piece.Black : Piece.White;
         }
 
     }

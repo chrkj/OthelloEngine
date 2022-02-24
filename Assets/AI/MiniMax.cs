@@ -1,43 +1,43 @@
 using System;
 using UnityEngine;
+
 using Othello.Core;
 
 namespace Othello.AI
 {
     public class MiniMax : ISearchEngine
     {
-        private readonly int _depthLimit;
-        
-        private static int positions;
-        private const int ParityWeight = 1;
-        private const int CornerWeight = 4;
-        private const int MaxPlayer = Piece.Black;
-        private const int MinPlayer = Piece.White;
+        private static int m_positions;
+        private readonly int m_depthLimit;
+        private const int m_ParityWeight = 1;
+        private const int m_CornerWeight = 4;
+        private const int m_MaxPlayer = Piece.Black;
+        private const int m_MinPlayer = Piece.White;
 
         public MiniMax(int depth)
         {
-            _depthLimit = depth;
+            m_depthLimit = depth;
         }
         
-        public int StartSearch(Board board)
+        public Move StartSearch(Board board)
         {
             return CalculateMove(board);
         }
         
-        private int CalculateMove(Board board)
+        private Move CalculateMove(Board board)
         {
-            int bestMove = -1;
-            positions = 0;
+            m_positions = 0;
+            Move bestMove = null;
             var currentUtil = 0;
             var currentPlayer = board.GetCurrentPlayer();
 
-            if (currentPlayer == MaxPlayer)
+            if (currentPlayer == m_MaxPlayer)
             {
                 var highestUtil = int.MinValue;
                 foreach (var legalMove in MoveGenerator.GenerateLegalMoves(board)) 
                 {
                     var possibleNextState = MakeMove(board, legalMove);
-                    currentUtil = MinValue(possibleNextState, _depthLimit - 1, int.MinValue, int.MaxValue);
+                    currentUtil = MinValue(possibleNextState, m_depthLimit - 1, int.MinValue, int.MaxValue);
                     if (currentUtil <= highestUtil) continue;
                     highestUtil = currentUtil;
                     bestMove = legalMove;
@@ -50,13 +50,13 @@ namespace Othello.AI
                 foreach (var legalMove in MoveGenerator.GenerateLegalMoves(board)) 
                 {
                     var possibleNextState = MakeMove(board, legalMove);
-                    currentUtil = MaxValue(possibleNextState, _depthLimit - 1, int.MinValue, int.MaxValue);
+                    currentUtil = MaxValue(possibleNextState, m_depthLimit - 1, int.MinValue, int.MaxValue);
                     if (currentUtil >= minUtil) continue;
                     minUtil = currentUtil;
                     bestMove = legalMove;
                 }
                 var end = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-                MonoBehaviour.print("Time taken: " + (end - start) + "ms for " + positions + " positions");
+                MonoBehaviour.print("Time taken: " + (end - start) + "ms for " + m_positions + " positions");
             }
             return bestMove;
         }
@@ -106,10 +106,10 @@ namespace Othello.AI
 
         private static int GetUtility(Board board)
         {
-            positions++;
+            m_positions++;
             if (!board.IsTerminalBoardState()) return GetBoardUtility(board);
-            if (board.GetPieceCount(MaxPlayer) > board.GetPieceCount(MinPlayer)) return int.MaxValue - 1;
-            if (board.GetPieceCount(MaxPlayer) < board.GetPieceCount(MinPlayer)) return int.MinValue + 1;
+            if (board.GetPieceCount(m_MaxPlayer) > board.GetPieceCount(m_MinPlayer)) return int.MaxValue - 1;
+            if (board.GetPieceCount(m_MaxPlayer) < board.GetPieceCount(m_MinPlayer)) return int.MinValue + 1;
             return 0;
         }
 
@@ -118,7 +118,7 @@ namespace Othello.AI
             return board.IsTerminalBoardState() || depth == 0;
         }
         
-        private static Board MakeMove(Board board, int legalMove)
+        private static Board MakeMove(Board board, Move legalMove)
         {
             var nextBoardState = board.Copy();
             nextBoardState.MakeMove(legalMove, MoveGenerator.GetCaptureIndices(legalMove, nextBoardState));
@@ -128,12 +128,12 @@ namespace Othello.AI
         
         private static int GetBoardUtility(Board board)
         {
-            return ParityWeight * TokenParityValue(board) + CornerWeight * TokenCornerValue(board);
+            return m_ParityWeight * TokenParityValue(board) + m_CornerWeight * TokenCornerValue(board);
         }
         
         private static int TokenParityValue(Board board)
         {
-            return board.GetPieceCount(MaxPlayer);
+            return board.GetPieceCount(m_MaxPlayer);
         }
         
         private static int TokenCornerValue(Board board)
@@ -141,24 +141,24 @@ namespace Othello.AI
             var maxPlayerCornerValue = 0;
             var minPlayerCornerValue = 0;
 
-            if (board.GetPieceColor(0, 0) == MaxPlayer)
+            if (board.GetPieceColor(0, 0) == m_MaxPlayer)
                 maxPlayerCornerValue++;
-            else if (board.GetPieceColor(0, 0) == MinPlayer)
+            else if (board.GetPieceColor(0, 0) == m_MinPlayer)
                 minPlayerCornerValue++;
 
-            if (board.GetPieceColor(0, 7) == MaxPlayer)
+            if (board.GetPieceColor(0, 7) == m_MaxPlayer)
                 maxPlayerCornerValue++;
-            else if (board.GetPieceColor(0, 7) == MinPlayer)
+            else if (board.GetPieceColor(0, 7) == m_MinPlayer)
                 minPlayerCornerValue++;
 
-            if (board.GetPieceColor(7, 0) == MaxPlayer)
+            if (board.GetPieceColor(7, 0) == m_MaxPlayer)
                 maxPlayerCornerValue++;
-            else if (board.GetPieceColor(7, 0) == MinPlayer)
+            else if (board.GetPieceColor(7, 0) == m_MinPlayer)
                 minPlayerCornerValue++;
 
-            if (board.GetPieceColor(7, 7) == MaxPlayer)
+            if (board.GetPieceColor(7, 7) == m_MaxPlayer)
                 maxPlayerCornerValue++;
-            else if (board.GetPieceColor(7, 7) == MinPlayer)
+            else if (board.GetPieceColor(7, 7) == m_MinPlayer)
                 minPlayerCornerValue++;
             
             return maxPlayerCornerValue - minPlayerCornerValue;

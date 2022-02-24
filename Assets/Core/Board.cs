@@ -6,13 +6,12 @@ namespace Othello.Core
     {
         private ulong m_pieces;
         private ulong m_colors;
-        
-        private int m_lastMove;
+        private Move m_lastMove;
         private bool m_isWhiteToMove;
         
         public Board(int playerToStart)
         {
-            m_lastMove = -1;
+            m_lastMove = null;
             m_isWhiteToMove = (playerToStart == Piece.White);
         }
         
@@ -34,7 +33,7 @@ namespace Othello.Core
         {
             m_pieces = 0;
             m_colors = 0;
-            m_lastMove = -1;
+            m_lastMove = null;
             m_isWhiteToMove = playerToStart == Piece.White;
         }
 
@@ -46,10 +45,15 @@ namespace Othello.Core
         public void PlacePiece(int index, int player)
         {
             m_pieces |= (1UL << index);
-            if (player == Piece.Black)
-                m_colors |= (1UL << index);
-            if (player == Piece.White)
-                m_colors &= ~(1UL << index);
+            switch (player)
+            {
+                case Piece.Black:
+                    m_colors |= (1UL << index);
+                    break;
+                case Piece.White:
+                    m_colors &= ~(1UL << index);
+                    break;
+            }
         }
         
         public void LoadStartPosition()
@@ -88,7 +92,7 @@ namespace Othello.Core
             return m_isWhiteToMove ? Piece.Black : Piece.White;
         }
         
-        public int GetLastMove()
+        public Move GetLastMove()
         {
             return m_lastMove;
         }
@@ -167,12 +171,12 @@ namespace Othello.Core
             m_isWhiteToMove = player == Piece.White; 
         }
 
-        public void MakeMove(int move, HashSet<int> captures)
+        public void MakeMove(Move move, HashSet<Move> captures)
         {
             m_lastMove = move;
-            PlacePiece(move, GetCurrentPlayer());
+            PlacePiece(move.Index, GetCurrentPlayer());
             foreach (var capture in captures)
-                PlacePiece(capture, GetCurrentPlayer());
+                PlacePiece(capture.Index, GetCurrentPlayer());
         }
         
         public string GetPieceCountAsString(int player)
