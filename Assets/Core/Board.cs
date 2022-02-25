@@ -159,11 +159,12 @@ namespace Othello.Core
 
         public bool IsTerminalBoardState()
         {
-            var legalMovesCurrentPlayer = MoveGenerator.GenerateLegalMoves(this).Count;
+            var numLegalMovesCurrentPlayer = MoveGenerator.GenerateLegalMoves(this).Count;
+            if (numLegalMovesCurrentPlayer != 0) return false;
             ChangePlayer();
-            var legalMovesCurrentOpponent = MoveGenerator.GenerateLegalMoves(this).Count;
+            var numLegalMovesCurrentOpponent = MoveGenerator.GenerateLegalMoves(this).Count;
             ChangePlayer();
-            return legalMovesCurrentPlayer == 0 & legalMovesCurrentOpponent == 0;
+            return numLegalMovesCurrentOpponent == 0;
         }
         
         public void SetStartingPlayer(int player)
