@@ -30,6 +30,7 @@ namespace Othello.AI
             Move bestMove = null;
             var currentUtil = 0;
             var currentPlayer = board.GetCurrentPlayer();
+            var start = DateTimeOffset.Now.ToUnixTimeMilliseconds();
 
             if (currentPlayer == m_MaxPlayer)
             {
@@ -45,7 +46,6 @@ namespace Othello.AI
             }
             else
             {
-                var start = DateTimeOffset.Now.ToUnixTimeMilliseconds();
                 var minUtil = int.MaxValue;
                 foreach (var legalMove in MoveGenerator.GenerateLegalMoves(board)) 
                 {
@@ -55,9 +55,9 @@ namespace Othello.AI
                     minUtil = currentUtil;
                     bestMove = legalMove;
                 }
-                var end = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-                MonoBehaviour.print("Time taken: " + (end - start) + "ms for " + m_positions + " positions");
             }
+            var end = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+            MonoBehaviour.print("Time taken: " + (end - start) + "ms for " + m_positions + " positions");
             return bestMove;
         }
 

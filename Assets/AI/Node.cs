@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace Othello.AI
 {
-    public class Node 
+    public class Node : IComparable
     {
         public Node Parent;
         public State State;
@@ -33,6 +33,14 @@ namespace Othello.AI
         public Node GetChildWithHighestScore()
         {
             return ChildArray.OrderByDescending(node => node.State.NumWins / node.State.NumVisits == 0 ? int.MaxValue : node.State.NumVisits).First();
+        }
+
+        public int CompareTo(object obj)
+        {
+            Node cast = (Node) obj;
+            if (cast.State.Board.GetLastMove().Index == State.Board.GetLastMove().Index) return 0;
+            if (cast.State.Board.GetLastMove().Index > State.Board.GetLastMove().Index) return 1;
+            return -1;
         }
     }
 }

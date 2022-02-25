@@ -27,7 +27,8 @@ namespace Othello.Core
         private int m_playerToStartNextGame;
         private bool m_lastPlayerHadNoMove;
         private enum State { Playing, GameOver, Idle }
-        private enum PlayerType { Human = 0, Minimax = 1, Mcts = 2, Random = 3 }
+        private enum PlayerType { Human = 0, Minimax = 1, Mcts = 2, Random = 3, MctsThreading = 4
+        }
 
         private void Start()
         {
@@ -118,6 +119,7 @@ namespace Othello.Core
             var inputFieldMinimax = playerColor == Piece.Black ? blackAiDepthMinimax : whiteAiDepthMinimax;
             if (inputFieldMCTS.text.Length == 0) inputFieldMCTS.text = "1";
             if (inputFieldMinimax.text.Length == 0) inputFieldMinimax.text = "1";
+            int iterations;
             switch (playerType)
             {
                 case (int)PlayerType.Human:
@@ -135,12 +137,20 @@ namespace Othello.Core
                     print("Player Type: AI-Minimax, Player color: " + Piece.GetPlayerAsString(playerColor) + ", depth = " + depth);
                     break;
                 case (int)PlayerType.Mcts:
-                    var iterations = int.Parse(inputFieldMCTS.text);
+                    iterations = int.Parse(inputFieldMCTS.text);
                     if (iterations < 1) iterations = 1;
                     player = new AIPlayer(m_board, new MonteCarloTreeSearch(iterations));
                     inputFieldMCTS.gameObject.SetActive(true);
                     inputFieldMinimax.gameObject.SetActive(false);
                     print("Player Type: AI-MCTS, Player color: " + Piece.GetPlayerAsString(playerColor) + ", iterations = " + iterations);
+                    break;
+                case (int)PlayerType.MctsThreading:
+                    iterations = int.Parse(inputFieldMCTS.text);
+                    if (iterations < 1) iterations = 1;
+                    player = new AIPlayer(m_board, new MctsThreading(iterations));
+                    inputFieldMCTS.gameObject.SetActive(true);
+                    inputFieldMinimax.gameObject.SetActive(false);
+                    print("Player Type: AI-MCTS-T, Player color: " + Piece.GetPlayerAsString(playerColor) + ", iterations = " + iterations);
                     break;
                 case (int)PlayerType.Random:
                     player = new AIPlayer(m_board, new RandomPlay());
