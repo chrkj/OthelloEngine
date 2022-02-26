@@ -112,7 +112,7 @@ namespace Othello.Core
         
         public static bool IsOutOfBounds(int file, int rank)
         {
-            return file < 0 || file > 7 && rank < 0 || rank > 7;
+            return file < 0 | file > 7 | rank < 0 | rank > 7;
         }
         
         public bool IsOpponentPiece(int index)
