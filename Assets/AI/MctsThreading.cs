@@ -27,7 +27,7 @@ namespace Othello.AI
             
             var threads = new List<Thread>();
             var processorCount = Environment.ProcessorCount;
-            for (var i = 0; i < processorCount; i++)
+            for (var i = 0; i < processorCount / 2; i++)
             {
                 var thread = new Thread(CalculateMove);
                 thread.Start();
@@ -42,7 +42,7 @@ namespace Othello.AI
         
         private void CalculateMove()
         {
-            var rootNode = new Node(m_board.Copy());
+            var rootNode = new Node(m_board.Copy()); // Bug when setting cached tree
             for (var i = 0; i < m_iterations; i++)
             {
                 var promisingNode = Selection(rootNode);
