@@ -75,7 +75,6 @@ namespace Othello.Core
 
                 if (!board.IsFriendlyPiece(currentSquare) || currentCaptures.Count <= 0) continue;
                 allCaptures.UnionWith(currentCaptures);
-                break;
             }
             return allCaptures;
         }
