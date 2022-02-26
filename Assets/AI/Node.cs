@@ -1,46 +1,87 @@
 using System;
-using System.Linq;
 using System.Collections.Generic;
+
+using Othello.Core;
 
 namespace Othello.AI
 {
-    public class Node : IComparable
+    public class Node
     {
         public Node Parent;
-        public State State;
-        public readonly List<Node> ChildArray = new List<Node>();
-
-        public Node()
+        public double NumWins;
+        public double NumVisits;
+        public readonly Board Board;
+        public readonly List<Node> Children = new List<Node>();
+        
+        public Node(Board board)
         {
-            State = new State();
+            this.Board = board;
         }
 
-        public Node(Node node) // Convert to copy method?
+        public Node Copy() 
         {
-            State = new State()
+            var copyNode = new Node(Board.Copy())
             {
-                Board = node.State.Board.Copy(), 
-                NumVisits = node.State.NumVisits, 
-                NumWins = node.State.NumVisits
+                NumVisits = this.NumVisits, 
+                NumWins = this.NumWins
             };
+            return copyNode;
         }
 
         public Node GetRandomChildNode()
         {
-            return ChildArray[new Random().Next(ChildArray.Count)];
+            return Children[new Random().Next(Children.Count)];
         }
 
-        public Node GetChildWithHighestScore()
+        public Node SelectBestNode()
         {
-            return ChildArray.OrderByDescending(node => node.State.NumWins / node.State.NumVisits == 0 ? int.MaxValue : node.State.NumVisits).First();
+            var bestNode = Children[0];
+            for(var i = 1; i < Children.Count; ++i) 
+            {
+                if (CalculateScore(Children[i]) > CalculateScore(bestNode)) {
+                    bestNode = Children[i];
+                }
+            }
+            return bestNode;
         }
 
-        public int CompareTo(object obj)
+        private static double CalculateScore(Node node)
         {
-            Node cast = (Node) obj;
-            if (cast.State.Board.GetLastMove().Index == State.Board.GetLastMove().Index) return 0;
-            if (cast.State.Board.GetLastMove().Index > State.Board.GetLastMove().Index) return 1;
-            return -1;
+            return node.NumVisits;
+        }
+        
+        public List<Node> CreateChildNodes()
+        {
+            var notes = new List<Node>();
+            foreach (var legalMove in MoveGenerator.GenerateLegalMoves(Board))
+            {
+                var newBoard = Board.Copy();
+                newBoard.MakeMove(legalMove, MoveGenerator.GetCaptureIndices(legalMove, newBoard));
+                newBoard.ChangePlayer();
+                var newNode = new Node(newBoard);
+                notes.Add(newNode);
+            }
+            return notes;
+        }
+            
+        public void RandomMove() 
+        {
+            var legalMoves = MoveGenerator.GenerateLegalMoves(Board);
+            if (legalMoves.Count == 0)
+            {
+                Board.ChangePlayer();
+                return;
+            }
+            var randomMove = legalMoves[new Random().Next(legalMoves.Count)];
+            var captures = MoveGenerator.GetCaptureIndices(randomMove, Board);
+            Board.MakeMove(randomMove, captures);
+            Board.ChangePlayer();
+        }
+        
+        public double CalculateUct()
+        {
+            if (NumVisits == 0) return int.MaxValue;
+            return (NumWins / NumVisits) + Math.Sqrt(2.0) * Math.Sqrt(Math.Log(Parent.NumVisits) / NumVisits);
         }
     }
 }

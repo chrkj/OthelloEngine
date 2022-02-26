@@ -37,12 +37,12 @@ namespace Othello.Core
             m_isWhiteToMove = playerToStart == Piece.White;
         }
 
-        public bool IsEmpty(int index)
+        private bool IsEmpty(int index)
         {
             return (m_pieces & (1UL << index)) == 0;
         }
 
-        public void PlacePiece(int index, int player)
+        private void PlacePiece(int index, int player)
         {
             m_pieces |= (1UL << index);
             switch (player)
@@ -75,8 +75,8 @@ namespace Othello.Core
             if (IsEmpty(index)) return 0;
             return (m_colors & (1UL << index)) == 0 ? Piece.White : Piece.Black;
         }
-        
-        public int GetPieceColor(int index)
+
+        private int GetPieceColor(int index)
         {
             if (IsEmpty(index)) return 0;
             return (m_colors & (1UL << index)) == 0 ? Piece.White : Piece.Black;
@@ -87,7 +87,7 @@ namespace Othello.Core
             return m_isWhiteToMove ? Piece.White : Piece.Black;
         }
 
-        public int GetCurrentOpponent()
+        private int GetCurrentOpponent()
         {
             return m_isWhiteToMove ? Piece.Black : Piece.White;
         }
@@ -148,8 +148,8 @@ namespace Othello.Core
             if (!IsTerminalBoardState()) return -1;
             return GetWinner();
         }
-        
-        public int GetWinner()
+
+        private int GetWinner()
         {
             var playerPieceCount = GetPieceCount(GetCurrentPlayer());
             var opponentPieceCount = GetPieceCount(GetCurrentOpponent());
@@ -165,11 +165,6 @@ namespace Othello.Core
             var numLegalMovesCurrentOpponent = MoveGenerator.GenerateLegalMoves(this).Count;
             ChangePlayer();
             return numLegalMovesCurrentOpponent == 0;
-        }
-        
-        public void SetStartingPlayer(int player)
-        {
-            m_isWhiteToMove = player == Piece.White; 
         }
 
         public void MakeMove(Move move, HashSet<Move> captures)

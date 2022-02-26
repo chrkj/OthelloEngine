@@ -1,16 +1,14 @@
-using System;
-using System.Linq;
-
 using Othello.Core;
+using UnityEngine;
 
 namespace Othello.AI
 {
     public class MonteCarloTreeSearch : ISearchEngine
     {
         private int m_player;
-        private Tree m_cachedTree;
-        private readonly int m_iterations;
+        private Node m_cachedNode;
         private const int m_IsRunning = -1;
+        private readonly int m_iterations;
         
         public MonteCarloTreeSearch(int iterations)
         {
@@ -19,61 +17,63 @@ namespace Othello.AI
 
         public Move StartSearch(Board board)
         {
+            m_player = board.GetCurrentPlayer();
             return CalculateMove(board);
         }
         
         private Move CalculateMove(Board board)
         {
-            m_player = board.GetCurrentPlayer();
-            
-            var tree = new Tree();
-            SetCachedTreeIfPossible(board, tree);
-            
-            var rootNode = tree.Root;
+            var rootNode = SetRootNode(board);
             for (var i = 0; i < m_iterations; i++)
             {
                 var promisingNode = Selection(rootNode);
-                if (!promisingNode.State.Board.IsTerminalBoardState()) 
-                    Expansion(promisingNode);
+                
+                Expansion(promisingNode); // Check for terminalstate?
 
                 var nodeToExplore = promisingNode;
-                if (promisingNode.ChildArray.Count > 0) 
-                    nodeToExplore = promisingNode.GetRandomChildNode();
+                if (promisingNode.Children.Count > 0) nodeToExplore = promisingNode.GetRandomChildNode();
                 
                 var winningPlayer = Simulation(nodeToExplore);
                 BackPropagation(nodeToExplore, winningPlayer);
             }
 
-            var bestNode = rootNode.GetChildWithHighestScore();
-            m_cachedTree = new Tree() { Root = bestNode };
-            return bestNode.State.Board.GetLastMove();
-        }
-
-        private void SetCachedTreeIfPossible(Board board, Tree tree)
-        {
-            if (m_cachedTree != null) // Only checking 1 depth in cachedTree atm
+            foreach (var node in rootNode.Children)
             {
-                foreach (var node in m_cachedTree.Root.ChildArray)
-                    if (node.State.Board.Equals(board))
-                        tree.Root = node;
+                MonoBehaviour.print("Move: " + node.Board.GetLastMove().Index + " Wins: " + node.NumWins + " Visits: " + node.NumVisits + " Score: " +  node.NumWins / node.NumVisits);
             }
-            tree.Root.State.Board ??= board.Copy();
+            var bestNode = rootNode.SelectBestNode();
+            MonoBehaviour.print("Move: " + bestNode.Board.GetLastMove().Index + " Wins: " + bestNode.NumWins + " Visits: " + bestNode.NumVisits + " Score: " + bestNode.NumWins / bestNode.NumVisits);
+            m_cachedNode = bestNode;
+            return bestNode.Board.GetLastMove();
         }
 
-        private static Node Selection(Node rootNode) 
+        private Node SetRootNode(Board board)
         {
-            var node = rootNode;
-            while (node.ChildArray.Count != 0) node = SelectNodeWithUct(node);
-            return node;
+            Node rootNode = null;
+            if (m_cachedNode != null)
+            {
+                foreach (var node in m_cachedNode.Children)
+                    if (node.Board.Equals(board))
+                        rootNode = node;
+            }
+            rootNode ??= new Node(board.Copy());
+            return rootNode;
+        }
+
+        private Node Selection(Node node) 
+        {
+            var currentNode = node;
+            while (currentNode.Children.Count > 0) currentNode = SelectNodeWithUct(currentNode);
+            return currentNode;
         }
         
         private static void Expansion(Node node) 
         {
-            var possibleStates = node.State.GetAllPossibleStates();
-            foreach (var state in possibleStates)
+            var childNodes = node.CreateChildNodes();
+            foreach (var childNode in childNodes)
             {
-                var newNode = new Node { State = state, Parent = node };
-                node.ChildArray.Add(newNode);
+                childNode.Parent = node;
+                node.Children.Add(childNode);
             }
         }
         
@@ -83,34 +83,42 @@ namespace Othello.AI
             var simulationScore = m_player == winningPlayer ? 1 : 0;
             while (currentNode != null) 
             {
-                currentNode.State.NumVisits++;
-                currentNode.State.NumWins += simulationScore;
+                currentNode.NumVisits++;
+                currentNode.NumWins += simulationScore;
                 currentNode = currentNode.Parent;
             }
         }
         
-        private static int Simulation(Node node) 
+        private int Simulation(Node node) 
         {
-            var tempNode = new Node(node);
-            var tempState = tempNode.State;
-            var winningPlayer = tempState.Board.GetBoardState();
+            var tempNode = node.Copy();
+            var winningPlayer = tempNode.Board.GetBoardState();
             while (winningPlayer == m_IsRunning)
             {
-                tempState.RandomPlay();
-                winningPlayer = tempState.Board.GetBoardState();
+                tempNode.RandomMove();
+                winningPlayer = tempNode.Board.GetBoardState();
             }
             return winningPlayer;
         }
-        
-        private static double CalculateUct(int totalVisit, double noWins, int noVisits) 
-        {
-            if (noVisits == 0) return int.MaxValue;
-            return (noWins / noVisits) + (Math.Sqrt(2) * Math.Sqrt(Math.Log(totalVisit) / noVisits));
-        }
 
-        private static Node SelectNodeWithUct(Node node) 
+        private Node SelectNodeWithUct(Node node)
         {
-            return node.ChildArray.OrderByDescending(currentNode => CalculateUct(currentNode.Parent.State.NumVisits, currentNode.State.NumWins, currentNode.State.NumVisits)).First();
+            var selectedNode = node.Children[0];
+            for (var i = 1; i < node.Children.Count; i++)
+            {
+                var currentNode = node.Children[i];
+                if (node.Board.GetCurrentPlayer() == m_player)
+                {
+                    if (currentNode.CalculateUct() > selectedNode.CalculateUct())
+                        selectedNode = currentNode;
+                }
+                else
+                {
+                    if (currentNode.CalculateUct() < selectedNode.CalculateUct())
+                        selectedNode = currentNode;
+                }
+            }
+            return selectedNode;
         }
 
     }

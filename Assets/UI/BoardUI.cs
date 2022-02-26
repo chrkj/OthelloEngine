@@ -33,7 +33,7 @@ namespace Othello.UI
             InitBoard();
         }
 
-        public void InitBoard()
+        private void InitBoard()
         {
             m_canvas = FindObjectOfType<Canvas>();
             m_squareRenderers = new MeshRenderer[64];
@@ -48,7 +48,7 @@ namespace Othello.UI
             var squareColor = (file + rank) % 2 == 0 ? lightColor : darkColor;
             var square = GameObject.CreatePrimitive(PrimitiveType.Quad).transform;
             square.parent = transform;
-            square.name = m_FileChars[file] + (rank + 1).ToString();
+            square.name = m_FileChars[file] + (rank + 1);
             square.position = new Vector3(file + m_BoardOffset, rank + m_BoardOffset, 0f);
 
             var squareMaterial = squareColor == lightColor ? lightSquareMaterial : darkSquareMaterial;
@@ -135,18 +135,11 @@ namespace Othello.UI
             m_squareRenderers[index].material.color = IsWhiteSquare(index) ? darkColor : lightColor;
         }
 
-        public static bool IsWhiteSquare(int index)
+        private static bool IsWhiteSquare(int index)
         {
             var file = index & 7;
             var rank = index >> 3;
             return (file + rank) % 2 == 0;
-        }
-        
-        public static bool IsBlackSquare(int index)
-        {
-            var file = index & 7;
-            var rank = index >> 3;
-            return (file + rank) % 2 != 0;
         }
 
         public void HighlightLegalMoves(List<Move> legalMoves)
