@@ -7,12 +7,13 @@ namespace Othello.AI
     {
         private Node m_cachedNode;
         private const int m_IsRunning = -1;
-        private const int m_maxTime = 10000;
         private const int m_blockSize = 50;
+        private readonly int m_maxTime;
         private readonly int m_maxIterations;
 
-        public MonteCarloTreeSearch(int maxIterations)
+        public MonteCarloTreeSearch(int maxIterations, int maxTime)
         {
+            m_maxTime = maxTime;
             m_maxIterations = maxIterations;
         }
 

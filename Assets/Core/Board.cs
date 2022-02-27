@@ -9,13 +9,17 @@ namespace Othello.Core
         private Move m_lastMove;
         private bool m_isWhiteToMove;
         
+        public Board()
+        {
+            m_lastMove = null;
+            m_isWhiteToMove = false;
+        }
+        
         public Board(int playerToStart)
         {
             m_lastMove = null;
             m_isWhiteToMove = (playerToStart == Piece.White);
         }
-        
-        private Board() { }
 
         public Board Copy()
         {

@@ -10,13 +10,14 @@ namespace Othello.AI
     {
         private Board m_board;
         private Node m_cachedNode;
-        private const int m_maxTime = 4000;
         private const int m_IsRunning = -1;
         private readonly int m_maxIterations;
+        private readonly int m_maxTime;
         private Node mergedNode;
         
-        public MctsThreading(int iterations)
+        public MctsThreading(int iterations, int maxTime)
         {
+            m_maxTime = maxTime;
             m_maxIterations = iterations;
         }
 
