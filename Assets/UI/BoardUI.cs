@@ -92,7 +92,7 @@ namespace Othello.UI
             fileChar.text = m_FileChars[file];
         }
 
-        public void UpdateBoardUI(Board board)
+        public void UpdateUI(Board board)
         {
             for (var rank = 0; rank < 8; rank++)
                 for (var file = 0; file < 8; file++)
@@ -108,55 +108,13 @@ namespace Othello.UI
             if (board.GetLastMove() != null)
                 HighlightSquare(board.GetLastMove().Index);
         }
-
-        public void MakeMove(Move move, HashSet<Move> captures, Board board)
-        {
-            m_pieceRenderers[move.Index].sprite = pieceTheme.GetSprite(board.GetCurrentPlayer());
-            foreach (var capture in captures)
-                m_pieceRenderers[capture.Index].sprite = pieceTheme.GetSprite(board.GetCurrentPlayer());
-        }
-
-        public void UpdateTextUI(Board board)
-        {
-            playerToMoveUI.text = "Player: " + board.GetCurrentPlayerAsString();
-            blackPieceCountUI.text = $"Black: {board.GetPieceCountAsString(Piece.Black)}";
-            whitePieceCountUI.text = $"White: {board.GetPieceCountAsString(Piece.White)}";
-        }
-
-        public bool HasSprite(int index)
-        {
-            return m_pieceRenderers[index].sprite != null;
-        }
-
-        public void HighlightSquare(int index)
-        {
-            m_squareRenderers[index].material.color = lastMoveHighlightColor;
-        }
-
-        public void UnhighlightSquare(int index)
-        {
-            m_squareRenderers[index].material.color = IsWhiteSquare(index) ? darkColor : lightColor;
-        }
-
-        private static bool IsWhiteSquare(int index)
-        {
-            var file = index & 7;
-            var rank = index >> 3;
-            return (file + rank) % 2 == 0;
-        }
-
+        
         public void HighlightLegalMoves(List<Move> legalMoves)
         {
             m_currentLegalMoves = legalMoves;
             if (!m_highLightLegalMoves) return;
             foreach (var legalMove in legalMoves)
                 m_squareRenderers[legalMove.Index].material.color = highlightColor;
-        }
-
-        public void UnhighlightLegalMoves(List<Move> legalMoves)
-        {
-            foreach (var legalMove in legalMoves)
-                UnhighlightSquare(legalMove.Index);
         }
 
         public void ToggleLegalMoves(bool isOn)
@@ -174,5 +132,30 @@ namespace Othello.UI
                 m_squareRenderers[i].material.color = IsWhiteSquare(i) ? darkColor : lightColor;
             }
         }
+
+        private void UpdateTextUI(Board board)
+        {
+            playerToMoveUI.text = "Player: " + board.GetCurrentPlayerAsString();
+            blackPieceCountUI.text = $"Black: {board.GetPieceCountAsString(Piece.Black)}";
+            whitePieceCountUI.text = $"White: {board.GetPieceCountAsString(Piece.White)}";
+        }
+
+        private void HighlightSquare(int index)
+        {
+            m_squareRenderers[index].material.color = lastMoveHighlightColor;
+        }
+
+        private void UnhighlightSquare(int index)
+        {
+            m_squareRenderers[index].material.color = IsWhiteSquare(index) ? darkColor : lightColor;
+        }
+
+        private static bool IsWhiteSquare(int index)
+        {
+            var file = index & 7;
+            var rank = index >> 3;
+            return (file + rank) % 2 == 0;
+        }
+        
     }
 }

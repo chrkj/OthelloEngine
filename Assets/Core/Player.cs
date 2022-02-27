@@ -1,6 +1,7 @@
 ﻿using System;
 using Othello.UI;
 using System.Collections.Generic;
+using UnityEngine;
 using Object = UnityEngine.Object;
 
 namespace Othello.Core
@@ -10,7 +11,6 @@ namespace Othello.Core
         public event Action OnNoLegalMove;
         public event Action<Move> OnMoveChosen;
         
-        protected List<Move> m_legalMoves;
         protected readonly Board m_Board;
         protected readonly BoardUI m_BoardUI;
 
@@ -29,6 +29,7 @@ namespace Othello.Core
         
         protected void NoLegalMove()
         {
+            MonoBehaviour.print("No legal move for " + m_Board.GetCurrentPlayerAsString());
             OnNoLegalMove?.Invoke();
         }
         

@@ -46,7 +46,7 @@ namespace Othello.Core
             m_playerToStartNextGame = Piece.Black;
             m_board = new Board(m_playerToStartNextGame);
             m_board.LoadStartPosition();
-            m_boardUI.UpdateBoardUI(m_board);
+            m_boardUI.UpdateUI(m_board);
 
             blackAiDepthMinimax.text = "5";
             whiteAiDepthMinimax.text = "5";
@@ -87,7 +87,7 @@ namespace Othello.Core
         {
             m_board.ResetBoard(m_playerToStartNextGame);
             m_board.LoadStartPosition();
-            m_boardUI.UpdateBoardUI(m_board);
+            m_boardUI.UpdateUI(m_board);
             m_boardUI.UnhighlightAll();
             m_whitePlayer = (Player)m_whitePlayerNextGame.Clone();
             m_blackPlayer = (Player)m_blackPlayerNextGame.Clone();
@@ -174,7 +174,7 @@ namespace Othello.Core
         {
             m_board.MakeMove(move);
             ChangePlayer();
-            m_boardUI.UpdateBoardUI(m_board);
+            m_boardUI.UpdateUI(m_board);
             m_lastPlayerHadNoMove = false;
         }
 

@@ -1,5 +1,4 @@
 using System.Threading;
-using UnityEngine;
 
 using Othello.Core;
 
@@ -18,26 +17,23 @@ namespace Othello.AI
         
         public override void Update()
         {
-            if (!m_moveFound) return;
-            m_BoardUI.UnhighlightLegalMoves(m_legalMoves);
-            var lastMove = m_Board.GetLastMove();
-            if (lastMove != null) m_BoardUI.UnhighlightSquare(lastMove.Index);
+            if (!m_moveFound)
+                return;
             m_moveFound = false;
             ChooseMove(m_chosenMove);
         }
 
         public override void NotifyTurnToMove()
         {
-            m_legalMoves = m_Board.GenerateLegalMoves();
-            if (m_legalMoves.Count == 0)
+            var legalMoves = m_Board.GenerateLegalMoves();
+            if (legalMoves.Count == 0)
             {
-                MonoBehaviour.print("No legal move for " + m_Board.GetCurrentPlayerAsString());
                 NoLegalMove();
                 return;
             }
+            m_BoardUI.HighlightLegalMoves(legalMoves);
             var engineThread = new Thread(StartSearch);
             engineThread.Start();
-            m_BoardUI.HighlightLegalMoves(m_legalMoves);
         }
 
         private void StartSearch()

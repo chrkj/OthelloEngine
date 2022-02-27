@@ -1,6 +1,5 @@
 using System;
 using Othello.Core;
-using UnityEngine;
 
 namespace Othello.AI
 {
@@ -8,9 +7,9 @@ namespace Othello.AI
     {
         private Node m_cachedNode;
         private const int m_IsRunning = -1;
-        private const int m_maxTime = 4000;
+        private const int m_maxTime = 10000;
+        private const int m_blockSize = 50;
         private readonly int m_maxIterations;
-        private int m_blockSize = 50;
 
         public MonteCarloTreeSearch(int maxIterations)
         {
@@ -83,7 +82,7 @@ namespace Othello.AI
             }
         }
         
-        private void BackPropagation(Node nodeToExplore, int winningPlayer)
+        private static void BackPropagation(Node nodeToExplore, int winningPlayer)
         {
             var currentNode = nodeToExplore;
             while (currentNode != null) 
@@ -97,7 +96,7 @@ namespace Othello.AI
             }
         }
         
-        private int Simulation(Node node) 
+        private static int Simulation(Node node) 
         {
             var tempNode = node.Copy();
             var winningPlayer = tempNode.Board.GetBoardState();
@@ -109,7 +108,7 @@ namespace Othello.AI
             return winningPlayer;
         }
 
-        private Node SelectNodeWithUct(Node node)
+        private static Node SelectNodeWithUct(Node node)
         {
             var selectedNode = node.Children[0];
             for (var i = 1; i < node.Children.Count; i++)

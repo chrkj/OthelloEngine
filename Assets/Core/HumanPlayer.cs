@@ -1,11 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Othello.Core
 {
     public class HumanPlayer : Player
     {
-        
+        private List<Move> m_legalMoves;
         private readonly Camera m_mainCam;
 
         public HumanPlayer(Board board) : base(board)
@@ -21,10 +22,12 @@ namespace Othello.Core
         public override void NotifyTurnToMove()
         {
             m_legalMoves = m_Board.GenerateLegalMoves();
+            if (m_legalMoves.Count == 0)
+            {
+                NoLegalMove();
+                return;
+            }
             m_BoardUI.HighlightLegalMoves(m_legalMoves);
-            if (m_legalMoves.Count != 0) return;
-            MonoBehaviour.print("No legal move for " + m_Board.GetCurrentPlayerAsString());
-            NoLegalMove();
         }
 
         private void HandleInput()
@@ -39,19 +42,17 @@ namespace Othello.Core
             
             var selectedFile = (int) Math.Floor(mousePosition.x) + 4;
             var selectedRank = (int) Math.Floor(mousePosition.y) + 4;
-            if (Board.IsOutOfBounds(selectedFile, selectedRank)) return;
+            if (Board.IsOutOfBounds(selectedFile, selectedRank))
+                return;
+            
             var selectedIndex = Board.GetIndex(selectedFile, selectedRank);
-            var lastMove = m_Board.GetLastMove();
-            
-            var isValidSquare = !Board.IsOutOfBounds(selectedFile, selectedRank) || m_BoardUI.HasSprite(selectedIndex);
-            if (!isValidSquare) return;
+            var isValidSquare = !Board.IsOutOfBounds(selectedFile, selectedRank) || !m_Board.IsEmpty(selectedIndex);
+            if (!isValidSquare)
+                return;
 
-            if (!m_legalMoves.Contains(new Move(selectedIndex))) return;
+            if (!m_legalMoves.Contains(new Move(selectedIndex))) 
+                return;
             
-            m_BoardUI.UnhighlightLegalMoves(m_legalMoves);
-            if (lastMove != null) m_BoardUI.UnhighlightSquare(lastMove.Index);
-            m_BoardUI.HighlightSquare(selectedIndex);
-
             var chosenMove = new Move(selectedIndex);
             ChooseMove(chosenMove);
         }
