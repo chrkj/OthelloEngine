@@ -33,8 +33,6 @@ namespace Othello.Core
             m_board.LoadStartPosition();
             m_boardUI.UpdateUI(m_board);
             Settings.Setup(m_board, m_boardUI);
-            m_whitePlayer = (Player)Settings.WhitePlayerNextGame.Clone();
-            m_blackPlayer = (Player)Settings.BlackPlayerNextGame.Clone();
             m_gameState = State.Idle;
         }
 
@@ -44,24 +42,35 @@ namespace Othello.Core
             m_board.LoadStartPosition();
             m_boardUI.UpdateUI(m_board);
             m_boardUI.UnhighlightAll();
-            SetupEvents();
+            TryUnsubscribeEvents();
             m_whitePlayer = (Player)Settings.WhitePlayerNextGame.Clone();
             m_blackPlayer = (Player)Settings.BlackPlayerNextGame.Clone();
+            SubscribeEvents();
             m_playerToMove = (Settings.PlayerToStartNextGame == Piece.White) ? m_whitePlayer : m_blackPlayer;
             m_gameState = State.Playing;
             m_playerToMove.NotifyTurnToMove();
         }
 
-        private void SetupEvents()
+        private void SubscribeEvents()
         {
-            m_whitePlayer.OnMoveChosen -= MakeMove;
-            m_whitePlayer.OnNoLegalMove -= NoLegalMove;
-            m_blackPlayer.OnMoveChosen -= MakeMove;
-            m_blackPlayer.OnNoLegalMove -= NoLegalMove;
-            Settings.WhitePlayerNextGame.OnMoveChosen += MakeMove;
-            Settings.WhitePlayerNextGame.OnNoLegalMove += NoLegalMove;
-            Settings.BlackPlayerNextGame.OnMoveChosen += MakeMove;
-            Settings.BlackPlayerNextGame.OnNoLegalMove += NoLegalMove;
+            m_whitePlayer.OnMoveChosen += MakeMove;
+            m_whitePlayer.OnNoLegalMove += NoLegalMove;
+            m_blackPlayer.OnMoveChosen += MakeMove;
+            m_blackPlayer.OnNoLegalMove += NoLegalMove;
+        }
+
+        private void TryUnsubscribeEvents()
+        {
+            if (m_blackPlayer != null)
+            {
+                m_blackPlayer.OnMoveChosen -= MakeMove;
+                m_blackPlayer.OnNoLegalMove -= NoLegalMove;
+            }
+            if (m_whitePlayer != null)
+            {
+                m_whitePlayer.OnMoveChosen -= MakeMove;
+                m_whitePlayer.OnNoLegalMove -= NoLegalMove;
+            }
         }
 
         private void Update()
