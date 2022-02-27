@@ -8,23 +8,22 @@ namespace Othello.AI
 {
     public class MctsThreading : ISearchEngine
     {
-        private int m_player;
         private Board m_board;
         private Node m_cachedNode;
+        private const int m_maxTime = 4000;
         private const int m_IsRunning = -1;
-        private readonly int m_iterations;
+        private readonly int m_maxIterations;
         private Node mergedNode;
         
         public MctsThreading(int iterations)
         {
-            m_iterations = iterations;
+            m_maxIterations = iterations;
         }
 
         public Move StartSearch(Board board)
         {
             m_board = board;
-            m_player = board.GetCurrentPlayer();
-            
+
             var threads = new List<Thread>();
             var processorCount = Environment.ProcessorCount;
             for (var i = 0; i < processorCount / 2; i++)
@@ -33,7 +32,8 @@ namespace Othello.AI
                 thread.Start();
                 threads.Add(thread);
             }
-            foreach(var thread in threads) thread.Join();
+            foreach(var thread in threads) 
+                thread.Join();
         
             var bestNode = mergedNode.SelectBestNode();
             m_cachedNode = bestNode;
@@ -43,16 +43,23 @@ namespace Othello.AI
         private void CalculateMove()
         {
             var rootNode = new Node(m_board.Copy()); // Bug when setting cached tree
-            for (var i = 0; i < m_iterations; i++)
+            var startTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+            var timeLimit = startTime + m_maxTime;
+            for (var iterations = 0; iterations < m_maxIterations && DateTimeOffset.Now.ToUnixTimeMilliseconds() < timeLimit; iterations++)
             {
+                // Selection
                 var promisingNode = Selection(rootNode);
                 
-                Expansion(promisingNode); // Check for terminalstate?
-
-                var nodeToExplore = promisingNode;
-                if (promisingNode.Children.Count > 0) nodeToExplore = promisingNode.GetRandomChildNode();
+                // Expansion
+                Expansion(promisingNode);
                 
+                // Simulation
+                var nodeToExplore = promisingNode;
+                if (promisingNode.Children.Count > 0) 
+                    nodeToExplore = promisingNode.GetRandomChildNode();
                 var winningPlayer = Simulation(nodeToExplore);
+                
+                // BaclPropagation
                 BackPropagation(nodeToExplore, winningPlayer);
             }
             MergeTrees(rootNode);
@@ -75,23 +82,24 @@ namespace Othello.AI
             }
         }
 
-        private Node SetRootNode()
+       private Node SetRootNode(Board board)
         {
             Node rootNode = null;
             if (m_cachedNode != null)
             {
                 foreach (var node in m_cachedNode.Children)
-                    if (node.Board.Equals(m_board))
+                    if (node.Board.Equals(board))
                         rootNode = node;
             }
-            rootNode ??= new Node(m_board.Copy());
+            rootNode ??= new Node(board.Copy());
             return rootNode;
         }
 
-        private static Node Selection(Node node) 
+        private Node Selection(Node node) 
         {
             var currentNode = node;
-            while (currentNode.Children.Count > 0) currentNode = SelectNodeWithUct(currentNode);
+            while (currentNode.Children.Count > 0) 
+                currentNode = SelectNodeWithUct(currentNode);
             return currentNode;
         }
         
@@ -108,9 +116,11 @@ namespace Othello.AI
         private void BackPropagation(Node nodeToExplore, int winningPlayer)
         {
             var currentNode = nodeToExplore;
-            var simulationScore = m_player == winningPlayer ? 1 : 0;
             while (currentNode != null) 
             {
+                //TODO: Cleanup
+                double simulationScore = winningPlayer == currentNode.Board.GetCurrentPlayer() ? 0 : 1;
+                if (winningPlayer == 0) simulationScore = 0.5;
                 currentNode.NumVisits++;
                 currentNode.NumWins += simulationScore;
                 currentNode = currentNode.Parent;
@@ -129,13 +139,14 @@ namespace Othello.AI
             return winningPlayer;
         }
 
-        private static Node SelectNodeWithUct(Node node)
+        private Node SelectNodeWithUct(Node node)
         {
             var selectedNode = node.Children[0];
-            for (int i = 1; i < node.Children.Count; i++)
+            for (var i = 1; i < node.Children.Count; i++)
             {
                 var currentNode = node.Children[i];
-                if (currentNode.CalculateUct() > selectedNode.CalculateUct()) selectedNode = currentNode;
+                if (currentNode.CalculateUct() > selectedNode.CalculateUct())
+                        selectedNode = currentNode;
             }
             return selectedNode;
         }

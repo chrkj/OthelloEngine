@@ -18,19 +18,17 @@ namespace Othello.AI
         
         public override void Update()
         {
-            //if (!Input.GetButtonDown("Fire1")) return;
             if (!m_moveFound) return;
             m_BoardUI.UnhighlightLegalMoves(m_legalMoves);
             var lastMove = m_Board.GetLastMove();
             if (lastMove != null) m_BoardUI.UnhighlightSquare(lastMove.Index);
-            m_BoardUI.HighlightSquare(m_chosenMove.Index);
             m_moveFound = false;
             ChooseMove(m_chosenMove);
         }
 
         public override void NotifyTurnToMove()
         {
-            m_legalMoves = MoveGenerator.GenerateLegalMoves(m_Board);
+            m_legalMoves = m_Board.GenerateLegalMoves();
             if (m_legalMoves.Count == 0)
             {
                 MonoBehaviour.print("No legal move for " + m_Board.GetCurrentPlayerAsString());

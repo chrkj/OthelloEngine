@@ -35,7 +35,7 @@ namespace Othello.AI
             if (currentPlayer == m_MaxPlayer)
             {
                 var highestUtil = int.MinValue;
-                foreach (var legalMove in MoveGenerator.GenerateLegalMoves(board)) 
+                foreach (var legalMove in board.GenerateLegalMoves()) 
                 {
                     var possibleNextState = MakeMove(board, legalMove);
                     currentUtil = MinValue(possibleNextState, m_depthLimit - 1, int.MinValue, int.MaxValue);
@@ -47,7 +47,7 @@ namespace Othello.AI
             else
             {
                 var minUtil = int.MaxValue;
-                foreach (var legalMove in MoveGenerator.GenerateLegalMoves(board)) 
+                foreach (var legalMove in board.GenerateLegalMoves()) 
                 {
                     var possibleNextState = MakeMove(board, legalMove);
                     currentUtil = MaxValue(possibleNextState, m_depthLimit - 1, int.MinValue, int.MaxValue);
@@ -70,7 +70,7 @@ namespace Othello.AI
             if (!HasLegalMove(board))
                 minUtil = Math.Min(minUtil, MaxValue(board, depth - 1, alpha, beta));
             
-            foreach (var legalMove in MoveGenerator.GenerateLegalMoves(board))
+            foreach (var legalMove in board.GenerateLegalMoves())
             {
                 var nextState = MakeMove(board, legalMove);
                 minUtil = Math.Min(minUtil, MaxValue(nextState, depth - 1, alpha, beta));
@@ -89,7 +89,7 @@ namespace Othello.AI
             if (!HasLegalMove(board))
                 maxUtil = Math.Max(maxUtil, MinValue(board, depth - 1, alpha, beta));
             
-            foreach (var legalMove in MoveGenerator.GenerateLegalMoves(board))
+            foreach (var legalMove in board.GenerateLegalMoves())
             {
                 var nextState = MakeMove(board, legalMove);
                 maxUtil = Math.Max(maxUtil, MinValue(nextState, depth - 1, alpha, beta));
@@ -101,7 +101,7 @@ namespace Othello.AI
         
         private static bool HasLegalMove(Board board)
         {
-            return MoveGenerator.GenerateLegalMoves(board).Count != 0;
+            return board.GenerateLegalMoves().Count != 0;
         }
 
         private static int GetUtility(Board board)
@@ -121,7 +121,7 @@ namespace Othello.AI
         private static Board MakeMove(Board board, Move legalMove)
         {
             var nextBoardState = board.Copy();
-            nextBoardState.MakeMove(legalMove, MoveGenerator.GetCaptureIndices(legalMove, nextBoardState));
+            nextBoardState.MakeMove(legalMove);
             nextBoardState.ChangePlayer();
             return nextBoardState;
         }

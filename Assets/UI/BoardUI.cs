@@ -103,7 +103,10 @@ namespace Othello.UI
                     m_pieceRenderers[boardIndex].sprite = sprite;
                     UnhighlightSquare(Board.GetIndex(file, rank));
                 }
-            UpdateUI(board);
+            UpdateTextUI(board);
+            HighlightLegalMoves(m_currentLegalMoves);
+            if (board.GetLastMove() != null)
+                HighlightSquare(board.GetLastMove().Index);
         }
 
         public void MakeMove(Move move, HashSet<Move> captures, Board board)
@@ -113,7 +116,7 @@ namespace Othello.UI
                 m_pieceRenderers[capture.Index].sprite = pieceTheme.GetSprite(board.GetCurrentPlayer());
         }
 
-        public void UpdateUI(Board board)
+        public void UpdateTextUI(Board board)
         {
             playerToMoveUI.text = "Player: " + board.GetCurrentPlayerAsString();
             blackPieceCountUI.text = $"Black: {board.GetPieceCountAsString(Piece.Black)}";
@@ -147,7 +150,7 @@ namespace Othello.UI
             m_currentLegalMoves = legalMoves;
             if (!m_highLightLegalMoves) return;
             foreach (var legalMove in legalMoves)
-                m_squareRenderers[legalMove.Index].material.color = highlightColor;;
+                m_squareRenderers[legalMove.Index].material.color = highlightColor;
         }
 
         public void UnhighlightLegalMoves(List<Move> legalMoves)
@@ -164,7 +167,7 @@ namespace Othello.UI
 
         }
 
-        private void UnhighlightAll()
+        public void UnhighlightAll()
         {
             for (int i = 0; i < m_squareRenderers.Length; i++)
             {

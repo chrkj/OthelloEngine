@@ -16,6 +16,7 @@ namespace Othello.Core
         public InputField whiteAiDepthMinimax;
         public InputField blackAiIterationsMcts;
         public InputField whiteAiIterationsMcts;
+        public Text debug;
         private Board m_board;
         private BoardUI m_boardUI;
         private State m_gameState;
@@ -27,13 +28,16 @@ namespace Othello.Core
         private int m_playerToStartNextGame;
         private bool m_lastPlayerHadNoMove;
         private enum State { Playing, GameOver, Idle }
+
+        public static long speed = 0;
+
         private enum PlayerType { Human = 0, Minimax = 1, Mcts = 2, Random = 3, MctsThreading = 4
         }
 
         private void Start()
         {
             m_boardUI = FindObjectOfType<BoardUI>();
-            MoveGenerator.PrecomputeData();
+            MoveData.PrecomputeData();
             Setup();
         }
 
@@ -84,6 +88,7 @@ namespace Othello.Core
             m_board.ResetBoard(m_playerToStartNextGame);
             m_board.LoadStartPosition();
             m_boardUI.UpdateBoardUI(m_board);
+            m_boardUI.UnhighlightAll();
             m_whitePlayer = (Player)m_whitePlayerNextGame.Clone();
             m_blackPlayer = (Player)m_blackPlayerNextGame.Clone();
             m_playerToMove = m_playerToStartNextGame == Piece.White ? m_whitePlayer : m_blackPlayer;
@@ -97,6 +102,7 @@ namespace Othello.Core
             {
                 case State.Playing:
                     m_playerToMove.Update();
+                    debug.text = speed.ToString();
                     break;
                 case State.GameOver:
                     // TODO: Add gameover animation
@@ -166,11 +172,9 @@ namespace Othello.Core
 
         private void MakeMove(Move move)
         {
-            var captures = MoveGenerator.GetCaptureIndices(move, m_board);
-            m_board.MakeMove(move, captures);
-            m_boardUI.MakeMove(move, captures, m_board);
+            m_board.MakeMove(move);
             ChangePlayer();
-            m_boardUI.UpdateUI(m_board);
+            m_boardUI.UpdateBoardUI(m_board);
             m_lastPlayerHadNoMove = false;
         }
 

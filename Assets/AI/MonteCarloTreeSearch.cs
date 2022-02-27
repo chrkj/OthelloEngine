@@ -6,12 +6,11 @@ namespace Othello.AI
 {
     public class MonteCarloTreeSearch : ISearchEngine
     {
-        private int m_player;
         private Node m_cachedNode;
         private const int m_IsRunning = -1;
-        private const int m_maxTime = 30000;
-        private const int m_blockSize = 50;
+        private const int m_maxTime = 4000;
         private readonly int m_maxIterations;
+        private int m_blockSize = 50;
 
         public MonteCarloTreeSearch(int maxIterations)
         {
@@ -20,7 +19,6 @@ namespace Othello.AI
 
         public Move StartSearch(Board board)
         {
-            m_player = board.GetCurrentPlayer();
             return CalculateMove(board);
         }
         
@@ -29,31 +27,30 @@ namespace Othello.AI
             var rootNode = SetRootNode(board);
             var startTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
             var timeLimit = startTime + m_maxTime;
-            for (var iterations = 0; iterations < m_maxIterations && DateTimeOffset.Now.ToUnixTimeMilliseconds() < timeLimit; iterations++)
+            for (var iterations = 0; (iterations < m_maxIterations) & (DateTimeOffset.Now.ToUnixTimeMilliseconds()) < timeLimit; iterations += m_blockSize)
             {
-                for (var i = 0; i < m_blockSize; ++i)
+                for (int i = 0; i < m_blockSize; i++)
                 {
+                    // Selection
                     var promisingNode = Selection(rootNode);
-
-                    Expansion(promisingNode); // Check for terminalstate?
-
+                
+                    // Expansion
+                    Expansion(promisingNode);
+                
+                    // Simulation
                     var nodeToExplore = promisingNode;
-                    if (promisingNode.Children.Count > 0) nodeToExplore = promisingNode.GetRandomChildNode();
-
+                    if (promisingNode.Children.Count > 0) 
+                        nodeToExplore = promisingNode.GetRandomChildNode();
                     var winningPlayer = Simulation(nodeToExplore);
+                
+                    // BaclPropagation
                     BackPropagation(nodeToExplore, winningPlayer);
                 }
             }
-
-            foreach (var node in rootNode.Children)
-            {
-                MonoBehaviour.print("Move: " + node.Board.GetLastMove().Index + " Wins: " + node.NumWins + " Visits: " + node.NumVisits + " Score: " +  node.NumWins / node.NumVisits);
-            }
             var bestNode = rootNode.SelectBestNode();
-            MonoBehaviour.print("Move: " + bestNode.Board.GetLastMove().Index + " Wins: " + bestNode.NumWins + " Visits: " + bestNode.NumVisits + " Score: " + bestNode.NumWins / bestNode.NumVisits);
             m_cachedNode = bestNode;
             return bestNode.Board.GetLastMove();
-        }
+            }
 
         private Node SetRootNode(Board board)
         {
@@ -71,7 +68,8 @@ namespace Othello.AI
         private Node Selection(Node node) 
         {
             var currentNode = node;
-            while (currentNode.Children.Count > 0) currentNode = SelectNodeWithUct(currentNode);
+            while (currentNode.Children.Count > 0) 
+                currentNode = SelectNodeWithUct(currentNode);
             return currentNode;
         }
         
@@ -88,9 +86,11 @@ namespace Othello.AI
         private void BackPropagation(Node nodeToExplore, int winningPlayer)
         {
             var currentNode = nodeToExplore;
-            var simulationScore = m_player == winningPlayer ? 1 : 0;
             while (currentNode != null) 
             {
+                //TODO: Cleanup
+                double simulationScore = winningPlayer == currentNode.Board.GetCurrentPlayer() ? 0 : 1;
+                if (winningPlayer == 0) simulationScore = 0.5;
                 currentNode.NumVisits++;
                 currentNode.NumWins += simulationScore;
                 currentNode = currentNode.Parent;

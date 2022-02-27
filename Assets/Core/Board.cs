@@ -159,18 +159,19 @@ namespace Othello.Core
 
         public bool IsTerminalBoardState()
         {
-            var numLegalMovesCurrentPlayer = MoveGenerator.GenerateLegalMoves(this).Count;
+            var numLegalMovesCurrentPlayer = GenerateLegalMoves().Count;
             if (numLegalMovesCurrentPlayer != 0) return false;
             ChangePlayer();
-            var numLegalMovesCurrentOpponent = MoveGenerator.GenerateLegalMoves(this).Count;
+            var numLegalMovesCurrentOpponent = GenerateLegalMoves().Count;
             ChangePlayer();
             return numLegalMovesCurrentOpponent == 0;
         }
 
-        public void MakeMove(Move move, HashSet<Move> captures)
+        public void MakeMove(Move move)
         {
             m_lastMove = move;
             PlacePiece(move.Index, GetCurrentPlayer());
+            var captures = GetCaptureIndices(move);
             foreach (var capture in captures)
                 PlacePiece(capture.Index, GetCurrentPlayer());
         }
@@ -185,6 +186,58 @@ namespace Othello.Core
         public bool Equals(Board other)
         {
             return m_pieces == other.m_pieces && m_colors == other.m_colors && m_isWhiteToMove == other.m_isWhiteToMove;
+        }
+        
+        public List<Move> GenerateLegalMoves()
+        {
+            var legalMoves = new List<Move>();
+            var emptySquares = GetEmptySquares();
+            foreach (var square in emptySquares)
+                GenerateLegalMovesForSquare(square, legalMoves);
+            return legalMoves;
+        }
+
+        private void GenerateLegalMovesForSquare(int square, ICollection<Move> legalMoves)
+        {
+            for (var directionOffsetIndex = 0; directionOffsetIndex < 8; directionOffsetIndex++)
+            {
+                var captureCount = 0;
+                var currentSquare = square + MoveData.DirectionOffsets[directionOffsetIndex];
+                if (Board.IsOutOfBounds(currentSquare)) continue;
+
+                for (var timesMoved = 1; timesMoved < MoveData.SquaresToEdge[square][directionOffsetIndex]; timesMoved++)
+                {
+                    if (!IsOpponentPiece(currentSquare)) break;
+                    captureCount++;
+                    currentSquare += MoveData.DirectionOffsets[directionOffsetIndex];
+                }
+
+                if (!IsFriendlyPiece(currentSquare) || captureCount <= 0) continue;
+                legalMoves.Add(new Move(square));
+                break;
+            }
+        }
+
+        public HashSet<Move> GetCaptureIndices(Move move)
+        {
+            var allCaptures = new HashSet<Move>();
+            for (var directionOffsetIndex = 0; directionOffsetIndex < 8; directionOffsetIndex++)
+            {
+                var currentCaptures = new HashSet<Move>();
+                var currentSquare = move.Index + MoveData.DirectionOffsets[directionOffsetIndex];
+                if (Board.IsOutOfBounds(currentSquare)) continue;
+
+                for (var timesMoved = 1; timesMoved < MoveData.SquaresToEdge[move.Index][directionOffsetIndex]; timesMoved++)
+                {
+                    if (!IsOpponentPiece(currentSquare)) break;
+                    currentCaptures.Add(new Move(currentSquare));
+                    currentSquare += MoveData.DirectionOffsets[directionOffsetIndex];
+                }
+
+                if (!IsFriendlyPiece(currentSquare) || currentCaptures.Count <= 0) continue;
+                allCaptures.UnionWith(currentCaptures);
+            }
+            return allCaptures;
         }
         
     }

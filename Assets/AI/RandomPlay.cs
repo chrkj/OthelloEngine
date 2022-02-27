@@ -13,7 +13,7 @@ namespace Othello.AI
 
         private Move CalculateMove(Board board)
         {
-            var legalMoves = MoveGenerator.GenerateLegalMoves(board);
+            var legalMoves = board.GenerateLegalMoves();
             var random = new Random();
             var index = random.Next(legalMoves.Count);
             return legalMoves[index];

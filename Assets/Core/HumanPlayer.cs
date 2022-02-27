@@ -20,7 +20,7 @@ namespace Othello.Core
 
         public override void NotifyTurnToMove()
         {
-            m_legalMoves = MoveGenerator.GenerateLegalMoves(m_Board);
+            m_legalMoves = m_Board.GenerateLegalMoves();
             m_BoardUI.HighlightLegalMoves(m_legalMoves);
             if (m_legalMoves.Count != 0) return;
             MonoBehaviour.print("No legal move for " + m_Board.GetCurrentPlayerAsString());

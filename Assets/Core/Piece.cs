@@ -13,11 +13,6 @@
             return (piece & m_Mask) == Black;
         }
 
-        public static bool IsSameColor(int piece1, int piece2)
-        {
-            return (piece1 & m_Mask) == (piece2 & m_Mask);
-        }
-
         public static string GetPlayerAsString(int playerColor)
         {
             return playerColor == Piece.White ? "White" : "Black";

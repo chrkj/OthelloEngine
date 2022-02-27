@@ -38,9 +38,8 @@ namespace Othello.AI
             var bestNode = Children[0];
             for(var i = 1; i < Children.Count; ++i) 
             {
-                if (CalculateScore(Children[i]) > CalculateScore(bestNode)) {
+                if (CalculateScore(Children[i]) > CalculateScore(bestNode))
                     bestNode = Children[i];
-                }
             }
             return bestNode;
         }
@@ -53,10 +52,10 @@ namespace Othello.AI
         public List<Node> CreateChildNodes()
         {
             var notes = new List<Node>();
-            foreach (var legalMove in MoveGenerator.GenerateLegalMoves(Board))
+            foreach (var legalMove in Board.GenerateLegalMoves())
             {
                 var newBoard = Board.Copy();
-                newBoard.MakeMove(legalMove, MoveGenerator.GetCaptureIndices(legalMove, newBoard));
+                newBoard.MakeMove(legalMove);
                 newBoard.ChangePlayer();
                 var newNode = new Node(newBoard);
                 notes.Add(newNode);
@@ -66,15 +65,14 @@ namespace Othello.AI
             
         public void RandomMove() 
         {
-            var legalMoves = MoveGenerator.GenerateLegalMoves(Board);
+            var legalMoves = Board.GenerateLegalMoves();
             if (legalMoves.Count == 0)
             {
                 Board.ChangePlayer();
                 return;
             }
             var randomMove = legalMoves[new Random().Next(legalMoves.Count)];
-            var captures = MoveGenerator.GetCaptureIndices(randomMove, Board);
-            Board.MakeMove(randomMove, captures);
+            Board.MakeMove(randomMove);
             Board.ChangePlayer();
         }
         
