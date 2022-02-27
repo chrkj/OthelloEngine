@@ -20,7 +20,6 @@ namespace Othello.UI
         public Material darkSquareMaterial;
         public Material lightSquareMaterial;
         
-        private Canvas m_canvas;
         private bool m_highLightLegalMoves;
         private MeshRenderer[] m_squareRenderers;
         private SpriteRenderer[] m_pieceRenderers;
@@ -35,7 +34,6 @@ namespace Othello.UI
 
         private void InitBoard()
         {
-            m_canvas = FindObjectOfType<Canvas>();
             m_squareRenderers = new MeshRenderer[64];
             m_pieceRenderers = new SpriteRenderer[64];
             for (var rank = 0; rank < 8; rank++)
@@ -61,35 +59,6 @@ namespace Othello.UI
             pieceRendererTc.position = new Vector3(file + m_BoardOffset, rank + m_BoardOffset, pieceDepth);
             pieceRendererTc.localScale = new Vector3(pieceScale, pieceScale, 1);
             m_pieceRenderers[Board.GetIndex(file, rank)] = pieceRenderer;
-            
-            if (rank == 0) DrawFileChar(file);
-            if (file == 0) DrawRankChar(rank);
-        }
-
-        private void DrawRankChar(int rank)
-        {
-            var fileChar = new GameObject("FileChar" + rank).AddComponent<Text>();
-            var fileCharTc = fileChar.transform;
-            fileCharTc.SetParent(m_canvas.transform);
-            fileCharTc.localScale = Vector3.one;
-            fileCharTc.position = new Vector3(m_BoardOffset - 1, m_BoardOffset + rank, 0);
-            fileChar.font = Font.CreateDynamicFontFromOSFont("Oswald-Bold.ttf", 20);
-            fileChar.fontSize = 20;
-            fileChar.alignment = TextAnchor.MiddleCenter;
-            fileChar.text = (rank + 1).ToString();
-        }
-
-        private void DrawFileChar(int file)
-        {
-            var fileChar = new GameObject("FileChar" + m_FileChars[file]).AddComponent<Text>();
-            var fileCharTc = fileChar.transform;
-            fileCharTc.SetParent(m_canvas.transform);
-            fileCharTc.localScale = Vector3.one;
-            fileCharTc.position = new Vector3(file + m_BoardOffset, m_BoardOffset - 1, 0);
-            fileChar.font = Font.CreateDynamicFontFromOSFont("Oswald-Bold.ttf", 20);
-            fileChar.fontSize = 20;
-            fileChar.alignment = TextAnchor.MiddleCenter;
-            fileChar.text = m_FileChars[file];
         }
 
         public void UpdateUI(Board board)
