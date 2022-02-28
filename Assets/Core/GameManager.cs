@@ -100,7 +100,15 @@ namespace Othello.Core
         
         private void NoLegalMove()
         {
-            if (m_lastPlayerHadNoMove) m_gameState = State.GameOver;
+            if (m_lastPlayerHadNoMove)
+            {
+                m_gameState = State.GameOver;
+                string winner = "";
+                if (m_board.GetWinner() == Piece.Black) winner = "Black";
+                else if (m_board.GetWinner() == Piece.White) winner = "White";
+                else if (m_board.GetWinner() == 0) winner = "Draw";
+                Console.Log("--- Winner: " + winner + " ---");
+            }
             m_lastPlayerHadNoMove = true;
             ChangePlayer();
         }
@@ -116,7 +124,6 @@ namespace Othello.Core
                     break;
                 case State.GameOver:
                     // Handle winning animation
-                    print("GameOver");
                     break;
                 case State.Idle:
                     break;

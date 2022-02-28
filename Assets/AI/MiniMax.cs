@@ -2,6 +2,8 @@ using System;
 using UnityEngine;
 
 using Othello.Core;
+using Console = Othello.Core.Console;
+using Object = UnityEngine.Object;
 
 namespace Othello.AI
 {
@@ -57,7 +59,9 @@ namespace Othello.AI
                 }
             }
             var end = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-            MonoBehaviour.print("Time taken: " + (end - start) + "ms for " + m_positions + " positions");
+            Console.Log(board.GetCurrentPlayerAsString() + " plays " + Board.GetMoveAsString(bestMove));
+            Console.Log("Search time: " + (end - start) + " ms");
+            Console.Log("Positions examined: " + m_positions);
             return bestMove;
         }
 

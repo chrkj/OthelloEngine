@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Othello.UI;
 
 namespace Othello.Core
 {
@@ -145,6 +146,13 @@ namespace Othello.Core
             return GetWinner();
         }
 
+        public static string GetMoveAsString(Move move)
+        {
+            string rank = ((move.Index >> 3) + 1).ToString();
+            string file = BoardUI.FileChars[move.Index & 7].ToUpper();
+            return file + rank;
+        }
+
         private void PlacePiece(int index, int player)
         {
             m_pieces |= (1UL << index);
@@ -193,7 +201,7 @@ namespace Othello.Core
             return GetPieceColor(index) == GetCurrentPlayer();
         }
 
-        private int GetWinner()
+        public int GetWinner()
         {
             var playerPieceCount = GetPieceCount(GetCurrentPlayer());
             var opponentPieceCount = GetPieceCount(GetCurrentOpponent());

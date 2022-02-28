@@ -1,7 +1,5 @@
 ﻿using System;
 using Othello.UI;
-using System.Collections.Generic;
-using UnityEngine;
 using Object = UnityEngine.Object;
 
 namespace Othello.Core
@@ -29,7 +27,7 @@ namespace Othello.Core
         
         protected void NoLegalMove()
         {
-            MonoBehaviour.print("No legal move for " + m_Board.GetCurrentPlayerAsString());
+            Console.Log("No leagl moves for " + m_Board.GetCurrentPlayerAsString());
             OnNoLegalMove?.Invoke();
         }
         

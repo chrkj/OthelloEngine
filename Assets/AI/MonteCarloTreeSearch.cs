@@ -1,5 +1,6 @@
 using System;
 using Othello.Core;
+using Console = Othello.Core.Console;
 
 namespace Othello.AI
 {
@@ -10,6 +11,8 @@ namespace Othello.AI
         private const int m_blockSize = 50;
         private readonly int m_maxTime;
         private readonly int m_maxIterations;
+        private int m_nodesVisited = 0;
+        private int m_iterationsRun = 0;
 
         public MonteCarloTreeSearch(int maxIterations, int maxTime)
         {
@@ -19,6 +22,8 @@ namespace Othello.AI
 
         public Move StartSearch(Board board)
         {
+            m_nodesVisited = 0;
+            m_iterationsRun = 0;
             return CalculateMove(board);
         }
         
@@ -45,10 +50,17 @@ namespace Othello.AI
                 
                     // BaclPropagation
                     BackPropagation(nodeToExplore, winningPlayer);
+                    m_iterationsRun++;
                 }
             }
             var bestNode = rootNode.SelectBestNode();
             m_cachedNode = bestNode;
+            var endTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+            Console.Log(board.GetCurrentPlayerAsString() + " plays " + Board.GetMoveAsString(bestNode.Board.GetLastMove()));
+            Console.Log("Search time: " + (endTime - startTime) + " ms");
+            Console.Log("Iterations: " + m_iterationsRun);
+            Console.Log("Nodes visited: " + m_nodesVisited);
+            Console.Log("Win prediction: " + ((bestNode.NumWins / bestNode.NumVisits) * 100).ToString("0.##") + " %");
             return bestNode.Board.GetLastMove();
             }
 
@@ -88,8 +100,7 @@ namespace Othello.AI
             var currentNode = nodeToExplore;
             while (currentNode != null) 
             {
-                //TODO: Cleanup
-                double simulationScore = winningPlayer == currentNode.Board.GetCurrentPlayer() ? 0 : 1;
+                double simulationScore = (winningPlayer == currentNode.Board.GetCurrentPlayer()) ? 0 : 1;
                 if (winningPlayer == 0) simulationScore = 0.5;
                 currentNode.NumVisits++;
                 currentNode.NumWins += simulationScore;
@@ -97,13 +108,14 @@ namespace Othello.AI
             }
         }
         
-        private static int Simulation(Node node) 
+        private int Simulation(Node node) 
         {
             var tempNode = node.Copy();
             var winningPlayer = tempNode.Board.GetBoardState();
             while (winningPlayer == m_IsRunning)
             {
                 tempNode.RandomMove();
+                m_nodesVisited++;
                 winningPlayer = tempNode.Board.GetBoardState();
             }
             return winningPlayer;

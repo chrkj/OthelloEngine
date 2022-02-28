@@ -11,8 +11,10 @@ namespace Othello.Core
         public Player WhitePlayerNextGame;
         public Player BlackPlayerNextGame;
         public int PlayerToStartNextGame = Piece.Black;
+        public static bool AutoMove;
         
         public Toggle showLegalMoves;
+        public Toggle enableAutoMove;
         public TMP_Dropdown whitePlayer;
         public TMP_Dropdown blackPlayer;
         public TMP_Dropdown playerToStart;
@@ -90,6 +92,11 @@ namespace Othello.Core
         public void ToggleLegalMoves()
         {
             m_boardUI.ToggleLegalMoves(showLegalMoves.isOn);
+        }
+        
+        public void ToggleAutoMove()
+        {
+            AutoMove = enableAutoMove.isOn;
         }
         
         public void SetStartingPlayer()

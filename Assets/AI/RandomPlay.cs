@@ -1,6 +1,7 @@
 using System;
 
 using Othello.Core;
+using Console = Othello.Core.Console;
 
 namespace Othello.AI
 {
@@ -14,9 +15,10 @@ namespace Othello.AI
         private Move CalculateMove(Board board)
         {
             var legalMoves = board.GenerateLegalMoves();
-            var random = new Random();
-            var index = random.Next(legalMoves.Count);
-            return legalMoves[index];
+            var index = new Random().Next(legalMoves.Count);
+            var move = legalMoves[index];
+            Console.Log(board.GetCurrentPlayerAsString() + " plays " + Board.GetMoveAsString(move));
+            return move;
         }
     }
 }

@@ -1,6 +1,7 @@
 using System.Threading;
 
 using Othello.Core;
+using UnityEngine;
 
 namespace Othello.AI
 {
@@ -17,10 +18,18 @@ namespace Othello.AI
         
         public override void Update()
         {
-            if (!m_moveFound)
-                return;
-            m_moveFound = false;
-            ChooseMove(m_chosenMove);
+            if (!m_moveFound) return;
+            if (!Settings.AutoMove)
+            {
+                if (!Input.GetKeyDown(KeyCode.Space)) return;
+                m_moveFound = false;
+                ChooseMove(m_chosenMove);
+            }
+            else
+            {
+                m_moveFound = false;
+                ChooseMove(m_chosenMove);
+            }
         }
 
         public override void NotifyTurnToMove()

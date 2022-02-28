@@ -19,13 +19,13 @@ namespace Othello.UI
         public TMPro.TMP_Text whitePieceCountUI;
         public Material darkSquareMaterial;
         public Material lightSquareMaterial;
+        public static readonly string[] FileChars = { "A", "B", "C", "D", "E", "F", "G", "H"};
         
         private bool m_highLightLegalMoves;
         private MeshRenderer[] m_squareRenderers;
         private SpriteRenderer[] m_pieceRenderers;
         private List<Move> m_currentLegalMoves = new List<Move>();
         private const float m_BoardOffset = -3.5f;
-        private readonly string[] m_FileChars = { "A", "B", "C", "D", "E", "F", "G", "H"};
 
         private void Awake()
         {
@@ -46,7 +46,7 @@ namespace Othello.UI
             var squareColor = (file + rank) % 2 == 0 ? lightColor : darkColor;
             var square = GameObject.CreatePrimitive(PrimitiveType.Quad).transform;
             square.parent = transform;
-            square.name = m_FileChars[file] + (rank + 1);
+            square.name = FileChars[file] + (rank + 1);
             square.position = new Vector3(file + m_BoardOffset, rank + m_BoardOffset, 0f);
 
             var squareMaterial = squareColor == lightColor ? lightSquareMaterial : darkSquareMaterial;
