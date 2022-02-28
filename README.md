@@ -49,7 +49,8 @@ Optimization:
 - ⬜ Implement iterative deepening for MiniMax
 
 UI:
-- ✅ Prettier UI
+- ⬜ Support for color coded console log
+- ✅ Better UI
 - ✅ Implement search algorithm diagnostics console
 
 <p align="right">(<a href="#top">back to top</a>)</p>
