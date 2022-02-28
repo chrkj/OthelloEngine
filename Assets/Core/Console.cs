@@ -11,13 +11,15 @@ namespace Othello.Core
         public GameObject console;
         public GameObject chatPanel;
         public GameObject textObject;
-        
+
         private ScrollRect m_scrollRect;
         private readonly Color m_textColor = new Color(0.9622642f, 0.6748884f, 0.3948915f);
+        private static GameObject s_chatPanel;
         private static readonly List<string> m_messagesToLog = new List<string>();
 
         private void Start()
         {
+            s_chatPanel = chatPanel;
             m_scrollRect = console.GetComponent<ScrollRect>();
         }
 
@@ -45,6 +47,12 @@ namespace Othello.Core
         public static void Log(string text)
         {
             m_messagesToLog.Add(text);
+        }
+
+        public static void Clear()
+        {
+            foreach (Transform child in s_chatPanel.transform)
+                GameObject.Destroy(child.gameObject);
         }
 
         [Serializable]

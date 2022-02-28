@@ -54,6 +54,7 @@ namespace Othello.Core
                 return;
             
             var chosenMove = new Move(selectedIndex);
+            Console.Log(m_Board.GetCurrentPlayerAsString() + " plays " + Board.GetMoveAsString(chosenMove));
             ChooseMove(chosenMove);
         }
         

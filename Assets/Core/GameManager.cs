@@ -42,6 +42,7 @@ namespace Othello.Core
             m_board.LoadStartPosition();
             m_boardUI.UpdateUI(m_board);
             m_boardUI.UnhighlightAll();
+            Console.Clear();
             TryUnsubscribeEvents();
             m_whitePlayer = (Player)Settings.WhitePlayerNextGame.Clone();
             m_blackPlayer = (Player)Settings.BlackPlayerNextGame.Clone();
