@@ -13,7 +13,7 @@
 
 <h3 align="center">Othello Engine</h3>
   <a href="https://github.com/chrkj/OthelloEngine">
-    <img src="/Example.png" width="600" height="338">
+    <img src="/Example.png" width="700" height="366">
   </a>
   <p align="center">
     A simple othello engine
@@ -49,9 +49,8 @@ Optimization:
 - ⬜ Implement iterative deepening for MiniMax
 
 UI:
-- ⬜ Prettier UI
-- ⬜ Implement winning animation
-- ⬜ Implement search algorithm diagnostics
+- ✅ Prettier UI
+- ✅ Implement search algorithm diagnostics console
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
