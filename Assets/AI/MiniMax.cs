@@ -62,6 +62,7 @@ namespace Othello.AI
             Console.Log(board.GetCurrentPlayerAsString() + " plays " + Board.GetMoveAsString(bestMove));
             Console.Log("Search time: " + (end - start) + " ms");
             Console.Log("Positions examined: " + m_positions);
+            Console.Log("----------------------------------------------------");
             return bestMove;
         }
 

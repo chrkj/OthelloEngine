@@ -104,11 +104,12 @@ namespace Othello.Core
             if (m_lastPlayerHadNoMove)
             {
                 m_gameState = State.GameOver;
-                string winner = "";
+                var winner = "";
                 if (m_board.GetWinner() == Piece.Black) winner = "Black";
                 else if (m_board.GetWinner() == Piece.White) winner = "White";
                 else if (m_board.GetWinner() == 0) winner = "Draw";
-                Console.Log("--- Winner: " + winner + " ---");
+                Console.Log("-------------- Winner: " + winner + " --------------");
+                Console.Log("----------------------------------------------------");
             }
             m_lastPlayerHadNoMove = true;
             ChangePlayer();

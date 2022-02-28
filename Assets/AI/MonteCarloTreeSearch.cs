@@ -61,6 +61,7 @@ namespace Othello.AI
             Console.Log("Iterations: " + m_iterationsRun);
             Console.Log("Nodes visited: " + m_nodesVisited);
             Console.Log("Win prediction: " + ((bestNode.NumWins / bestNode.NumVisits) * 100).ToString("0.##") + " %");
+            Console.Log("----------------------------------------------------");
             return bestNode.Board.GetLastMove();
             }
 

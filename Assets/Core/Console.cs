@@ -13,9 +13,10 @@ namespace Othello.Core
         public GameObject textObject;
 
         private ScrollRect m_scrollRect;
-        private readonly Color m_textColor = new Color(0.9622642f, 0.6748884f, 0.3948915f);
         private static GameObject s_chatPanel;
-        private static readonly List<string> m_messagesToLog = new List<string>();
+        private static readonly Queue<Color>  m_messageColor = new Queue<Color>();
+        private static readonly Queue<string>  m_messagesToLog = new Queue<string>();
+        private static readonly Color m_standardColor = new Color(0.96f, 0.67f, 0.39f);
 
         private void Start()
         {
@@ -26,33 +27,38 @@ namespace Othello.Core
         private void Update()
         {
             if (m_messagesToLog.Count == 0) return;  
-            LogMessage(m_messagesToLog[0]);
-            m_messagesToLog.RemoveAt(0);
+            LogMessage(m_messagesToLog.Dequeue(), m_messageColor.Dequeue());
             m_scrollRect.velocity = new Vector2(0f, 1000f);
         }
 
-        // TODO: Add support for color coded log messages
-        private void LogMessage(string text)
+        private void LogMessage(string text, Color color)
         {
-            Message newMessage = new Message();
-            GameObject newText = Instantiate(textObject, chatPanel.transform);
-            string timeStamp = "[" + DateTime.UtcNow.ToString("HH:mm:ss") + "] ";
+            var newMessage = new Message();
+            var newText = Instantiate(textObject, chatPanel.transform);
+            var timeStamp = "[" + DateTime.UtcNow.ToString("HH:mm:ss") + "] ";
             newMessage.Text = timeStamp + text;
             newMessage.TextObject = newText.GetComponent<TMP_Text>();
             newMessage.TextObject.text = newMessage.Text;
-            newMessage.TextObject.color = m_textColor;
+            newMessage.TextObject.color = color;
             m_scrollRect.verticalNormalizedPosition = 0f;
         }
 
         public static void Log(string text)
         {
-            m_messagesToLog.Add(text);
+            m_messagesToLog.Enqueue(text);
+            m_messageColor.Enqueue(m_standardColor);
+        }
+        
+        public static void Log(string text, Color color)
+        {
+            m_messagesToLog.Enqueue(text);
+            m_messageColor.Enqueue(color);
         }
 
         public static void Clear()
         {
             foreach (Transform child in s_chatPanel.transform)
-                GameObject.Destroy(child.gameObject);
+                Destroy(child.gameObject);
         }
 
         [Serializable]

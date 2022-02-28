@@ -18,6 +18,7 @@ namespace Othello.AI
             var index = new Random().Next(legalMoves.Count);
             var move = legalMoves[index];
             Console.Log(board.GetCurrentPlayerAsString() + " plays " + Board.GetMoveAsString(move));
+            Console.Log("----------------------------------------------------");
             return move;
         }
     }
