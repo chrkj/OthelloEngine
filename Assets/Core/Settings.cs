@@ -101,7 +101,7 @@ namespace Othello.Core
         
         public void SetStartingPlayer()
         {
-            PlayerToStartNextGame = playerToStart.value == 0 ? Piece.Black : Piece.White;
+            PlayerToStartNextGame = (playerToStart.value == 0) ? Piece.Black : Piece.White;
         }
     }
 }

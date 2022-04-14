@@ -11,8 +11,8 @@ namespace Othello.AI
         private const int m_blockSize = 50;
         private readonly int m_maxTime;
         private readonly int m_maxIterations;
-        private int m_nodesVisited = 0;
-        private int m_iterationsRun = 0;
+        private int m_nodesVisited;
+        private int m_iterationsRun;
 
         public MonteCarloTreeSearch(int maxIterations, int maxTime)
         {
@@ -29,12 +29,13 @@ namespace Othello.AI
         
         private Move CalculateMove(Board board)
         {
+            //var rootNode = new Node(board.Copy());
             var rootNode = SetRootNode(board);
             var startTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
             var timeLimit = startTime + m_maxTime;
             for (var iterations = 0; (iterations < m_maxIterations) & (DateTimeOffset.Now.ToUnixTimeMilliseconds()) < timeLimit; iterations += m_blockSize)
             {
-                for (int i = 0; i < m_blockSize; i++)
+                for (var i = 0; i < m_blockSize; i++)
                 {
                     // Selection
                     var promisingNode = Selection(rootNode);
@@ -48,7 +49,7 @@ namespace Othello.AI
                         nodeToExplore = promisingNode.GetRandomChildNode();
                     var winningPlayer = Simulation(nodeToExplore);
                 
-                    // BaclPropagation
+                    // BackPropagation
                     BackPropagation(nodeToExplore, winningPlayer);
                     m_iterationsRun++;
                 }
@@ -60,7 +61,7 @@ namespace Othello.AI
             Console.Log("Search time: " + (endTime - startTime) + " ms");
             Console.Log("Iterations: " + m_iterationsRun);
             Console.Log("Nodes visited: " + m_nodesVisited);
-            Console.Log("Win prediction: " + ((bestNode.NumWins / bestNode.NumVisits) * 100).ToString("0.##") + " %");
+            Console.Log("Win prediction: " + ((bestNode.numWins / bestNode.NumVisits) * 100).ToString("0.##") + " %");
             Console.Log("----------------------------------------------------");
             return bestNode.Board.GetLastMove();
             }
@@ -72,13 +73,16 @@ namespace Othello.AI
             {
                 foreach (var node in m_cachedNode.Children)
                     if (node.Board.Equals(board))
+                    {
                         rootNode = node;
+                        break;
+                    }
             }
             rootNode ??= new Node(board.Copy());
             return rootNode;
         }
 
-        private Node Selection(Node node) 
+        private static Node Selection(Node node) 
         {
             var currentNode = node;
             while (currentNode.Children.Count > 0) 
@@ -104,7 +108,8 @@ namespace Othello.AI
                 double simulationScore = (winningPlayer == currentNode.Board.GetCurrentPlayer()) ? 0 : 1;
                 if (winningPlayer == 0) simulationScore = 0.5;
                 currentNode.NumVisits++;
-                currentNode.NumWins += simulationScore;
+                currentNode.numWins += (winningPlayer == currentNode.Board.GetCurrentPlayer()) ? 0 : 1;
+                currentNode.score += simulationScore;
                 currentNode = currentNode.Parent;
             }
         }

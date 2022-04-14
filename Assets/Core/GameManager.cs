@@ -67,11 +67,10 @@ namespace Othello.Core
                 m_blackPlayer.OnMoveChosen -= MakeMove;
                 m_blackPlayer.OnNoLegalMove -= NoLegalMove;
             }
-            if (m_whitePlayer != null)
-            {
-                m_whitePlayer.OnMoveChosen -= MakeMove;
-                m_whitePlayer.OnNoLegalMove -= NoLegalMove;
-            }
+
+            if (m_whitePlayer == null) return;
+            m_whitePlayer.OnMoveChosen -= MakeMove;
+            m_whitePlayer.OnNoLegalMove -= NoLegalMove;
         }
 
         private void Update()
@@ -108,7 +107,7 @@ namespace Othello.Core
                 if (m_board.GetWinner() == Piece.Black) winner = "Black";
                 else if (m_board.GetWinner() == Piece.White) winner = "White";
                 else if (m_board.GetWinner() == 0) winner = "Draw";
-                Console.Log("-------------- Winner: " + winner + " --------------");
+                Console.Log("---------------- Winner: " + winner + " ----------------");
                 Console.Log("----------------------------------------------------");
             }
             m_lastPlayerHadNoMove = true;

@@ -148,8 +148,8 @@ namespace Othello.Core
 
         public static string GetMoveAsString(Move move)
         {
-            string rank = ((move.Index >> 3) + 1).ToString();
-            string file = BoardUI.FileChars[move.Index & 7].ToUpper();
+            var rank = ((move.Index >> 3) + 1).ToString();
+            var file = BoardUI.FileChars[move.Index & 7].ToUpper();
             return file + rank;
         }
 
@@ -203,10 +203,10 @@ namespace Othello.Core
 
         public int GetWinner()
         {
-            var playerPieceCount = GetPieceCount(GetCurrentPlayer());
-            var opponentPieceCount = GetPieceCount(GetCurrentOpponent());
-            if (playerPieceCount == opponentPieceCount) return 0;
-            return playerPieceCount > opponentPieceCount ? GetCurrentPlayer() : GetCurrentOpponent();
+            var blackPieceCount = GetPieceCount(Piece.Black);
+            var whitePieceCount = GetPieceCount(Piece.White);
+            if (blackPieceCount == whitePieceCount) return 0;
+            return blackPieceCount > whitePieceCount ? Piece.Black : Piece.White;
         }
 
         private void GenerateLegalMovesForSquare(int square, ICollection<Move> legalMoves)
