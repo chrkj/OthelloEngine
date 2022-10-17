@@ -31,7 +31,7 @@
 ## About The Project
 This is an implementation of the game Othello (also known as Reversi) strategy board game for two players, played on an 8 x 8 board.
 I originally created the project to learn more about game AI's of which the game currently supports two.
-Firstly the [MiniMax algorithm](https://en.wikipedia.org/wiki/Minimax) and secondly the [Monte Carlo Tree Search Algorithm](https://en.wikipedia.org/wiki/Monte_Carlo_tree_search).
+Firstly the [MiniMax algorithm](https://en.wikipedia.org/wiki/Minimax) and secondly the [Monte Carlo Tree Search Algorithm](https://en.wikipedia.org/wiki/Monte_Carlo_tree_search). The board representation uses two ulong integers (128-bit) to store the current board state. This is done to reduce the amount of memory used by MCTS.
 <p align="right">(<a href="#top">back to top</a>)</p>
 
 
