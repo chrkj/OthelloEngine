@@ -56,7 +56,9 @@ namespace Othello.AI
             }
             var bestNode = rootNode.SelectBestNode();
             m_cachedNode = bestNode;
+            m_cachedNode.Parent = null;
             var endTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+            Console.Log("Tree size: " + rootNode.NumVisits);
             Console.Log(board.GetCurrentPlayerAsString() + " plays " + Board.GetMoveAsString(bestNode.Board.GetLastMove()));
             Console.Log("Search time: " + (endTime - startTime) + " ms");
             Console.Log("Iterations: " + m_iterationsRun);
@@ -106,7 +108,8 @@ namespace Othello.AI
             while (currentNode != null) 
             {
                 double simulationScore = (winningPlayer == currentNode.Board.GetCurrentPlayer()) ? 0 : 1;
-                if (winningPlayer == 0) simulationScore = 0.5;
+                if (winningPlayer == 0) 
+                    simulationScore = 0.5;
                 currentNode.NumVisits++;
                 currentNode.numWins += (winningPlayer == currentNode.Board.GetCurrentPlayer()) ? 0 : 1;
                 currentNode.score += simulationScore;
