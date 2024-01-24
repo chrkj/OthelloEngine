@@ -27,7 +27,7 @@ namespace Othello.Core
 
         private Board m_board;
         private BoardUI m_boardUI;
-        private enum PlayerType { Human = 0, Minimax = 1, Mcts = 2, Random = 3 }
+        private enum PlayerType { Human = 0, Minimax = 1, Mcts = 2, Random = 3, MCTSRootParallel = 4, MCTSTreeParallel = 5 }
 
         public void Setup(Board board, BoardUI boardUI)
         {
@@ -72,21 +72,45 @@ namespace Othello.Core
                      inputFieldIterations.gameObject.SetActive(false);
                      break;
                  case (int)PlayerType.Mcts:
+                    { 
                      var timeLimit = int.Parse(inputFieldTimeLimit.text);
                      var iterations = int.Parse(inputFieldIterations.text);
                      if (iterations < 1) iterations = 1;
-                     playerRef = new AIPlayer(m_board, new MonteCarloTreeSearch(iterations, timeLimit));
+                     playerRef = new AIPlayer(m_board, new MCTS(iterations, timeLimit));
                      inputFieldDepth.gameObject.SetActive(false);
                      inputFieldTimeLimit.gameObject.SetActive(true);
                      inputFieldIterations.gameObject.SetActive(true);
-                     break;
+                    }
+                    break;
                  case (int)PlayerType.Random:
                      playerRef = new AIPlayer(m_board, new RandomPlay());
                      inputFieldDepth.gameObject.SetActive(false);
                      inputFieldTimeLimit.gameObject.SetActive(false);
                      inputFieldIterations.gameObject.SetActive(false);
                      break;
-             }
+                 case (int)PlayerType.MCTSRootParallel:
+                    { 
+                     var timeLimit = int.Parse(inputFieldTimeLimit.text);
+                     var iterations = int.Parse(inputFieldIterations.text);
+                     if (iterations < 1) iterations = 1;
+                     playerRef = new AIPlayer(m_board, new MCTSRootParallel(iterations, timeLimit));
+                     inputFieldDepth.gameObject.SetActive(false);
+                     inputFieldTimeLimit.gameObject.SetActive(true);
+                     inputFieldIterations.gameObject.SetActive(true);
+                    }
+                    break;
+                case (int)PlayerType.MCTSTreeParallel:
+                    { 
+                     var timeLimit = int.Parse(inputFieldTimeLimit.text);
+                     var iterations = int.Parse(inputFieldIterations.text);
+                     if (iterations < 1) iterations = 1;
+                     playerRef = new AIPlayer(m_board, new MCTSTreeParallel(iterations, timeLimit));
+                     inputFieldDepth.gameObject.SetActive(false);
+                     inputFieldTimeLimit.gameObject.SetActive(true);
+                     inputFieldIterations.gameObject.SetActive(true);
+                    }
+                    break;
+            }
         }
         
         public void ToggleLegalMoves()

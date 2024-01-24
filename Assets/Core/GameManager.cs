@@ -86,7 +86,7 @@ namespace Othello.Core
                 case State.Idle:
                     break;
                 default:
-                    throw new ArgumentOutOfRangeException();
+                    throw new NotImplementedException();
             }
         }
 

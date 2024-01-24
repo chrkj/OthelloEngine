@@ -8,23 +8,23 @@ namespace Othello.AI
     public class Node
     {
         public Node Parent;
-        public double score;
+        public double Score;
         public double NumVisits;
         public readonly Board Board;
         public readonly List<Node> Children = new List<Node>();
-        public int numWins = 0;
+        public volatile int NumWins = 0;
         
         public Node(Board board)
         {
-            this.Board = board;
+            Board = board;
         }
 
         public Node Copy() 
         {
             var copyNode = new Node(Board.Copy())
             {
-                NumVisits = this.NumVisits, 
-                score = this.score
+                NumVisits = NumVisits, 
+                Score = Score
             };
             return copyNode;
         }
@@ -79,8 +79,9 @@ namespace Othello.AI
         
         public double CalculateUct()
         {
-            if (NumVisits == 0) return int.MaxValue;
-            return (score / NumVisits) + Math.Sqrt(2.0) * Math.Sqrt(Math.Log(Parent.NumVisits) / NumVisits);
+            if (NumVisits == 0) 
+                return int.MaxValue;
+            return (Score / NumVisits) + Math.Sqrt(2.0) * Math.Sqrt(Math.Log(Parent.NumVisits) / NumVisits);
         }
     }
 }

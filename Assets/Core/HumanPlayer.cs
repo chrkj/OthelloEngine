@@ -38,7 +38,8 @@ namespace Othello.Core
 
         private void HandlePieceSelection(Vector3 mousePosition)
         {
-            if (!Input.GetButtonDown("Fire1")) return;
+            if (!Input.GetButtonDown("Fire1")) 
+                return;
             
             var selectedFile = (int) Math.Floor(mousePosition.x) + 4;
             var selectedRank = (int) Math.Floor(mousePosition.y) + 4;
@@ -54,7 +55,7 @@ namespace Othello.Core
                 return;
             
             var chosenMove = new Move(selectedIndex);
-            Console.Log(m_Board.GetCurrentPlayerAsString() + " plays " + Board.GetMoveAsString(chosenMove));
+            Console.Log(m_Board.GetCurrentPlayerAsString() + " plays " + chosenMove.ToString());
             Console.Log("----------------------------------------------------");
             ChooseMove(chosenMove);
         }

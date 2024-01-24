@@ -10536,6 +10536,10 @@ MonoBehaviour:
       m_Image: {fileID: 0}
     - m_Text: Random AI
       m_Image: {fileID: 0}
+    - m_Text: MCTS Root Parallel
+      m_Image: {fileID: 0}
+    - m_Text: MCTS Tree Parallel
+      m_Image: {fileID: 0}
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls:
@@ -10896,7 +10900,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1196769651}
   m_HandleRect: {fileID: 1196769650}
   m_Direction: 2
-  m_Value: 0
+  m_Value: 1
   m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
@@ -11190,6 +11194,10 @@ MonoBehaviour:
     - m_Text: MCTS AI
       m_Image: {fileID: 0}
     - m_Text: Random AI
+      m_Image: {fileID: 0}
+    - m_Text: MCTS Root Parallel
+      m_Image: {fileID: 0}
+    - m_Text: MCTS Tree Parallel
       m_Image: {fileID: 0}
   m_OnValueChanged:
     m_PersistentCalls:

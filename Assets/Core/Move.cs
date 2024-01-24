@@ -1,4 +1,5 @@
 using System;
+using Othello.UI;
 
 namespace Othello.Core
 {
@@ -14,19 +15,16 @@ namespace Othello.Core
 
         public override bool Equals(object obj)
         {
-            if (ReferenceEquals(null, obj)) return false;
-            if (ReferenceEquals(this, obj)) return true;
+            if (obj is null) 
+                return false;
+            if (ReferenceEquals(this, obj)) 
+                return true;
             return obj.GetType() == GetType() && Equals((Move) obj);
         }
 
         public bool Equals(Move other)
         {
             return m_index == other.m_index;
-        }
-
-        public override int GetHashCode()
-        {
-            return m_index;
         }
 
         public static bool operator ==(Move left, Move right)
@@ -37,6 +35,18 @@ namespace Othello.Core
         public static bool operator !=(Move left, Move right)
         {
             return !Equals(left, right);
+        }
+
+        public override int GetHashCode()
+        {
+            return m_index.GetHashCode();
+        }
+
+        public override string ToString()
+        {
+            var rank = ((m_index >> 3) + 1).ToString();
+            var file = BoardUI.FileChars[m_index & 7].ToUpper();
+            return file + rank;
         }
     }
 }

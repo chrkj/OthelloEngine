@@ -19,7 +19,7 @@ namespace Othello.Core
         public Board(int playerToStart)
         {
             m_lastMove = null;
-            m_isWhiteToMove = (playerToStart == Piece.White);
+            m_isWhiteToMove = playerToStart == Piece.White;
         }
 
         public Board Copy()
@@ -50,10 +50,13 @@ namespace Othello.Core
         public bool IsTerminalBoardState()
         {
             var numLegalMovesCurrentPlayer = GenerateLegalMoves().Count;
-            if (numLegalMovesCurrentPlayer != 0) return false;
+            if (numLegalMovesCurrentPlayer != 0) 
+                return false;
+
             ChangePlayer();
             var numLegalMovesCurrentOpponent = GenerateLegalMoves().Count;
             ChangePlayer();
+
             return numLegalMovesCurrentOpponent == 0;
         }
 
@@ -83,7 +86,7 @@ namespace Othello.Core
             var legalMoves = new List<Move>();
             var emptySquares = GetEmptySquares();
             foreach (var square in emptySquares)
-                GenerateLegalMovesForSquare(square, legalMoves);
+                AddIfSquareIsLegalMove(square, legalMoves);
             return legalMoves;
         }
         
@@ -136,7 +139,8 @@ namespace Othello.Core
         {
             var count = 0;
             for (var i = 0; i < 64; i++)
-                if (!IsEmpty(i) && GetPieceColor(i) == player) count++;
+                if (!IsEmpty(i) && GetPieceColor(i) == player) 
+                    count++;
             return count;
         }
         
@@ -146,20 +150,13 @@ namespace Othello.Core
             return GetWinner();
         }
 
-        public static string GetMoveAsString(Move move)
-        {
-            var rank = ((move.Index >> 3) + 1).ToString();
-            var file = BoardUI.FileChars[move.Index & 7].ToUpper();
-            return file + rank;
-        }
-
         private void PlacePiece(int index, int player)
         {
-            m_pieces |= (1UL << index);
+            m_pieces |= 1UL << index;
             switch (player)
             {
                 case Piece.Black:
-                    m_colors |= (1UL << index);
+                    m_colors |= 1UL << index;
                     break;
                 case Piece.White:
                     m_colors &= ~(1UL << index);
@@ -209,22 +206,25 @@ namespace Othello.Core
             return blackPieceCount > whitePieceCount ? Piece.Black : Piece.White;
         }
 
-        private void GenerateLegalMovesForSquare(int square, ICollection<Move> legalMoves)
+        private void AddIfSquareIsLegalMove(int square, ICollection<Move> legalMoves)
         {
             for (var directionOffsetIndex = 0; directionOffsetIndex < 8; directionOffsetIndex++)
             {
                 var captureCount = 0;
                 var currentSquare = square + MoveData.DirectionOffsets[directionOffsetIndex];
-                if (Board.IsOutOfBounds(currentSquare)) continue;
+                if (IsOutOfBounds(currentSquare)) 
+                    continue;
 
                 for (var timesMoved = 1; timesMoved < MoveData.SquaresToEdge[square][directionOffsetIndex]; timesMoved++)
                 {
-                    if (!IsOpponentPiece(currentSquare)) break;
+                    if (!IsOpponentPiece(currentSquare)) 
+                        break;
                     captureCount++;
                     currentSquare += MoveData.DirectionOffsets[directionOffsetIndex];
                 }
 
-                if (!IsFriendlyPiece(currentSquare) || captureCount <= 0) continue;
+                if (!IsFriendlyPiece(currentSquare) || captureCount <= 0) 
+                    continue;
                 legalMoves.Add(new Move(square));
                 break;
             }
@@ -237,7 +237,7 @@ namespace Othello.Core
             {
                 var currentCaptures = new HashSet<Move>();
                 var currentSquare = move.Index + MoveData.DirectionOffsets[directionOffsetIndex];
-                if (Board.IsOutOfBounds(currentSquare)) continue;
+                if (IsOutOfBounds(currentSquare)) continue;
 
                 for (var timesMoved = 1; timesMoved < MoveData.SquaresToEdge[move.Index][directionOffsetIndex]; timesMoved++)
                 {
@@ -246,7 +246,9 @@ namespace Othello.Core
                     currentSquare += MoveData.DirectionOffsets[directionOffsetIndex];
                 }
 
-                if (!IsFriendlyPiece(currentSquare) || currentCaptures.Count <= 0) continue;
+                if (!IsFriendlyPiece(currentSquare) || currentCaptures.Count <= 0) 
+                    continue;
+                    
                 allCaptures.UnionWith(currentCaptures);
             }
             return allCaptures;

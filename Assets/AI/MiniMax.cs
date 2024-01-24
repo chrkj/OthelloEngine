@@ -30,14 +30,14 @@ namespace Othello.AI
         {
             m_positions = 0;
             Move bestMove = null;
-            var currentUtil = 0;
             var currentPlayer = board.GetCurrentPlayer();
             var start = DateTimeOffset.Now.ToUnixTimeMilliseconds();
 
+            int currentUtil;
             if (currentPlayer == m_MaxPlayer)
             {
                 var highestUtil = int.MinValue;
-                foreach (var legalMove in board.GenerateLegalMoves()) 
+                foreach (var legalMove in board.GenerateLegalMoves())
                 {
                     var possibleNextState = MakeMove(board, legalMove);
                     currentUtil = MinValue(possibleNextState, m_depthLimit - 1, int.MinValue, int.MaxValue);
@@ -49,7 +49,7 @@ namespace Othello.AI
             else
             {
                 var minUtil = int.MaxValue;
-                foreach (var legalMove in board.GenerateLegalMoves()) 
+                foreach (var legalMove in board.GenerateLegalMoves())
                 {
                     var possibleNextState = MakeMove(board, legalMove);
                     currentUtil = MaxValue(possibleNextState, m_depthLimit - 1, int.MinValue, int.MaxValue);
@@ -59,7 +59,7 @@ namespace Othello.AI
                 }
             }
             var end = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-            Console.Log(board.GetCurrentPlayerAsString() + " plays " + Board.GetMoveAsString(bestMove));
+            Console.Log(board.GetCurrentPlayerAsString() + " plays " + bestMove.ToString());
             Console.Log("Search time: " + (end - start) + " ms");
             Console.Log("Positions examined: " + m_positions);
             Console.Log("----------------------------------------------------");
