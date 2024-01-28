@@ -15,14 +15,14 @@ namespace Othello.Core
         private Player m_whitePlayer;
         
         private State m_gameState;
-        private Settings Settings;
+        private Settings m_settings;
         
         private bool m_lastPlayerHadNoMove;
         private enum State { Playing, GameOver, Idle }
 
         private void Awake()
         {
-            Settings = GetComponent<Settings>();
+            m_settings = GetComponent<Settings>();
             m_boardUI = FindObjectOfType<BoardUI>();
             MoveData.PrecomputeData();
         }
@@ -31,23 +31,23 @@ namespace Othello.Core
         {
             m_board = new Board();
             m_board.LoadStartPosition();
-            m_boardUI.UpdateUI(m_board);
-            Settings.Setup(m_board, m_boardUI);
+            m_boardUI.UpdateBoard(m_board);
+            m_settings.Setup(m_board, m_boardUI);
             m_gameState = State.Idle;
         }
 
         public void NewGame()
         {
-            m_board.ResetBoard(Settings.PlayerToStartNextGame);
+            m_board.ResetBoard(m_settings.PlayerToStartNextGame);
             m_board.LoadStartPosition();
-            m_boardUI.UpdateUI(m_board);
+            m_boardUI.UpdateBoard(m_board);
             m_boardUI.UnhighlightAll();
             Console.Clear();
             TryUnsubscribeEvents();
-            m_whitePlayer = (Player)Settings.WhitePlayerNextGame.Clone();
-            m_blackPlayer = (Player)Settings.BlackPlayerNextGame.Clone();
+            m_whitePlayer = (Player)m_settings.WhitePlayerNextGame.Clone();
+            m_blackPlayer = (Player)m_settings.BlackPlayerNextGame.Clone();
             SubscribeEvents();
-            m_playerToMove = (Settings.PlayerToStartNextGame == Piece.White) ? m_whitePlayer : m_blackPlayer;
+            m_playerToMove = (m_settings.PlayerToStartNextGame == Piece.White) ? m_whitePlayer : m_blackPlayer;
             m_gameState = State.Playing;
             m_playerToMove.NotifyTurnToMove();
         }
@@ -68,7 +68,8 @@ namespace Othello.Core
                 m_blackPlayer.OnNoLegalMove -= NoLegalMove;
             }
 
-            if (m_whitePlayer == null) return;
+            if (m_whitePlayer == null) 
+                return;
             m_whitePlayer.OnMoveChosen -= MakeMove;
             m_whitePlayer.OnNoLegalMove -= NoLegalMove;
         }
@@ -79,6 +80,7 @@ namespace Othello.Core
             {
                 case State.Playing:
                     m_playerToMove.Update();
+                    m_boardUI.UpdateUI(m_board, m_settings);
                     break;
                 case State.GameOver:
                     // TODO: Add gameover animation
@@ -94,7 +96,7 @@ namespace Othello.Core
         {
             m_board.MakeMove(move);
             ChangePlayer();
-            m_boardUI.UpdateUI(m_board);
+            m_boardUI.UpdateBoard(m_board);
             m_lastPlayerHadNoMove = false;
         }
         

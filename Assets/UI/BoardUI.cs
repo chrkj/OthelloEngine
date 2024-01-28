@@ -1,7 +1,7 @@
 using System.Collections.Generic;
+using Othello.AI;
 using Othello.Core;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace Othello.UI
 {
@@ -20,12 +20,17 @@ namespace Othello.UI
         public Material darkSquareMaterial;
         public Material lightSquareMaterial;
         public static readonly string[] FileChars = { "A", "B", "C", "D", "E", "F", "G", "H"};
+        public static bool s_blackAiPlayerCalculating = false;
+        public static bool s_whiteAiPlayerCalculating = false;
         
+
         private bool m_highLightLegalMoves;
         private MeshRenderer[] m_squareRenderers;
         private SpriteRenderer[] m_pieceRenderers;
         private List<Move> m_currentLegalMoves = new List<Move>();
         private const float m_BoardOffset = -3.5f;
+        [SerializeField] private simplerotate blackLoadingWiget;
+        [SerializeField] private simplerotate whiteLoadingWiget;
 
         private void Awake()
         {
@@ -39,6 +44,42 @@ namespace Othello.UI
             for (var rank = 0; rank < 8; rank++)
                 for (var file = 0; file < 8; file++)
                     DrawSquare(file, rank);
+        }
+
+        public void UpdateUI(Board board, Settings settings)
+        {
+            UpdateTextUI(board);
+            UpdateGameDataUI(settings);
+            UpdateLoadingWidget();
+        }
+
+        private static void UpdateGameDataUI(Settings settings)
+        {
+            settings.whiteCurrentDepth.text = "Current depth: " + MiniMax.s_CurrentDepthWhite;
+            settings.blackCurrentDepth.text = "Current depth: " + MiniMax.s_CurrentDepthBlack;
+            settings.whitePositionsEvaluated.text = "Positions Evaluated: " + MiniMax.s_WhitePositionsEvaluated;
+            settings.blackPositionsEvaluated.text = "Positions Evaluated: " + MiniMax.s_BlackPositionsEvaluated;
+            settings.whiteCurrentSimulation.text = "Current Simulation: " + MCTS.s_WhiteIterationsRun;
+            settings.blackCurrentSimulation.text = "Current Simulation: " + MCTS.s_BlackIterationsRun;
+            settings.whiteCurrentWinPrediction.text = "Current Win Prediction: " + MCTS.s_WhiteWinPrediction.ToString("0.##") + " %";
+            settings.blackCurrentWinPrediction.text = "Current Win Prediction: " + MCTS.s_BlackWinPrediction.ToString("0.##") + " %";
+            settings.whiteTimeElapsed.text = "Time Elapsed: " + AIPlayer.s_WhiteTimeElapsed.Elapsed.TotalMilliseconds.ToString("F0") + "ms";
+            settings.blackTimeElapsed.text = "Time Elapsed: " + AIPlayer.s_BlackTimeElapsed.Elapsed.TotalMilliseconds.ToString("F0") + "ms";
+            settings.whiteBranchesPruned.text = "Branches Pruned: " + MiniMax.s_WhiteBranchesPruned;
+            settings.blackBranchesPruned.text = "Branches Pruned: " + MiniMax.s_BlackBranchesPruned;
+        }
+
+        private void UpdateLoadingWidget()
+        {
+            if (s_blackAiPlayerCalculating)
+                blackLoadingWiget.gameObject.SetActive(true);
+            else
+                blackLoadingWiget.gameObject.SetActive(false);
+
+            if (s_whiteAiPlayerCalculating)
+                whiteLoadingWiget.gameObject.SetActive(true);
+            else
+                whiteLoadingWiget.gameObject.SetActive(false);
         }
 
         private void DrawSquare(int file, int rank)
@@ -61,7 +102,7 @@ namespace Othello.UI
             m_pieceRenderers[Board.GetIndex(file, rank)] = pieceRenderer;
         }
 
-        public void UpdateUI(Board board)
+        public void UpdateBoard(Board board)
         {
             for (var rank = 0; rank < 8; rank++)
                 for (var file = 0; file < 8; file++)
@@ -72,7 +113,6 @@ namespace Othello.UI
                     m_pieceRenderers[boardIndex].sprite = sprite;
                     UnhighlightSquare(Board.GetIndex(file, rank));
                 }
-            UpdateTextUI(board);
             HighlightLegalMoves(m_currentLegalMoves);
             if (board.GetLastMove() != null)
                 HighlightSquare(board.GetLastMove().Index);
@@ -81,7 +121,8 @@ namespace Othello.UI
         public void HighlightLegalMoves(List<Move> legalMoves)
         {
             m_currentLegalMoves = legalMoves;
-            if (!m_highLightLegalMoves) return;
+            if (!m_highLightLegalMoves) 
+                return;
             foreach (var legalMove in legalMoves)
                 m_squareRenderers[legalMove.Index].material.color = highlightColor;
         }
@@ -97,9 +138,7 @@ namespace Othello.UI
         public void UnhighlightAll()
         {
             for (int i = 0; i < m_squareRenderers.Length; i++)
-            {
                 m_squareRenderers[i].material.color = IsWhiteSquare(i) ? darkColor : lightColor;
-            }
         }
 
         private void UpdateTextUI(Board board)

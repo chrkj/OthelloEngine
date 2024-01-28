@@ -1,6 +1,8 @@
+using System.Diagnostics;
 using System.Threading;
 
 using Othello.Core;
+using Othello.UI;
 using UnityEngine;
 
 namespace Othello.AI
@@ -10,7 +12,10 @@ namespace Othello.AI
         private bool m_moveFound;
         private Move m_chosenMove;
         private readonly ISearchEngine m_searchEngine;
-        
+
+        public static Stopwatch s_BlackTimeElapsed = new Stopwatch();
+        public static Stopwatch s_WhiteTimeElapsed = new Stopwatch();
+
         public AIPlayer(Board board, ISearchEngine searchEngine) : base(board)
         {
             m_searchEngine = searchEngine;
@@ -18,10 +23,12 @@ namespace Othello.AI
         
         public override void Update()
         {
-            if (!m_moveFound) return;
+            if (!m_moveFound) 
+                return;
             if (!Settings.AutoMove)
             {
-                if (!Input.GetKeyDown(KeyCode.Space)) return;
+                if (!Input.GetKeyDown(KeyCode.Space))
+                    return;
                 m_moveFound = false;
                 ChooseMove(m_chosenMove);
             }
@@ -47,7 +54,31 @@ namespace Othello.AI
 
         private void StartSearch()
         {
+            if (m_Board.GetCurrentPlayer() == Piece.Black)
+            {
+                BoardUI.s_blackAiPlayerCalculating = true;
+                s_BlackTimeElapsed.Reset();
+                s_BlackTimeElapsed.Start();
+            }
+            else
+            {
+                BoardUI.s_whiteAiPlayerCalculating = true;
+                s_WhiteTimeElapsed.Reset();
+                s_WhiteTimeElapsed.Start();
+            }
+
             m_chosenMove = m_searchEngine.StartSearch(m_Board);
+
+            if (m_Board.GetCurrentPlayer() == Piece.Black)
+            { 
+                BoardUI.s_blackAiPlayerCalculating = false;
+                s_BlackTimeElapsed.Stop();
+            }
+            else
+            {
+                BoardUI.s_whiteAiPlayerCalculating = false;
+                s_WhiteTimeElapsed.Stop();
+            }
             m_moveFound = true;
         }
     }
