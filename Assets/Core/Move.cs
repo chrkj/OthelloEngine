@@ -3,10 +3,23 @@ using Othello.UI;
 
 namespace Othello.Core
 {
-    public class Move : IEquatable<Move>
+    public class Move : IEquatable<Move>, IComparable<Move>
     {
-        private readonly int m_index;
         public int Index => m_index;
+
+        private readonly int m_index;
+        
+        public static readonly int[] m_cellWeight = new int[64]
+        {
+            30,  -12, 0,  -1, -1, 0,  -12, 30,  
+            -12, -15, -3, -3, -3, -3, -15, -12,
+            0,   -3,  0,  -1, -1, 0,  -3,  0,   
+            -1,  -3,  -1, -1, -1, -1, -3,  -1,
+            -1,  -3,  -1, -1, -1, -1, -3,  -1,  
+            0,   -3,  0,  -1, -1, 0,  -3,  0,
+            -12, -15, -3, -3, -3, -3, -15, -12, 
+            30,  -12, 0,  -1, -1, 0,  -12, 30
+        };
 
         public Move(int index)
         {
@@ -47,6 +60,15 @@ namespace Othello.Core
             var rank = ((m_index >> 3) + 1).ToString();
             var file = BoardUI.FileChars[m_index & 7].ToUpper();
             return file + rank;
+        }
+
+        public int CompareTo(Move other)
+        {
+            if (m_cellWeight[Index] < m_cellWeight[other.Index])
+                return 1;
+            if (m_cellWeight[Index] > m_cellWeight[other.Index])
+                return -1;
+            return 0; 
         }
     }
 }

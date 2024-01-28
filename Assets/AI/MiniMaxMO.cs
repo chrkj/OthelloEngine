@@ -4,7 +4,7 @@ using Console = Othello.Core.Console;
 
 namespace Othello.AI
 {
-    public class MiniMax : ISearchEngine
+    public class MiniMaxMO : ISearchEngine
     {
         private static int m_positions;
         private readonly int m_depthLimit;
@@ -13,7 +13,7 @@ namespace Othello.AI
         private const int m_MaxPlayer = Piece.Black;
         private const int m_MinPlayer = Piece.White;
 
-        public MiniMax(int depth)
+        public MiniMaxMO(int depth)
         {
             m_depthLimit = depth;
         }
@@ -35,6 +35,7 @@ namespace Othello.AI
             {
                 var highestUtil = int.MinValue;
                 var legalMoves = board.GenerateLegalMoves();
+                legalMoves.Sort();
                 foreach (var legalMove in legalMoves)
                 {
                     var possibleNextState = MakeMove(board, legalMove);
@@ -49,6 +50,7 @@ namespace Othello.AI
             {
                 var minUtil = int.MaxValue;
                 var legalMoves = board.GenerateLegalMoves();
+                legalMoves.Sort();
                 foreach (var legalMove in legalMoves)
                 {
                     var possibleNextState = MakeMove(board, legalMove);
@@ -78,6 +80,7 @@ namespace Othello.AI
             if (legalMoves.Count == 0)
                 minUtil = Math.Min(minUtil, MaxValue(board, depth - 1, alpha, beta));
             
+            legalMoves.Sort();
             foreach (var legalMove in legalMoves)
             {
                 var nextState = MakeMove(board, legalMove);
@@ -100,6 +103,7 @@ namespace Othello.AI
             if (legalMoves.Count == 0)
                 maxUtil = Math.Max(maxUtil, MinValue(board, depth - 1, alpha, beta));
             
+            legalMoves.Sort();
             foreach (var legalMove in legalMoves)
             {
                 var nextState = MakeMove(board, legalMove);
@@ -138,7 +142,11 @@ namespace Othello.AI
         
         private static int GetBoardUtility(Board board)
         {
-            return m_ParityWeight * TokenParityValue(board) + m_CornerWeight * TokenCornerValue(board);
+            int value = 0;
+            var positions = board.GetPiecePositionsBlack();
+            foreach (var pos in positions)
+                value += Move.m_cellWeight[pos];
+            return m_ParityWeight * TokenParityValue(board) + m_CornerWeight * TokenCornerValue(board) + value;
         }
         
         private static int TokenParityValue(Board board)

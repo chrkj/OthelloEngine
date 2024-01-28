@@ -12,7 +12,7 @@ namespace Othello.Core
         public Player BlackPlayerNextGame;
         public int PlayerToStartNextGame = Piece.Black;
         public static bool AutoMove;
-        
+
         public Toggle showLegalMoves;
         public Toggle enableAutoMove;
         public TMP_Dropdown whitePlayer;
@@ -27,7 +27,7 @@ namespace Othello.Core
 
         private Board m_board;
         private BoardUI m_boardUI;
-        private enum PlayerType { Human = 0, Minimax = 1, Mcts = 2, Random = 3, MCTSRootParallel = 4, MCTSTreeParallel = 5 }
+        private enum PlayerType { Human = 0, Minimax = 1, Mcts = 2, Random = 3, MCTSRootParallel = 4, MCTSTreeParallel = 5, MinimaxMO = 6 }
 
         public void Setup(Board board, BoardUI boardUI)
         {
@@ -42,87 +42,106 @@ namespace Othello.Core
             PlayerSelection(Piece.Black);
             PlayerSelection(Piece.White);
         }
-        
-         public void PlayerSelection(int player)
-         {
-             ref Player playerRef = ref (player == Piece.Black) ? ref BlackPlayerNextGame : ref WhitePlayerNextGame;
-             var playerType = (player == Piece.Black) ? blackPlayer.value : whitePlayer.value;
-             var inputFieldIterations = (player == Piece.Black) ? blackIterations : whiteIterations;
-             var inputFieldDepth = (player == Piece.Black) ? blackDepth : whiteDepth;
-             var inputFieldTimeLimit = (player == Piece.Black) ? blackTimeLimit : whiteTimeLimit;
-             
-             if (inputFieldDepth.text.Length == 0) inputFieldDepth.text = "1";
-             if (inputFieldTimeLimit.text.Length == 0) inputFieldTimeLimit.text = "1";
-             if (inputFieldIterations.text.Length == 0) inputFieldIterations.text = "1";
 
-             switch (playerType)
-             {
-                 case (int)PlayerType.Human:
-                     playerRef = new HumanPlayer(m_board);
-                     inputFieldDepth.gameObject.SetActive(false);
-                     inputFieldIterations.gameObject.SetActive(false);
-                     inputFieldTimeLimit.gameObject.SetActive(false);
-                     break;
-                 case (int)PlayerType.Minimax:
-                     var depth = int.Parse(inputFieldDepth.text);
-                     if (depth < 1) depth = 1;
-                     playerRef = new AIPlayer(m_board, new MiniMax(depth));
-                     inputFieldDepth.gameObject.SetActive(true);
-                     inputFieldTimeLimit.gameObject.SetActive(false);
-                     inputFieldIterations.gameObject.SetActive(false);
-                     break;
-                 case (int)PlayerType.Mcts:
-                    { 
-                     var timeLimit = int.Parse(inputFieldTimeLimit.text);
-                     var iterations = int.Parse(inputFieldIterations.text);
-                     if (iterations < 1) iterations = 1;
-                     playerRef = new AIPlayer(m_board, new MCTS(iterations, timeLimit));
-                     inputFieldDepth.gameObject.SetActive(false);
-                     inputFieldTimeLimit.gameObject.SetActive(true);
-                     inputFieldIterations.gameObject.SetActive(true);
+        public void PlayerSelection(int player)
+        {
+            ref Player playerRef = ref (player == Piece.Black) ? ref BlackPlayerNextGame : ref WhitePlayerNextGame;
+            var playerType = (player == Piece.Black) ? blackPlayer.value : whitePlayer.value;
+            var inputFieldIterations = (player == Piece.Black) ? blackIterations : whiteIterations;
+            var inputFieldDepth = (player == Piece.Black) ? blackDepth : whiteDepth;
+            var inputFieldTimeLimit = (player == Piece.Black) ? blackTimeLimit : whiteTimeLimit;
+
+            if (inputFieldDepth.text.Length == 0) 
+                inputFieldDepth.text = "1";
+            if (inputFieldTimeLimit.text.Length == 0) 
+                inputFieldTimeLimit.text = "1";
+            if (inputFieldIterations.text.Length == 0) 
+                inputFieldIterations.text = "1";
+
+            switch (playerType)
+            {
+                case (int)PlayerType.Human:
+                    {
+                        playerRef = new HumanPlayer(m_board);
+                        inputFieldDepth.gameObject.SetActive(false);
+                        inputFieldIterations.gameObject.SetActive(false);
+                        inputFieldTimeLimit.gameObject.SetActive(false);
+                        break;
+                    }
+                case (int)PlayerType.Minimax:
+                    {
+                        var depth = int.Parse(inputFieldDepth.text);
+                        if (depth < 1) depth = 1;
+                        playerRef = new AIPlayer(m_board, new MiniMax(depth));
+                        inputFieldDepth.gameObject.SetActive(true);
+                        inputFieldTimeLimit.gameObject.SetActive(false);
+                        inputFieldIterations.gameObject.SetActive(false);
+                        break;
+                    }
+                case (int)PlayerType.Mcts:
+                    {
+                        var timeLimit = int.Parse(inputFieldTimeLimit.text);
+                        var iterations = int.Parse(inputFieldIterations.text);
+                        if (iterations < 1) iterations = 1;
+                        playerRef = new AIPlayer(m_board, new MCTS(iterations, timeLimit));
+                        inputFieldDepth.gameObject.SetActive(false);
+                        inputFieldTimeLimit.gameObject.SetActive(true);
+                        inputFieldIterations.gameObject.SetActive(true);
                     }
                     break;
-                 case (int)PlayerType.Random:
-                     playerRef = new AIPlayer(m_board, new RandomPlay());
-                     inputFieldDepth.gameObject.SetActive(false);
-                     inputFieldTimeLimit.gameObject.SetActive(false);
-                     inputFieldIterations.gameObject.SetActive(false);
-                     break;
-                 case (int)PlayerType.MCTSRootParallel:
-                    { 
-                     var timeLimit = int.Parse(inputFieldTimeLimit.text);
-                     var iterations = int.Parse(inputFieldIterations.text);
-                     if (iterations < 1) iterations = 1;
-                     playerRef = new AIPlayer(m_board, new MCTSRootParallel(iterations, timeLimit));
-                     inputFieldDepth.gameObject.SetActive(false);
-                     inputFieldTimeLimit.gameObject.SetActive(true);
-                     inputFieldIterations.gameObject.SetActive(true);
+                case (int)PlayerType.Random:
+                    {
+                        playerRef = new AIPlayer(m_board, new RandomPlay());
+                        inputFieldDepth.gameObject.SetActive(false);
+                        inputFieldTimeLimit.gameObject.SetActive(false);
+                        inputFieldIterations.gameObject.SetActive(false);
+                        break;
+                    }
+                case (int)PlayerType.MCTSRootParallel:
+                    {
+                        var timeLimit = int.Parse(inputFieldTimeLimit.text);
+                        var iterations = int.Parse(inputFieldIterations.text);
+                        if (iterations < 1) iterations = 1;
+                        playerRef = new AIPlayer(m_board, new MCTSRootParallel(iterations, timeLimit));
+                        inputFieldDepth.gameObject.SetActive(false);
+                        inputFieldTimeLimit.gameObject.SetActive(true);
+                        inputFieldIterations.gameObject.SetActive(true);
                     }
                     break;
                 case (int)PlayerType.MCTSTreeParallel:
-                    { 
-                     var timeLimit = int.Parse(inputFieldTimeLimit.text);
-                     var iterations = int.Parse(inputFieldIterations.text);
-                     if (iterations < 1) iterations = 1;
-                     playerRef = new AIPlayer(m_board, new MCTSTreeParallel(iterations, timeLimit));
-                     inputFieldDepth.gameObject.SetActive(false);
-                     inputFieldTimeLimit.gameObject.SetActive(true);
-                     inputFieldIterations.gameObject.SetActive(true);
+                    {
+                        var timeLimit = int.Parse(inputFieldTimeLimit.text);
+                        var iterations = int.Parse(inputFieldIterations.text);
+                        if (iterations < 1) iterations = 1;
+                        playerRef = new AIPlayer(m_board, new MCTSTreeParallel(iterations, timeLimit));
+                        inputFieldDepth.gameObject.SetActive(false);
+                        inputFieldTimeLimit.gameObject.SetActive(true);
+                        inputFieldIterations.gameObject.SetActive(true);
                     }
                     break;
+                case (int)PlayerType.MinimaxMO:
+                    {
+                        var depth = int.Parse(inputFieldDepth.text);
+                        if (depth < 1) depth = 1;
+                        playerRef = new AIPlayer(m_board, new MiniMax(depth));
+                        inputFieldDepth.gameObject.SetActive(true);
+                        inputFieldTimeLimit.gameObject.SetActive(false);
+                        inputFieldIterations.gameObject.SetActive(false);
+                        break;
+                    }
             }
         }
-        
+
         public void ToggleLegalMoves()
         {
             m_boardUI.ToggleLegalMoves(showLegalMoves.isOn);
         }
-        
+
         public void ToggleAutoMove()
         {
             AutoMove = enableAutoMove.isOn;
         }
-        
+
         public void SetStartingPlayer()
         {
             PlayerToStartNextGame = (playerToStart.value == 0) ? Piece.Black : Piece.White;
