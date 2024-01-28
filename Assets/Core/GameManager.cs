@@ -22,6 +22,7 @@ namespace Othello.Core
 
         private void Awake()
         {
+            Application.runInBackground = true;
             m_settings = GetComponent<Settings>();
             m_boardUI = FindObjectOfType<BoardUI>();
             MoveData.PrecomputeData();
