@@ -20,10 +20,10 @@ namespace Othello.AI
         {
             m_searchEngine = searchEngine;
         }
-        
+
         public override void Update()
         {
-            if (!m_moveFound) 
+            if (!m_moveFound)
                 return;
             if (!Settings.AutoMove)
             {
@@ -54,6 +54,28 @@ namespace Othello.AI
 
         private void StartSearch()
         {
+            StartStopwatch();
+            m_chosenMove = m_searchEngine.StartSearch(m_Board);
+            StopStopwatch();
+            m_moveFound = true;
+        }
+
+        private void StopStopwatch()
+        {
+            if (m_Board.GetCurrentPlayer() == Piece.Black)
+            {
+                BoardUI.s_blackAiPlayerCalculating = false;
+                s_BlackTimeElapsed.Stop();
+            }
+            else
+            {
+                BoardUI.s_whiteAiPlayerCalculating = false;
+                s_WhiteTimeElapsed.Stop();
+            }
+        }
+
+        private void StartStopwatch()
+        {
             if (m_Board.GetCurrentPlayer() == Piece.Black)
             {
                 BoardUI.s_blackAiPlayerCalculating = true;
@@ -66,20 +88,6 @@ namespace Othello.AI
                 s_WhiteTimeElapsed.Reset();
                 s_WhiteTimeElapsed.Start();
             }
-
-            m_chosenMove = m_searchEngine.StartSearch(m_Board);
-
-            if (m_Board.GetCurrentPlayer() == Piece.Black)
-            { 
-                BoardUI.s_blackAiPlayerCalculating = false;
-                s_BlackTimeElapsed.Stop();
-            }
-            else
-            {
-                BoardUI.s_whiteAiPlayerCalculating = false;
-                s_WhiteTimeElapsed.Stop();
-            }
-            m_moveFound = true;
         }
     }
 }

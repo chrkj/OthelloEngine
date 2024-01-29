@@ -32,7 +32,7 @@ namespace Othello.AI
             m_depthLimit = depth;
             m_maxTime = timeLimit;
         }
-        
+
         public Move StartSearch(Board board)
         {
             m_CurrentPlayer = board.GetCurrentPlayer() == Piece.Black ? Piece.Black : Piece.White;
@@ -80,7 +80,7 @@ namespace Othello.AI
                 {
                     var possibleNextState = MakeMove(board, legalMove);
                     bestEvalThisIteration = MinValue(possibleNextState, depth - 1, int.MinValue, int.MaxValue);
-                    if (bestEvalThisIteration <= highestUtil) 
+                    if (bestEvalThisIteration <= highestUtil)
                         continue;
                     highestUtil = bestEvalThisIteration;
                     bestMoveThisIteration = legalMove;
@@ -96,7 +96,7 @@ namespace Othello.AI
                 {
                     var possibleNextState = MakeMove(board, legalMove);
                     bestEvalThisIteration = MaxValue(possibleNextState, depth - 1, int.MinValue, int.MaxValue);
-                    if (bestEvalThisIteration >= minUtil) 
+                    if (bestEvalThisIteration >= minUtil)
                         continue;
                     minUtil = bestEvalThisIteration;
                     bestMoveThisIteration = legalMove;
@@ -109,13 +109,13 @@ namespace Othello.AI
         {
             if (IsTerminal(board, depth))
                 return GetEval(board);
-            
+
             var minUtil = int.MaxValue - 1;
 
             var legalMoves = board.GenerateLegalMoves();
             if (legalMoves.Count == 0)
                 minUtil = Math.Min(minUtil, MaxValue(board, depth - 1, alpha, beta));
-            
+
             legalMoves.Sort();
             foreach (var legalMove in legalMoves)
             {
@@ -142,7 +142,7 @@ namespace Othello.AI
             var legalMoves = board.GenerateLegalMoves();
             if (legalMoves.Count == 0)
                 maxUtil = Math.Max(maxUtil, MinValue(board, depth - 1, alpha, beta));
-            
+
             legalMoves.Sort();
             foreach (var legalMove in legalMoves)
             {
@@ -164,12 +164,12 @@ namespace Othello.AI
                 s_BlackPositionsEvaluated++;
             else
                 s_WhitePositionsEvaluated++;
-            
+
             if (!board.IsTerminalBoardState())
                 return GetBoardUtility(board);
-            if (board.GetPieceCount(m_MaxPlayer) > board.GetPieceCount(m_MinPlayer)) 
+            if (board.GetPieceCount(m_MaxPlayer) > board.GetPieceCount(m_MinPlayer))
                 return int.MaxValue - 1;
-            if (board.GetPieceCount(m_MaxPlayer) < board.GetPieceCount(m_MinPlayer)) 
+            if (board.GetPieceCount(m_MaxPlayer) < board.GetPieceCount(m_MinPlayer))
                 return int.MinValue + 1;
             return 0;
         }
@@ -178,7 +178,7 @@ namespace Othello.AI
         {
             return board.IsTerminalBoardState() || depth == 0;
         }
-        
+
         private static Board MakeMove(Board board, Move legalMove)
         {
             var nextBoardState = board.Copy();
@@ -186,7 +186,7 @@ namespace Othello.AI
             nextBoardState.ChangePlayer();
             return nextBoardState;
         }
-        
+
         private static int GetBoardUtility(Board board)
         {
             int value = 0;
@@ -195,12 +195,12 @@ namespace Othello.AI
                 value += Move.m_cellWeight[pos];
             return m_ParityWeight * TokenParityValue(board) + m_CornerWeight * TokenCornerValue(board) + value;
         }
-        
+
         private static int TokenParityValue(Board board)
         {
             return board.GetPieceCount(m_MaxPlayer);
         }
-        
+
         private static int TokenCornerValue(Board board)
         {
             var maxPlayerCornerValue = 0;
@@ -225,7 +225,7 @@ namespace Othello.AI
                 maxPlayerCornerValue++;
             else if (board.GetPieceColor(7, 7) == m_MinPlayer)
                 minPlayerCornerValue++;
-            
+
             return maxPlayerCornerValue - minPlayerCornerValue;
         }
 
@@ -240,12 +240,12 @@ namespace Othello.AI
 
         private void MoveOrdering(Move bestMove, ref List<Move> legalMoves)
         {
-            if (!m_MoveOrderingEnabled) 
+            if (!m_MoveOrderingEnabled)
                 return;
 
             legalMoves.Sort();
             if (bestMove == null)
-                return; 
+                return;
             Move targetMove = legalMoves.Find(move => move.Equals(bestMove));
             if (targetMove != null)
             {

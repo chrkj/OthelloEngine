@@ -1,11 +1,14 @@
 using System;
+using System.Threading.Tasks;
 using Othello.Core;
+using static Othello.Core.Settings;
 using Console = Othello.Core.Console;
 
 namespace Othello.AI
 {
     public class MCTS : ISearchEngine
     {
+        private static readonly object m_lock = new object();
         private Node m_cachedNode;
         private const int m_IsRunning = -1;
         private const int m_blockSize = 50;
@@ -13,13 +16,15 @@ namespace Othello.AI
         private readonly int m_maxIterations;
         private int m_nodesVisited;
         private int m_CurrentPlayer;
-        
+        private readonly MctsType m_MctsType;
+        private int m_numTrees;
+
         public static int s_WhiteIterationsRun;
         public static int s_BlackIterationsRun;
         public static double s_WhiteWinPrediction;
         public static double s_BlackWinPrediction;
 
-        public MCTS(int maxIterations, int maxTime)
+        public MCTS(int maxIterations, int maxTime, MctsType mctsType)
         {
             m_maxTime = maxTime;
             m_maxIterations = maxIterations;
@@ -27,6 +32,7 @@ namespace Othello.AI
             s_BlackIterationsRun = 0;
             s_WhiteWinPrediction = 0;
             s_BlackWinPrediction = 0;
+            m_MctsType = mctsType;
         }
 
         public Move StartSearch(Board board)
@@ -37,10 +43,87 @@ namespace Othello.AI
                 s_BlackIterationsRun = 0;
             else
                 s_WhiteIterationsRun = 0;
-            return CalculateMove(board);
+
+            switch (m_MctsType)
+            {
+                case MctsType.Sequential:
+                    return CalculateMoveSequential(board);
+                case MctsType.RootParallel:
+                    return CalculateMoveRoot(board);
+                case MctsType.TreeParallel:
+                    return CalculateMoveTree(board);
+                default:
+                    throw new NotImplementedException();
+            }
         }
 
-        private Move CalculateMove(Board board)
+        private Move CalculateMoveTree(Board board)
+        {
+            var rootNode = SetRootNode(board);
+            if (rootNode.Children.Count == 0)
+                Expand(rootNode);
+            m_numTrees = rootNode.Children.Count;
+
+            var startTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+            var timeLimit = startTime + m_maxTime;
+
+            Task[] tasks = new Task[rootNode.Children.Count];
+            for (int i = 0; i < rootNode.Children.Count; i++)
+            {
+                var treeNode = rootNode.Children[i];
+                Expand(treeNode);
+                tasks[i] = Task.Factory.StartNew(() => { RunTree(treeNode, timeLimit); });
+            }
+            Task.WaitAll(tasks);
+
+            var bestNode = rootNode.SelectBestNode();
+            m_cachedNode = bestNode;
+            m_cachedNode.Parent = null;
+            var endTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+            SetWinPrediction(bestNode);
+            PrintSearchData(rootNode, startTime, bestNode, endTime);
+            return bestNode.Board.GetLastMove();
+        }
+
+        private Move CalculateMoveRoot(Board board)
+        {
+            var rootNode = SetRootNode(board);
+            var startTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+            var timeLimit = startTime + m_maxTime;
+
+            var thread = Parallel.For(0, m_maxIterations + 1,
+            (i, loopState) =>
+            {
+                Node promisingNode;
+                lock (m_lock)
+                {
+                    promisingNode = Select(rootNode);
+                    Expand(promisingNode);
+                }
+
+                var nodeToExplore = promisingNode;
+                if (promisingNode.Children.Count > 0)
+                    nodeToExplore = promisingNode.GetRandomChildNode();
+                var winningPlayer = Simulate(nodeToExplore);
+
+                BackPropagation(nodeToExplore, winningPlayer);
+                IncrementIterarion();
+
+                if (DateTimeOffset.Now.ToUnixTimeMilliseconds() > timeLimit)
+                    loopState.Break();
+            }
+            );
+
+            var bestNode = rootNode.SelectBestNode();
+            m_cachedNode = bestNode;
+            m_cachedNode.Parent = null;
+            SetWinPrediction(bestNode);
+            var endTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+            PrintSearchData(rootNode, startTime, bestNode, endTime);
+            return bestNode.Board.GetLastMove();
+        }
+
+        private Move CalculateMoveSequential(Board board)
         {
             var rootNode = SetRootNode(board);
             var startTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
@@ -49,44 +132,54 @@ namespace Othello.AI
             {
                 for (var i = 0; i < m_blockSize; i++)
                 {
-                    // Selection
-                    var promisingNode = Selection(rootNode);
+                    var promisingNode = Select(rootNode);
+                    Expand(promisingNode);
 
-                    // Expansion
-                    Expansion(promisingNode);
-
-                    // Simulation
                     var nodeToExplore = promisingNode;
                     if (promisingNode.Children.Count > 0)
                         nodeToExplore = promisingNode.GetRandomChildNode();
-                    var winningPlayer = Simulation(nodeToExplore);
+                    var winningPlayer = Simulate(nodeToExplore);
 
-                    // BackPropagation
                     BackPropagation(nodeToExplore, winningPlayer);
-                    if (m_CurrentPlayer == Piece.Black)
-                        s_BlackIterationsRun++;
-                    else
-                        s_WhiteIterationsRun++;
+                    IncrementIterarion();
                 }
             }
             var bestNode = rootNode.SelectBestNode();
             m_cachedNode = bestNode;
             m_cachedNode.Parent = null;
+
             var endTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-
-            if (m_CurrentPlayer == Piece.Black)
-                s_BlackWinPrediction = bestNode.NumWins / bestNode.NumVisits * 100;
-            else
-                s_WhiteWinPrediction = bestNode.NumWins / bestNode.NumVisits * 100;
-
-            Console.Log("Tree size: " + bestNode.NumVisits);
-            Console.Log(board.GetCurrentPlayerAsString() + " plays " + bestNode.Board.GetLastMove().ToString());
-            Console.Log("Search time: " + (endTime - startTime) + " ms");
-            Console.Log("Iterations: " + (m_CurrentPlayer == Piece.Black ? s_BlackIterationsRun : s_WhiteIterationsRun));
-            Console.Log("Nodes visited: " + m_nodesVisited);
-            Console.Log("Win prediction: " + (bestNode.NumWins / bestNode.NumVisits * 100).ToString("0.##") + " %");
-            Console.Log("----------------------------------------------------");
+            SetWinPrediction(bestNode);
+            PrintSearchData(rootNode, startTime, bestNode, endTime);
             return bestNode.Board.GetLastMove();
+        }
+
+        private void IncrementIterarion()
+        {
+            if (m_CurrentPlayer == Piece.Black)
+                s_BlackIterationsRun++;
+            else
+                s_WhiteIterationsRun++;
+        }
+
+        private void RunTree(Node rootNode, long timeLimit)
+        {
+            for (var iterations = 0; (iterations < m_maxIterations / m_numTrees) & DateTimeOffset.Now.ToUnixTimeMilliseconds() < timeLimit; iterations += m_blockSize)
+            {
+                for (var i = 0; i < m_blockSize; i++)
+                {
+                    var promisingNode = Select(rootNode);
+                    Expand(promisingNode);
+
+                    var nodeToExplore = promisingNode;
+                    if (promisingNode.Children.Count > 0)
+                        nodeToExplore = promisingNode.GetRandomChildNode();
+                    var winningPlayer = Simulate(nodeToExplore);
+
+                    BackPropagation(nodeToExplore, winningPlayer);
+                    IncrementIterarion();
+                }
+            }
         }
 
         private Node SetRootNode(Board board)
@@ -105,7 +198,7 @@ namespace Othello.AI
             return rootNode;
         }
 
-        private static Node Selection(Node node)
+        private static Node Select(Node node)
         {
             var currentNode = node;
             while (currentNode.Children.Count > 0)
@@ -113,7 +206,7 @@ namespace Othello.AI
             return currentNode;
         }
 
-        private static void Expansion(Node node)
+        private static void Expand(Node node)
         {
             var childNodes = node.CreateChildNodes();
             foreach (var childNode in childNodes)
@@ -138,7 +231,7 @@ namespace Othello.AI
             }
         }
 
-        private int Simulation(Node node)
+        private int Simulate(Node node)
         {
             var tempNode = node.Copy();
             var winningPlayer = tempNode.Board.GetBoardState();
@@ -161,6 +254,25 @@ namespace Othello.AI
                     selectedNode = currentNode;
             }
             return selectedNode;
+        }
+
+        private void PrintSearchData(Node rootNode, long startTime, Node bestNode, long endTime)
+        {
+            Console.Log("Tree size: " + bestNode.NumVisits);
+            Console.Log(rootNode.Board.GetCurrentPlayerAsString() + " plays " + bestNode.Board.GetLastMove().ToString());
+            Console.Log("Search time: " + (endTime - startTime) + " ms");
+            Console.Log("Iterations: " + (m_CurrentPlayer == Piece.Black ? s_BlackIterationsRun : s_WhiteIterationsRun));
+            Console.Log("Nodes visited: " + m_nodesVisited);
+            Console.Log("Win prediction: " + (bestNode.NumWins / bestNode.NumVisits * 100).ToString("0.##") + " %");
+            Console.Log("----------------------------------------------------");
+        }
+
+        private void SetWinPrediction(Node bestNode)
+        {
+            if (m_CurrentPlayer == Piece.Black)
+                s_BlackWinPrediction = bestNode.NumWins / bestNode.NumVisits * 100;
+            else
+                s_WhiteWinPrediction = bestNode.NumWins / bestNode.NumVisits * 100;
         }
 
     }

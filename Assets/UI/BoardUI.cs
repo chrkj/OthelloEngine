@@ -19,10 +19,10 @@ namespace Othello.UI
         public TMPro.TMP_Text whitePieceCountUI;
         public Material darkSquareMaterial;
         public Material lightSquareMaterial;
-        public static readonly string[] FileChars = { "A", "B", "C", "D", "E", "F", "G", "H"};
+        public static readonly string[] FileChars = { "A", "B", "C", "D", "E", "F", "G", "H" };
         public static bool s_blackAiPlayerCalculating = false;
         public static bool s_whiteAiPlayerCalculating = false;
-        
+
 
         private bool m_highLightLegalMoves;
         private MeshRenderer[] m_squareRenderers;
@@ -93,7 +93,7 @@ namespace Othello.UI
             var squareMaterial = squareColor == lightColor ? lightSquareMaterial : darkSquareMaterial;
             m_squareRenderers[Board.GetIndex(file, rank)] = square.gameObject.GetComponent<MeshRenderer>();
             m_squareRenderers[Board.GetIndex(file, rank)].material = squareMaterial;
-            
+
             var pieceRenderer = new GameObject("Piece").AddComponent<SpriteRenderer>();
             var pieceRendererTc = pieceRenderer.transform;
             pieceRendererTc.parent = square;
@@ -117,11 +117,11 @@ namespace Othello.UI
             if (board.GetLastMove() != null)
                 HighlightSquare(board.GetLastMove().Index);
         }
-        
+
         public void HighlightLegalMoves(List<Move> legalMoves)
         {
             m_currentLegalMoves = legalMoves;
-            if (!m_highLightLegalMoves) 
+            if (!m_highLightLegalMoves)
                 return;
             foreach (var legalMove in legalMoves)
                 m_squareRenderers[legalMove.Index].material.color = highlightColor;
@@ -164,6 +164,6 @@ namespace Othello.UI
             var rank = index >> 3;
             return (file + rank) % 2 == 0;
         }
-        
+
     }
 }

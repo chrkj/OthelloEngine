@@ -1,27 +1,17 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-using UnityEngine.UI;
+﻿using UnityEngine;
 
-public class rotatetotate : MonoBehaviour {
-
-    private RectTransform rectComponent;
-    private Image imageComp;
-    private bool up = false;
-
+public class rotatetotate : MonoBehaviour 
+{
     public float rotateSpeed = 200f;
+    private RectTransform rectComponent;
 
-    // Use this for initialization
-    void Start () {
+    void Start () 
+    {
         rectComponent = GetComponent<RectTransform>();
-        imageComp = rectComponent.GetComponent<Image>();
-
     }
 	
-	// Update is called once per frame
-	void Update () {
-
+	void Update () 
+    {
         float currentSpeed = rotateSpeed * Time.deltaTime;
         rectComponent.Rotate(0f, 0f, currentSpeed);
     }

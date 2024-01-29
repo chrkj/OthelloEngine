@@ -12,11 +12,12 @@ namespace Othello.Core
         public Player BlackPlayerNextGame;
         public int PlayerToStartNextGame = Piece.Black;
         public static bool AutoMove;
+        public enum MctsType { Sequential = 0, RootParallel = 1, TreeParallel = 2 }
 
-        public Toggle showLegalMoves;
-        public Toggle enableAutoMove;
         public TMP_Dropdown whitePlayer;
         public TMP_Dropdown blackPlayer;
+        public TMP_Dropdown whiteMtcsMode;
+        public TMP_Dropdown blackMctsMode;
         public TMP_Dropdown playerToStart;
         public TMP_InputField blackDepth;
         public TMP_InputField whiteDepth;
@@ -24,12 +25,14 @@ namespace Othello.Core
         public TMP_InputField whiteIterations;
         public TMP_InputField blackTimeLimit;
         public TMP_InputField whiteTimeLimit;
-        public TMP_Text whiteCurrentDepth;
-        public TMP_Text blackCurrentDepth;
+        public Toggle showLegalMoves;
+        public Toggle enableAutoMove;
         public Toggle whiteMoveOrdering;
         public Toggle blackMoveOrdering;
         public Toggle whiteIterativeDeepning;
         public Toggle blackIterativeDeepning;
+        public TMP_Text whiteCurrentDepth;
+        public TMP_Text blackCurrentDepth;
         public TMP_Text blackTimeElapsed;
         public TMP_Text whiteTimeElapsed;
         public TMP_Text blackCurrentSimulation;
@@ -43,7 +46,8 @@ namespace Othello.Core
 
         private Board m_board;
         private BoardUI m_boardUI;
-        private enum PlayerType { Human = 0, Minimax = 1, Mcts = 2, Random = 3}
+        private enum PlayerType { Human = 0, Minimax = 1, Mcts = 2, Random = 3 }
+
 
         public void Setup(Board board, BoardUI boardUI)
         {
@@ -74,12 +78,14 @@ namespace Othello.Core
             var currnetPositionsEvaulated = (player == Piece.Black) ? blackPositionsEvaluated : whitePositionsEvaluated;
             var currentWinPrediction = (player == Piece.Black) ? blackCurrentWinPrediction : whiteCurrentWinPrediction;
             var branchesPruned = (player == Piece.Black) ? blackBranchesPruned : whiteBranchesPruned;
+            var mctsTypeInput = (player == Piece.Black) ? blackMctsMode : whiteMtcsMode;
+            var mctsType = (player == Piece.Black) ? blackMctsMode.value : whiteMtcsMode.value;
 
-            if (inputFieldDepth.text.Length == 0) 
+            if (inputFieldDepth.text.Length == 0)
                 inputFieldDepth.text = "1";
-            if (inputFieldTimeLimit.text.Length == 0) 
+            if (inputFieldTimeLimit.text.Length == 0)
                 inputFieldTimeLimit.text = "1";
-            if (inputFieldIterations.text.Length == 0) 
+            if (inputFieldIterations.text.Length == 0)
                 inputFieldIterations.text = "1";
 
             switch (playerType)
@@ -98,13 +104,14 @@ namespace Othello.Core
                         currentWinPrediction.gameObject.SetActive(false);
                         currentDepth.gameObject.SetActive(false);
                         branchesPruned.gameObject.SetActive(false);
+                        mctsTypeInput.gameObject.SetActive(false);
                         break;
                     }
                 case (int)PlayerType.Minimax:
                     {
                         var depth = int.Parse(inputFieldDepth.text);
                         var timeLimit = int.Parse(inputFieldTimeLimit.text);
-                        if (depth < 1) 
+                        if (depth < 1)
                             depth = 1;
                         playerRef = new AIPlayer(m_board, new MiniMax(depth, timeLimit, inputMoveOrdering.isOn, inputIterativeDeepning.isOn));
                         inputFieldDepth.gameObject.SetActive(true);
@@ -118,15 +125,16 @@ namespace Othello.Core
                         currentWinPrediction.gameObject.SetActive(false);
                         currentDepth.gameObject.SetActive(true);
                         branchesPruned.gameObject.SetActive(true);
+                        mctsTypeInput.gameObject.SetActive(false);
                         break;
                     }
                 case (int)PlayerType.Mcts:
                     {
                         var timeLimit = int.Parse(inputFieldTimeLimit.text);
                         var iterations = int.Parse(inputFieldIterations.text);
-                        if (iterations < 1) 
+                        if (iterations < 1)
                             iterations = 1;
-                        playerRef = new AIPlayer(m_board, new MCTS(iterations, timeLimit));
+                        playerRef = new AIPlayer(m_board, new MCTS(iterations, timeLimit, (MctsType)mctsType));
                         inputFieldDepth.gameObject.SetActive(false);
                         inputFieldIterations.gameObject.SetActive(true);
                         inputFieldTimeLimit.gameObject.SetActive(true);
@@ -138,6 +146,7 @@ namespace Othello.Core
                         currentWinPrediction.gameObject.SetActive(true);
                         currentDepth.gameObject.SetActive(false);
                         branchesPruned.gameObject.SetActive(false);
+                        mctsTypeInput.gameObject.SetActive(true);
                     }
                     break;
                 case (int)PlayerType.Random:
@@ -148,12 +157,13 @@ namespace Othello.Core
                         inputFieldTimeLimit.gameObject.SetActive(false);
                         inputMoveOrdering.gameObject.SetActive(false);
                         inputIterativeDeepning.gameObject.SetActive(false);
-                        timeElapsed.gameObject.SetActive(true);
+                        timeElapsed.gameObject.SetActive(false);
                         currentSimulation.gameObject.SetActive(false);
                         currnetPositionsEvaulated.gameObject.SetActive(false);
                         currentWinPrediction.gameObject.SetActive(false);
                         currentDepth.gameObject.SetActive(false);
                         branchesPruned.gameObject.SetActive(false);
+                        mctsTypeInput.gameObject.SetActive(false);
                         break;
                     }
             }
@@ -172,26 +182,6 @@ namespace Othello.Core
         public void SetStartingPlayer()
         {
             PlayerToStartNextGame = (playerToStart.value == 0) ? Piece.Black : Piece.White;
-        }
-
-        private void HumanUI()
-        {
-
-        }
-
-        private void MiniMaxUI()
-        {
-
-        }
-
-        private void MctsUI()
-        {
-
-        }
-
-        private void RandomUI()
-        {
-
         }
 
     }

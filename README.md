@@ -45,8 +45,8 @@ Frameworks/libraries used for the project:
 ## Roadmap
 
 Optimization:
-- ⬜ Implement multithreading for MCTS
-- ⬜ Implement iterative deepening for MiniMax
+- ✅ Implement multithreading for MCTS
+- ✅Implement iterative deepening for MiniMax
 
 UI:
 - ✅ Better UI

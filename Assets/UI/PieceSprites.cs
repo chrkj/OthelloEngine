@@ -3,7 +3,7 @@
 namespace Othello.UI
 {
     [System.Serializable]
-    public class PieceSprites 
+    public class PieceSprites
     {
         public Sprite playerPiece;
     }

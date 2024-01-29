@@ -9,14 +9,14 @@ namespace Othello.Core
     {
         private Board m_board;
         private BoardUI m_boardUI;
-        
+
         private Player m_playerToMove;
         private Player m_blackPlayer;
         private Player m_whitePlayer;
-        
+
         private State m_gameState;
         private Settings m_settings;
-        
+
         private bool m_lastPlayerHadNoMove;
         private enum State { Playing, GameOver, Idle }
 
@@ -69,7 +69,7 @@ namespace Othello.Core
                 m_blackPlayer.OnNoLegalMove -= NoLegalMove;
             }
 
-            if (m_whitePlayer == null) 
+            if (m_whitePlayer == null)
                 return;
             m_whitePlayer.OnMoveChosen -= MakeMove;
             m_whitePlayer.OnNoLegalMove -= NoLegalMove;
@@ -100,16 +100,19 @@ namespace Othello.Core
             m_boardUI.UpdateBoard(m_board);
             m_lastPlayerHadNoMove = false;
         }
-        
+
         private void NoLegalMove()
         {
             if (m_lastPlayerHadNoMove)
             {
                 m_gameState = State.GameOver;
                 var winner = "";
-                if (m_board.GetWinner() == Piece.Black) winner = "Black";
-                else if (m_board.GetWinner() == Piece.White) winner = "White";
-                else if (m_board.GetWinner() == 0) winner = "Draw";
+                if (m_board.GetWinner() == Piece.Black)
+                    winner = "Black";
+                else if (m_board.GetWinner() == Piece.White)
+                    winner = "White";
+                else if (m_board.GetWinner() == 0)
+                    winner = "Draw";
                 Console.Log("---------------- Winner: " + winner + " ----------------");
                 Console.Log("----------------------------------------------------");
             }
