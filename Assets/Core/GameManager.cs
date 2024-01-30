@@ -16,6 +16,10 @@ namespace Othello.Core
 
         private State m_gameState;
         private Settings m_settings;
+        public static int m_gamesToRun;
+        public static int m_blackWins;
+        public static int m_whiteWins;
+        public static int m_draws;
 
         private bool m_lastPlayerHadNoMove;
         private enum State { Playing, GameOver, Idle }
@@ -45,12 +49,22 @@ namespace Othello.Core
             m_boardUI.UnhighlightAll();
             Console.Clear();
             TryUnsubscribeEvents();
+            m_settings.PlayerSelection(Piece.White);
+            m_settings.PlayerSelection(Piece.Black);
             m_whitePlayer = (Player)m_settings.WhitePlayerNextGame.Clone();
             m_blackPlayer = (Player)m_settings.BlackPlayerNextGame.Clone();
             SubscribeEvents();
             m_playerToMove = (m_settings.PlayerToStartNextGame == Piece.White) ? m_whitePlayer : m_blackPlayer;
             m_gameState = State.Playing;
             m_playerToMove.NotifyTurnToMove();
+        }
+
+        public void ResetSim()
+        {
+            m_gamesToRun = 0;
+            m_blackWins = 0;
+            m_whiteWins = 0;
+            m_draws = 0;
         }
 
         private void SubscribeEvents()
@@ -84,7 +98,11 @@ namespace Othello.Core
                     m_boardUI.UpdateUI(m_board, m_settings);
                     break;
                 case State.GameOver:
-                    // TODO: Add gameover animation
+                    if (m_gamesToRun < int.Parse(m_settings.numGamesForSim.text))
+                    {
+                        m_gamesToRun++;
+                        NewGame();
+                    }
                     break;
                 case State.Idle:
                     break;
@@ -108,11 +126,20 @@ namespace Othello.Core
                 m_gameState = State.GameOver;
                 var winner = "";
                 if (m_board.GetWinner() == Piece.Black)
+                { 
                     winner = "Black";
+                    m_blackWins++;
+                }
                 else if (m_board.GetWinner() == Piece.White)
+                { 
                     winner = "White";
+                    m_whiteWins++;
+                }
                 else if (m_board.GetWinner() == 0)
+                { 
                     winner = "Draw";
+                    m_draws++;
+                }
                 Console.Log("---------------- Winner: " + winner + " ----------------");
                 Console.Log("----------------------------------------------------");
             }

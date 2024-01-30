@@ -12,7 +12,7 @@ namespace Othello.Core
         public Player BlackPlayerNextGame;
         public int PlayerToStartNextGame = Piece.Black;
         public static bool AutoMove;
-        public enum MctsType { Sequential = 0, RootParallel = 1, TreeParallel = 2 }
+        public enum MctsType { Sequential = 0, RootParallel = 1, TreeParallel = 2, Testing = 3 }
 
         public TMP_Dropdown whitePlayer;
         public TMP_Dropdown blackPlayer;
@@ -25,12 +25,15 @@ namespace Othello.Core
         public TMP_InputField whiteIterations;
         public TMP_InputField blackTimeLimit;
         public TMP_InputField whiteTimeLimit;
+        public TMP_InputField numGamesForSim;
         public Toggle showLegalMoves;
         public Toggle enableAutoMove;
         public Toggle whiteMoveOrdering;
         public Toggle blackMoveOrdering;
         public Toggle whiteIterativeDeepning;
         public Toggle blackIterativeDeepning;
+        public Toggle whiteZobristHashing;
+        public Toggle blackZobristHashing;
         public TMP_Text whiteCurrentDepth;
         public TMP_Text blackCurrentDepth;
         public TMP_Text blackTimeElapsed;
@@ -43,6 +46,12 @@ namespace Othello.Core
         public TMP_Text whiteCurrentWinPrediction;
         public TMP_Text blackBranchesPruned;
         public TMP_Text whiteBranchesPruned;
+        public TMP_Text blackWins;
+        public TMP_Text whiteWins;
+        public TMP_Text blackZobristSize;
+        public TMP_Text whiteZobristSize;
+        public TMP_Text draws;
+        public TMP_Text currentSim;
 
         private Board m_board;
         private BoardUI m_boardUI;
@@ -80,6 +89,8 @@ namespace Othello.Core
             var branchesPruned = (player == Piece.Black) ? blackBranchesPruned : whiteBranchesPruned;
             var mctsTypeInput = (player == Piece.Black) ? blackMctsMode : whiteMtcsMode;
             var mctsType = (player == Piece.Black) ? blackMctsMode.value : whiteMtcsMode.value;
+            var zobristHashing = (player == Piece.Black) ? blackZobristHashing : whiteZobristHashing;
+            var zobristSize = (player == Piece.Black) ? blackZobristSize : whiteZobristSize;
 
             if (inputFieldDepth.text.Length == 0)
                 inputFieldDepth.text = "1";
@@ -105,6 +116,8 @@ namespace Othello.Core
                         currentDepth.gameObject.SetActive(false);
                         branchesPruned.gameObject.SetActive(false);
                         mctsTypeInput.gameObject.SetActive(false);
+                        zobristHashing.gameObject.SetActive(false);
+                        zobristSize.gameObject.SetActive(false);
                         break;
                     }
                 case (int)PlayerType.Minimax:
@@ -113,7 +126,7 @@ namespace Othello.Core
                         var timeLimit = int.Parse(inputFieldTimeLimit.text);
                         if (depth < 1)
                             depth = 1;
-                        playerRef = new AIPlayer(m_board, new MiniMax(depth, timeLimit, inputMoveOrdering.isOn, inputIterativeDeepning.isOn));
+                        playerRef = new AIPlayer(m_board, new MiniMax(depth, timeLimit, inputMoveOrdering.isOn, inputIterativeDeepning.isOn, zobristHashing.isOn));
                         inputFieldDepth.gameObject.SetActive(true);
                         inputFieldIterations.gameObject.SetActive(false);
                         inputFieldTimeLimit.gameObject.SetActive(true);
@@ -126,6 +139,11 @@ namespace Othello.Core
                         currentDepth.gameObject.SetActive(true);
                         branchesPruned.gameObject.SetActive(true);
                         mctsTypeInput.gameObject.SetActive(false);
+                        zobristHashing.gameObject.SetActive(true);
+                        if (zobristHashing.isOn)
+                            zobristSize.gameObject.SetActive(true);
+                        else
+                            zobristSize.gameObject.SetActive(false);
                         break;
                     }
                 case (int)PlayerType.Mcts:
@@ -147,6 +165,9 @@ namespace Othello.Core
                         currentDepth.gameObject.SetActive(false);
                         branchesPruned.gameObject.SetActive(false);
                         mctsTypeInput.gameObject.SetActive(true);
+                        zobristHashing.gameObject.SetActive(false);
+                        zobristHashing.gameObject.SetActive(false);
+                        zobristSize.gameObject.SetActive(false);
                     }
                     break;
                 case (int)PlayerType.Random:
@@ -164,6 +185,8 @@ namespace Othello.Core
                         currentDepth.gameObject.SetActive(false);
                         branchesPruned.gameObject.SetActive(false);
                         mctsTypeInput.gameObject.SetActive(false);
+                        zobristHashing.gameObject.SetActive(false);
+                        zobristSize.gameObject.SetActive(false);
                         break;
                     }
             }

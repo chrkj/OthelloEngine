@@ -82,10 +82,11 @@ namespace Othello.Core
 
         public List<Move> GenerateLegalMoves()
         {
-            var legalMoves = new List<Move>();
+            List<Move> legalMoves = new();
+
             var emptySquares = GetEmptySquares();
             foreach (var square in emptySquares)
-                AddIfSquareIsLegalMove(square, legalMoves);
+                AddIfSquareIsLegalMove(square, ref legalMoves);
             return legalMoves;
         }
 
@@ -206,7 +207,7 @@ namespace Othello.Core
             return blackPieceCount > whitePieceCount ? Piece.Black : Piece.White;
         }
 
-        private void AddIfSquareIsLegalMove(int square, ICollection<Move> legalMoves)
+        private void AddIfSquareIsLegalMove(int square, ref List<Move> legalMoves)
         {
             for (var directionOffsetIndex = 0; directionOffsetIndex < 8; directionOffsetIndex++)
             {
@@ -262,6 +263,14 @@ namespace Othello.Core
                 if ((blackPositions & (1UL << i)) != 0)
                     positions.Add(i);
             return positions;
+        }
+
+        public ulong GetHash()
+        {
+            ulong hash = 5648423;
+            if (m_isWhiteToMove)
+                hash = 4239784;
+            return m_pieces ^ m_colors ^ hash;
         }
 
     }

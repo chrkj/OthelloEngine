@@ -23,7 +23,6 @@ namespace Othello.UI
         public static bool s_blackAiPlayerCalculating = false;
         public static bool s_whiteAiPlayerCalculating = false;
 
-
         private bool m_highLightLegalMoves;
         private MeshRenderer[] m_squareRenderers;
         private SpriteRenderer[] m_pieceRenderers;
@@ -67,6 +66,12 @@ namespace Othello.UI
             settings.blackTimeElapsed.text = "Time Elapsed: " + AIPlayer.s_BlackTimeElapsed.Elapsed.TotalMilliseconds.ToString("F0") + "ms";
             settings.whiteBranchesPruned.text = "Branches Pruned: " + MiniMax.s_WhiteBranchesPruned;
             settings.blackBranchesPruned.text = "Branches Pruned: " + MiniMax.s_BlackBranchesPruned;
+            settings.whiteWins.text = "White wins: " + GameManager.m_whiteWins;
+            settings.blackWins.text = "Black wins: " + GameManager.m_blackWins;
+            settings.draws.text = "Draws: " + GameManager.m_draws;
+            settings.currentSim.text = "Sim Nr.: " + GameManager.m_gamesToRun;
+            settings.blackZobristSize.text = "Size: " + MiniMax.s_BlackZobristSize * 32 / 8 / 1000000 + "MB";
+            settings.whiteZobristSize.text = "Size: " + MiniMax.s_WhiteZobristSize * 32 / 8 / 1000000 + "MB";
         }
 
         private void UpdateLoadingWidget()
@@ -130,7 +135,8 @@ namespace Othello.UI
         public void ToggleLegalMoves(bool isOn)
         {
             m_highLightLegalMoves = isOn;
-            if (!m_highLightLegalMoves) UnhighlightAll();
+            if (!m_highLightLegalMoves) 
+                UnhighlightAll();
             else HighlightLegalMoves(m_currentLegalMoves);
 
         }

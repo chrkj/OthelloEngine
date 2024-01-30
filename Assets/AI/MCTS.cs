@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Othello.Core;
 using static Othello.Core.Settings;
@@ -52,6 +54,8 @@ namespace Othello.AI
                     return CalculateMoveRoot(board);
                 case MctsType.TreeParallel:
                     return CalculateMoveTree(board);
+                case MctsType.Testing:
+                    return CalculateMoveTesting(board);
                 default:
                     throw new NotImplementedException();
             }
@@ -72,7 +76,10 @@ namespace Othello.AI
             {
                 var treeNode = rootNode.Children[i];
                 Expand(treeNode);
-                tasks[i] = Task.Factory.StartNew(() => { RunTree(treeNode, timeLimit); });
+                tasks[i] = Task.Factory.StartNew(() => { RunTree(treeNode, timeLimit); },
+                    CancellationToken.None,
+                    TaskCreationOptions.LongRunning,
+                    TaskScheduler.Default);
             }
             Task.WaitAll(tasks);
 
@@ -124,6 +131,37 @@ namespace Othello.AI
         }
 
         private Move CalculateMoveSequential(Board board)
+        {
+            var rootNode = SetRootNode(board);
+            var startTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+            var timeLimit = startTime + m_maxTime;
+            for (var iterations = 0; (iterations < m_maxIterations) & DateTimeOffset.Now.ToUnixTimeMilliseconds() < timeLimit; iterations += m_blockSize)
+            {
+                for (var i = 0; i < m_blockSize; i++)
+                {
+                    var promisingNode = Select(rootNode);
+                    Expand(promisingNode);
+
+                    var nodeToExplore = promisingNode;
+                    if (promisingNode.Children.Count > 0)
+                        nodeToExplore = promisingNode.GetRandomChildNode();
+                    var winningPlayer = Simulate(nodeToExplore);
+
+                    BackPropagation(nodeToExplore, winningPlayer);
+                    IncrementIterarion();
+                }
+            }
+            var bestNode = rootNode.SelectBestNode();
+            m_cachedNode = bestNode;
+            m_cachedNode.Parent = null;
+
+            var endTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+            SetWinPrediction(bestNode);
+            PrintSearchData(rootNode, startTime, bestNode, endTime);
+            return bestNode.Board.GetLastMove();
+        }
+
+        private Move CalculateMoveTesting(Board board)
         {
             var rootNode = SetRootNode(board);
             var startTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();

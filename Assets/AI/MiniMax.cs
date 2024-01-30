@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Othello.Core;
 using Console = Othello.Core.Console;
 
@@ -17,6 +18,10 @@ namespace Othello.AI
         private static int m_CurrentPlayer;
         private readonly bool m_IterativeDeepningEnabled;
         private readonly bool m_MoveOrderingEnabled;
+        private readonly bool m_ZobristHashingEnabled;
+        private bool m_TerminationFlag;
+        private readonly Dictionary<ulong, int> m_Zobrist;
+        private readonly Dictionary<ulong, List<Move>> m_ZobristMoves;
 
         public static int s_CurrentDepthWhite;
         public static int s_CurrentDepthBlack;
@@ -24,17 +29,25 @@ namespace Othello.AI
         public static int s_BlackPositionsEvaluated;
         public static int s_WhiteBranchesPruned;
         public static int s_BlackBranchesPruned;
+        public static int s_WhiteZobristSize;
+        public static int s_BlackZobristSize;
 
-        public MiniMax(int depth, int timeLimit, bool moveOrderingEnabled, bool iterativeDeepningEnabled)
+        public MiniMax(int depth, int timeLimit, bool moveOrderingEnabled, bool iterativeDeepningEnabled, bool zobristHashingEnabled)
         {
             m_IterativeDeepningEnabled = iterativeDeepningEnabled;
             m_MoveOrderingEnabled = moveOrderingEnabled;
+            m_ZobristHashingEnabled = zobristHashingEnabled;
             m_depthLimit = depth;
             m_maxTime = timeLimit;
+            m_Zobrist = new Dictionary<ulong, int>();
+            m_ZobristMoves = new Dictionary<ulong, List<Move>>();
+            s_WhiteZobristSize = 0;
+            s_BlackZobristSize = 0;
         }
 
         public Move StartSearch(Board board)
         {
+            m_TerminationFlag = false;
             m_CurrentPlayer = board.GetCurrentPlayer() == Piece.Black ? Piece.Black : Piece.White;
             ResetBranchCount();
 
@@ -42,7 +55,7 @@ namespace Othello.AI
             m_TimeLimit = start + m_maxTime;
 
             int bestEvalThisIteration = 0;
-            Move bestMoveThisIteration = null;
+            Move bestMoveThisIteration = board.GenerateLegalMoves().First();
             if (m_IterativeDeepningEnabled)
             {
                 for (int searchDepth = 1; searchDepth < m_depthLimit + 1; searchDepth++)
@@ -50,7 +63,7 @@ namespace Othello.AI
                     ResetBranchCount();
                     UpdateSeatchDepth(board, searchDepth);
                     CalculateMove(board, ref bestMoveThisIteration, ref bestEvalThisIteration, searchDepth);
-                    if (DateTimeOffset.Now.ToUnixTimeMilliseconds() > m_TimeLimit)
+                    if (m_TerminationFlag)
                         break;
                 }
             }
@@ -64,20 +77,17 @@ namespace Othello.AI
 
         private Move CalculateMove(Board board, ref Move bestMoveThisIteration, ref int bestEvalThisIteration, int depth)
         {
-            if (m_CurrentPlayer == Piece.Black)
-                s_BlackPositionsEvaluated = 0;
-            else
-                s_WhitePositionsEvaluated = 0;
-
+            ResetPositionCount();
             var currentPlayer = board.GetCurrentPlayer();
             if (currentPlayer == m_MaxPlayer)
             {
                 var highestUtil = int.MinValue;
                 var legalMoves = board.GenerateLegalMoves();
-
                 MoveOrdering(bestMoveThisIteration, ref legalMoves);
                 foreach (var legalMove in legalMoves)
                 {
+                    if (m_TerminationFlag)
+                        break;
                     var possibleNextState = MakeMove(board, legalMove);
                     bestEvalThisIteration = MinValue(possibleNextState, depth - 1, int.MinValue, int.MaxValue);
                     if (bestEvalThisIteration <= highestUtil)
@@ -90,7 +100,6 @@ namespace Othello.AI
             {
                 var minUtil = int.MaxValue;
                 var legalMoves = board.GenerateLegalMoves();
-
                 MoveOrdering(bestMoveThisIteration, ref legalMoves);
                 foreach (var legalMove in legalMoves)
                 {
@@ -107,16 +116,18 @@ namespace Othello.AI
 
         private int MinValue(Board board, int depth, int alpha, int beta)
         {
+            CheckTimelimit();
             if (IsTerminal(board, depth))
                 return GetEval(board);
+            if (m_TerminationFlag)
+                return int.MaxValue;
 
             var minUtil = int.MaxValue - 1;
 
-            var legalMoves = board.GenerateLegalMoves();
+            var legalMoves = GenerateLegalMoves(board);
             if (legalMoves.Count == 0)
                 minUtil = Math.Min(minUtil, MaxValue(board, depth - 1, alpha, beta));
 
-            legalMoves.Sort();
             foreach (var legalMove in legalMoves)
             {
                 var nextState = MakeMove(board, legalMove);
@@ -134,16 +145,18 @@ namespace Othello.AI
 
         private int MaxValue(Board board, int depth, int alpha, int beta)
         {
+            CheckTimelimit();
             if (IsTerminal(board, depth))
                 return GetEval(board);
+            if (m_TerminationFlag)
+                return int.MinValue;
 
             var maxUtil = int.MinValue + 1;
 
-            var legalMoves = board.GenerateLegalMoves();
+            var legalMoves = GenerateLegalMoves(board);
             if (legalMoves.Count == 0)
                 maxUtil = Math.Max(maxUtil, MinValue(board, depth - 1, alpha, beta));
 
-            legalMoves.Sort();
             foreach (var legalMove in legalMoves)
             {
                 var nextState = MakeMove(board, legalMove);
@@ -158,20 +171,55 @@ namespace Othello.AI
             return maxUtil;
         }
 
-        private static int GetEval(Board board)
+        private int GetEval(Board board)
+        {
+            IncrementPositionCount();
+
+            var boardHash = board.GetHash();
+            if (m_ZobristHashingEnabled && m_Zobrist.ContainsKey(boardHash))
+                return m_Zobrist[boardHash];
+
+            if (!board.IsTerminalBoardState())
+            {
+                var util = GetBoardUtility(board);
+                if (m_ZobristHashingEnabled)
+                {
+                    m_Zobrist[boardHash] = util;
+                    IncrementZobristCount(1);
+                }
+                return util;
+            }
+            if (board.GetPieceCount(m_MaxPlayer) > board.GetPieceCount(m_MinPlayer))
+            {
+                var util = int.MaxValue - 1;
+                if (m_ZobristHashingEnabled)
+                    m_Zobrist[boardHash] = util;
+                return util;
+            }
+            if (board.GetPieceCount(m_MaxPlayer) < board.GetPieceCount(m_MinPlayer))
+            {
+                var util = int.MinValue + 1;
+                if (m_ZobristHashingEnabled)
+                    m_Zobrist[boardHash] = util;
+                return util;
+            }
+            return 0;
+        }
+
+        private static void IncrementZobristCount(int count)
+        {
+            if (m_CurrentPlayer == Piece.Black)
+                s_BlackZobristSize += count;
+            else
+                s_WhiteZobristSize += count;
+        }
+
+        private static void IncrementPositionCount()
         {
             if (m_CurrentPlayer == Piece.Black)
                 s_BlackPositionsEvaluated++;
             else
                 s_WhitePositionsEvaluated++;
-
-            if (!board.IsTerminalBoardState())
-                return GetBoardUtility(board);
-            if (board.GetPieceCount(m_MaxPlayer) > board.GetPieceCount(m_MinPlayer))
-                return int.MaxValue - 1;
-            if (board.GetPieceCount(m_MaxPlayer) < board.GetPieceCount(m_MinPlayer))
-                return int.MinValue + 1;
-            return 0;
         }
 
         private static bool IsTerminal(Board board, int depth)
@@ -281,5 +329,46 @@ namespace Othello.AI
             else
                 s_WhiteBranchesPruned = 0;
         }
+
+        private void CheckTimelimit()
+        {
+            if (DateTimeOffset.Now.ToUnixTimeMilliseconds() > m_TimeLimit)
+                m_TerminationFlag = true;
+        }
+
+        private List<Move> GenerateLegalMoves(Board board)
+        {
+            List<Move> legalMoves;
+            if (m_ZobristHashingEnabled)
+            {
+                var boardHash = board.GetHash();
+                if (m_ZobristMoves.ContainsKey(boardHash))
+                {
+                    legalMoves = new List<Move>(m_ZobristMoves[boardHash]);
+                }
+                else
+                {
+                    legalMoves = board.GenerateLegalMoves();
+                    legalMoves.Sort();
+                    m_ZobristMoves[boardHash] = new List<Move>(legalMoves);
+                    IncrementZobristCount(legalMoves.Count);
+                }
+            }
+            else
+            {
+                legalMoves = board.GenerateLegalMoves();
+            }
+
+            return legalMoves;
+        }
+
+        private static void ResetPositionCount()
+        {
+            if (m_CurrentPlayer == Piece.Black)
+                s_BlackPositionsEvaluated = 0;
+            else
+                s_WhitePositionsEvaluated = 0;
+        }
+
     }
 }
