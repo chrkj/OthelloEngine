@@ -152,7 +152,7 @@ namespace Othello.Core
                         var iterations = int.Parse(inputFieldIterations.text);
                         if (iterations < 1)
                             iterations = 1;
-                        playerRef = new AIPlayer(m_board, new MCTS(iterations, timeLimit, (MctsType)mctsType));
+                        playerRef = new AIPlayer(m_board, new Mcts(iterations, timeLimit, (MctsType)mctsType));
                         inputFieldDepth.gameObject.SetActive(false);
                         inputFieldIterations.gameObject.SetActive(true);
                         inputFieldTimeLimit.gameObject.SetActive(true);

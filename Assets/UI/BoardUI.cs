@@ -58,10 +58,10 @@ namespace Othello.UI
             settings.blackCurrentDepth.text = "Current depth: " + MiniMax.s_CurrentDepthBlack;
             settings.whitePositionsEvaluated.text = "Positions Evaluated: " + MiniMax.s_WhitePositionsEvaluated;
             settings.blackPositionsEvaluated.text = "Positions Evaluated: " + MiniMax.s_BlackPositionsEvaluated;
-            settings.whiteCurrentSimulation.text = "Current Simulation: " + MCTS.s_WhiteIterationsRun;
-            settings.blackCurrentSimulation.text = "Current Simulation: " + MCTS.s_BlackIterationsRun;
-            settings.whiteCurrentWinPrediction.text = "Current Win Prediction: " + MCTS.s_WhiteWinPrediction.ToString("0.##") + " %";
-            settings.blackCurrentWinPrediction.text = "Current Win Prediction: " + MCTS.s_BlackWinPrediction.ToString("0.##") + " %";
+            settings.whiteCurrentSimulation.text = "Current Simulation: " + Mcts.s_WhiteIterationsRun;
+            settings.blackCurrentSimulation.text = "Current Simulation: " + Mcts.s_BlackIterationsRun;
+            settings.whiteCurrentWinPrediction.text = "Current Win Prediction: " + Mcts.s_WhiteWinPrediction.ToString("0.##") + " %";
+            settings.blackCurrentWinPrediction.text = "Current Win Prediction: " + Mcts.s_BlackWinPrediction.ToString("0.##") + " %";
             settings.whiteTimeElapsed.text = "Time Elapsed: " + AIPlayer.s_WhiteTimeElapsed.Elapsed.TotalMilliseconds.ToString("F0") + "ms";
             settings.blackTimeElapsed.text = "Time Elapsed: " + AIPlayer.s_BlackTimeElapsed.Elapsed.TotalMilliseconds.ToString("F0") + "ms";
             settings.whiteBranchesPruned.text = "Branches Pruned: " + MiniMax.s_WhiteBranchesPruned;

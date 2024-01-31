@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Othello.Core;
@@ -8,28 +7,28 @@ using Console = Othello.Core.Console;
 
 namespace Othello.AI
 {
-    public class MCTS : ISearchEngine
+    public class Mcts : ISearchEngine
     {
-        private static readonly object m_lock = new object();
-        private Node m_cachedNode;
-        private const int m_IsRunning = -1;
-        private const int m_blockSize = 50;
-        private readonly int m_maxTime;
-        private readonly int m_maxIterations;
-        private int m_nodesVisited;
+        private static readonly object s_Lock = new();
+        private Node m_CachedNode;
+        private const int IS_RUNNING = -1;
+        private const int BLOCK_SIZE = 50;
+        private readonly int m_MaxTime;
+        private readonly int m_MaxIterations;
+        private int m_NodesVisited;
         private int m_CurrentPlayer;
         private readonly MctsType m_MctsType;
-        private int m_numTrees;
+        private int m_NumTrees;
 
         public static int s_WhiteIterationsRun;
         public static int s_BlackIterationsRun;
         public static double s_WhiteWinPrediction;
         public static double s_BlackWinPrediction;
 
-        public MCTS(int maxIterations, int maxTime, MctsType mctsType)
+        public Mcts(int maxIterations, int maxTime, MctsType mctsType)
         {
-            m_maxTime = maxTime;
-            m_maxIterations = maxIterations;
+            m_MaxTime = maxTime;
+            m_MaxIterations = maxIterations;
             s_WhiteIterationsRun = 0;
             s_BlackIterationsRun = 0;
             s_WhiteWinPrediction = 0;
@@ -39,26 +38,21 @@ namespace Othello.AI
 
         public Move StartSearch(Board board)
         {
-            m_nodesVisited = 0;
+            m_NodesVisited = 0;
             m_CurrentPlayer = board.GetCurrentPlayer() == Piece.Black ? Piece.Black : Piece.White;
             if (m_CurrentPlayer == Piece.Black)
                 s_BlackIterationsRun = 0;
             else
                 s_WhiteIterationsRun = 0;
 
-            switch (m_MctsType)
+            return m_MctsType switch
             {
-                case MctsType.Sequential:
-                    return CalculateMoveSequential(board);
-                case MctsType.RootParallel:
-                    return CalculateMoveRoot(board);
-                case MctsType.TreeParallel:
-                    return CalculateMoveTree(board);
-                case MctsType.Testing:
-                    return CalculateMoveTesting(board);
-                default:
-                    throw new NotImplementedException();
-            }
+                MctsType.Sequential => CalculateMoveSequential(board),
+                MctsType.RootParallel => CalculateMoveRoot(board),
+                MctsType.TreeParallel => CalculateMoveTree(board),
+                MctsType.Testing => CalculateMoveTesting(board),
+                _ => throw new NotImplementedException()
+            };
         }
 
         private Move CalculateMoveTree(Board board)
@@ -66,10 +60,10 @@ namespace Othello.AI
             var rootNode = SetRootNode(board);
             if (rootNode.Children.Count == 0)
                 Expand(rootNode);
-            m_numTrees = rootNode.Children.Count;
+            m_NumTrees = rootNode.Children.Count;
 
             var startTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-            var timeLimit = startTime + m_maxTime;
+            var timeLimit = startTime + m_MaxTime;
 
             Task[] tasks = new Task[rootNode.Children.Count];
             for (int i = 0; i < rootNode.Children.Count; i++)
@@ -84,8 +78,8 @@ namespace Othello.AI
             Task.WaitAll(tasks);
 
             var bestNode = rootNode.SelectBestNode();
-            m_cachedNode = bestNode;
-            m_cachedNode.Parent = null;
+            m_CachedNode = bestNode;
+            m_CachedNode.Parent = null;
             var endTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
             SetWinPrediction(bestNode);
             PrintSearchData(rootNode, startTime, bestNode, endTime);
@@ -96,13 +90,13 @@ namespace Othello.AI
         {
             var rootNode = SetRootNode(board);
             var startTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-            var timeLimit = startTime + m_maxTime;
+            var timeLimit = startTime + m_MaxTime;
 
-            var thread = Parallel.For(0, m_maxIterations + 1,
+            var thread = Parallel.For(0, m_MaxIterations + 1,
             (i, loopState) =>
             {
                 Node promisingNode;
-                lock (m_lock)
+                lock (s_Lock)
                 {
                     promisingNode = Select(rootNode);
                     Expand(promisingNode);
@@ -122,8 +116,8 @@ namespace Othello.AI
             );
 
             var bestNode = rootNode.SelectBestNode();
-            m_cachedNode = bestNode;
-            m_cachedNode.Parent = null;
+            m_CachedNode = bestNode;
+            m_CachedNode.Parent = null;
             SetWinPrediction(bestNode);
             var endTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
             PrintSearchData(rootNode, startTime, bestNode, endTime);
@@ -134,10 +128,10 @@ namespace Othello.AI
         {
             var rootNode = SetRootNode(board);
             var startTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-            var timeLimit = startTime + m_maxTime;
-            for (var iterations = 0; (iterations < m_maxIterations) & DateTimeOffset.Now.ToUnixTimeMilliseconds() < timeLimit; iterations += m_blockSize)
+            var timeLimit = startTime + m_MaxTime;
+            for (var iterations = 0; (iterations < m_MaxIterations) & DateTimeOffset.Now.ToUnixTimeMilliseconds() < timeLimit; iterations += BLOCK_SIZE)
             {
-                for (var i = 0; i < m_blockSize; i++)
+                for (var i = 0; i < BLOCK_SIZE; i++)
                 {
                     var promisingNode = Select(rootNode);
                     Expand(promisingNode);
@@ -152,8 +146,8 @@ namespace Othello.AI
                 }
             }
             var bestNode = rootNode.SelectBestNode();
-            m_cachedNode = bestNode;
-            m_cachedNode.Parent = null;
+            m_CachedNode = bestNode;
+            m_CachedNode.Parent = null;
 
             var endTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
             SetWinPrediction(bestNode);
@@ -165,10 +159,10 @@ namespace Othello.AI
         {
             var rootNode = SetRootNode(board);
             var startTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-            var timeLimit = startTime + m_maxTime;
-            for (var iterations = 0; (iterations < m_maxIterations) & DateTimeOffset.Now.ToUnixTimeMilliseconds() < timeLimit; iterations += m_blockSize)
+            var timeLimit = startTime + m_MaxTime;
+            for (var iterations = 0; (iterations < m_MaxIterations) & DateTimeOffset.Now.ToUnixTimeMilliseconds() < timeLimit; iterations += BLOCK_SIZE)
             {
-                for (var i = 0; i < m_blockSize; i++)
+                for (var i = 0; i < BLOCK_SIZE; i++)
                 {
                     var promisingNode = Select(rootNode);
                     Expand(promisingNode);
@@ -183,8 +177,8 @@ namespace Othello.AI
                 }
             }
             var bestNode = rootNode.SelectBestNode();
-            m_cachedNode = bestNode;
-            m_cachedNode.Parent = null;
+            m_CachedNode = bestNode;
+            m_CachedNode.Parent = null;
 
             var endTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
             SetWinPrediction(bestNode);
@@ -202,9 +196,9 @@ namespace Othello.AI
 
         private void RunTree(Node rootNode, long timeLimit)
         {
-            for (var iterations = 0; (iterations < m_maxIterations / m_numTrees) & DateTimeOffset.Now.ToUnixTimeMilliseconds() < timeLimit; iterations += m_blockSize)
+            for (var iterations = 0; (iterations < m_MaxIterations / m_NumTrees) & DateTimeOffset.Now.ToUnixTimeMilliseconds() < timeLimit; iterations += BLOCK_SIZE)
             {
-                for (var i = 0; i < m_blockSize; i++)
+                for (var i = 0; i < BLOCK_SIZE; i++)
                 {
                     var promisingNode = Select(rootNode);
                     Expand(promisingNode);
@@ -223,9 +217,9 @@ namespace Othello.AI
         private Node SetRootNode(Board board)
         {
             Node rootNode = null;
-            if (m_cachedNode != null)
+            if (m_CachedNode != null)
             {
-                foreach (var node in m_cachedNode.Children)
+                foreach (var node in m_CachedNode.Children)
                     if (node.Board.Equals(board))
                     {
                         rootNode = node;
@@ -273,10 +267,10 @@ namespace Othello.AI
         {
             var tempNode = node.Copy();
             var winningPlayer = tempNode.Board.GetBoardState();
-            while (winningPlayer == m_IsRunning)
+            while (winningPlayer == IS_RUNNING)
             {
                 tempNode.RandomMove();
-                m_nodesVisited++;
+                m_NodesVisited++;
                 winningPlayer = tempNode.Board.GetBoardState();
             }
             return winningPlayer;
@@ -300,7 +294,7 @@ namespace Othello.AI
             Console.Log(rootNode.Board.GetCurrentPlayerAsString() + " plays " + bestNode.Board.GetLastMove().ToString());
             Console.Log("Search time: " + (endTime - startTime) + " ms");
             Console.Log("Iterations: " + (m_CurrentPlayer == Piece.Black ? s_BlackIterationsRun : s_WhiteIterationsRun));
-            Console.Log("Nodes visited: " + m_nodesVisited);
+            Console.Log("Nodes visited: " + m_NodesVisited);
             Console.Log("Win prediction: " + (bestNode.NumWins / bestNode.NumVisits * 100).ToString("0.##") + " %");
             Console.Log("----------------------------------------------------");
         }
