@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace Othello.Core
 {
     public class HumanPlayer : Player
     {
-        private List<Move> m_legalMoves;
+        private Move[] m_legalMoves;
         private readonly Camera m_mainCam;
 
         public HumanPlayer(Board board) : base(board)
@@ -22,12 +23,12 @@ namespace Othello.Core
         public override void NotifyTurnToMove()
         {
             m_legalMoves = m_Board.GenerateLegalMoves();
-            if (m_legalMoves.Count == 0)
+            if (m_legalMoves.Length == 0)
             {
                 NoLegalMove();
                 return;
             }
-            m_BoardUI.HighlightLegalMoves(m_legalMoves);
+            m_BoardUI.HighlightLegalMoves(m_legalMoves.ToList());
         }
 
         private void HandleInput()

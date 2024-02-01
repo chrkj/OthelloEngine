@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace Othello.Core
@@ -8,6 +9,7 @@ namespace Othello.Core
         private ulong m_BlackPieces;
         private Move m_LastMove;
         private bool m_IsWhiteToMove;
+        private const int MAX_LEGAL_MOVES = 30;
 
         public Board()
         {
@@ -52,12 +54,12 @@ namespace Othello.Core
             if (m_AllPieces == 0xFFFFFFFFFFFFFFFF)
                 return true;
 
-            var numLegalMovesCurrentPlayer = GenerateLegalMoves().Count;
+            var numLegalMovesCurrentPlayer = GenerateLegalMoves().Length;
             if (numLegalMovesCurrentPlayer != 0)
                 return false;
 
             ChangePlayer();
-            var numLegalMovesCurrentOpponent = GenerateLegalMoves().Count;
+            var numLegalMovesCurrentOpponent = GenerateLegalMoves().Length;
             ChangePlayer();
 
             return numLegalMovesCurrentOpponent == 0;
@@ -84,7 +86,7 @@ namespace Othello.Core
             return m_AllPieces == other.m_AllPieces && m_BlackPieces == other.m_BlackPieces && m_IsWhiteToMove == other.m_IsWhiteToMove;
         }
 
-        public List<Move> GenerateLegalMoves()
+        public Move[] GenerateLegalMoves()
         {
             ulong opponentBitBoard;
             ulong currentPlayerBitboard;
@@ -148,16 +150,19 @@ namespace Othello.Core
             return BitBoardToList(legalMovesBitBoard);
         }
         
-        private List<Move> BitBoardToList(ulong bitboard)
+        private Move[] BitBoardToList(ulong bitboard)
         {
-            List<Move> setBitIndices = new List<Move>();
+            int currIndexPtr = 0;
+            Move[] setBitIndices = new Move[MAX_LEGAL_MOVES];
             for (int i = 0; i < sizeof(ulong) * 8; i++)
             {
                 ulong mask = (ulong)1 << i;
                 if ((bitboard & mask) != 0)
-                    setBitIndices.Add(new Move(i));
+                    setBitIndices[currIndexPtr++] = new Move(i);
             }
-            return setBitIndices;
+            var returnArray = new Move[currIndexPtr];
+            Array.Copy(setBitIndices, returnArray, currIndexPtr);
+            return returnArray;
         }
 
         public void LoadStartPosition()

@@ -67,12 +67,12 @@ namespace Othello.AI
         public void RandomMove() 
         {
             var legalMoves = Board.GenerateLegalMoves();
-            if (legalMoves.Count == 0)
+            if (legalMoves.Length == 0)
             {
                 Board.ChangePlayer();
                 return;
             }
-            var randomMove = legalMoves[new Random().Next(legalMoves.Count)];
+            var randomMove = legalMoves[new Random().Next(legalMoves.Length)];
             Board.MakeMove(randomMove);
             Board.ChangePlayer();
         }

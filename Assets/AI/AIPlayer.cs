@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 
 using Othello.Core;
@@ -42,12 +43,12 @@ namespace Othello.AI
         public override void NotifyTurnToMove()
         {
             var legalMoves = m_Board.GenerateLegalMoves();
-            if (legalMoves.Count == 0)
+            if (legalMoves.Length == 0)
             {
                 NoLegalMove();
                 return;
             }
-            m_BoardUI.HighlightLegalMoves(legalMoves);
+            m_BoardUI.HighlightLegalMoves(legalMoves.ToList());
             var engineThread = new Thread(StartSearch);
             engineThread.Start();
         }

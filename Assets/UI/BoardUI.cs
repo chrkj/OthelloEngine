@@ -66,10 +66,10 @@ namespace Othello.UI
             settings.blackTimeElapsed.text = "Time Elapsed: " + AIPlayer.s_BlackTimeElapsed.Elapsed.TotalMilliseconds.ToString("F0") + "ms";
             settings.whiteBranchesPruned.text = "Branches Pruned: " + MiniMax.s_WhiteBranchesPruned;
             settings.blackBranchesPruned.text = "Branches Pruned: " + MiniMax.s_BlackBranchesPruned;
-            settings.whiteWins.text = "White wins: " + GameManager.m_whiteWins;
-            settings.blackWins.text = "Black wins: " + GameManager.m_blackWins;
-            settings.draws.text = "Draws: " + GameManager.m_draws;
-            settings.currentSim.text = "Sim Nr.: " + GameManager.m_gamesToRun;
+            settings.whiteWins.text = "White wins: " + GameManager.s_WhiteWins;
+            settings.blackWins.text = "Black wins: " + GameManager.s_BlackWins;
+            settings.draws.text = "Draws: " + GameManager.s_Draws;
+            settings.currentSim.text = "Sim Nr.: " + GameManager.s_GamesToRun;
             settings.blackZobristSize.text = "Size: " + MiniMax.s_BlackZobristSize * 32 / 8 / 1000000 + "MB";
             settings.whiteZobristSize.text = "Size: " + MiniMax.s_WhiteZobristSize * 32 / 8 / 1000000 + "MB";
         }

@@ -15,7 +15,7 @@ namespace Othello.AI
         private Move CalculateMove(Board board)
         {
             var legalMoves = board.GenerateLegalMoves();
-            var index = new Random().Next(legalMoves.Count);
+            var index = new Random().Next(legalMoves.Length);
             var move = legalMoves[index];
             Console.Log(board.GetCurrentPlayerAsString() + " plays " + move.ToString());
             Console.Log("----------------------------------------------------");

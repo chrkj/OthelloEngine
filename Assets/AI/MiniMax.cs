@@ -19,7 +19,7 @@ namespace Othello.AI
         private readonly bool m_ZobristHashingEnabled;
         private bool m_TerminationFlag;
         private readonly Dictionary<ulong, int> m_Zobrist;
-        private readonly Dictionary<ulong, List<Move>> m_ZobristMoves;
+        private readonly Dictionary<ulong, Move[]> m_ZobristMoves;
 
         public static int s_CurrentDepthWhite;
         public static int s_CurrentDepthBlack;
@@ -38,7 +38,7 @@ namespace Othello.AI
             m_DepthLimit = depth;
             m_MaxTime = timeLimit;
             m_Zobrist = new Dictionary<ulong, int>();
-            m_ZobristMoves = new Dictionary<ulong, List<Move>>();
+            m_ZobristMoves = new Dictionary<ulong, Move[]>();
             s_WhiteZobristSize = 0;
             s_BlackZobristSize = 0;
         }
@@ -123,7 +123,7 @@ namespace Othello.AI
             var minUtil = int.MaxValue - 1;
 
             var legalMoves = GenerateLegalMoves(board);
-            if (legalMoves.Count == 0)
+            if (legalMoves.Length == 0)
                 minUtil = Math.Min(minUtil, MaxValue(board, depth - 1, alpha, beta));
 
             foreach (var legalMove in legalMoves)
@@ -152,7 +152,7 @@ namespace Othello.AI
             var maxUtil = int.MinValue + 1;
 
             var legalMoves = GenerateLegalMoves(board);
-            if (legalMoves.Count == 0)
+            if (legalMoves.Length == 0)
                 maxUtil = Math.Max(maxUtil, MinValue(board, depth - 1, alpha, beta));
 
             foreach (var legalMove in legalMoves)
@@ -244,21 +244,21 @@ namespace Othello.AI
             Console.Log("----------------------------------------------------");
         }
 
-        private void MoveOrdering(Move bestMove, ref List<Move> legalMoves)
+        private void MoveOrdering(Move bestMove, ref Move[] legalMoves)
         {
             if (!m_MoveOrderingEnabled)
                 return;
-            legalMoves.Sort();
+            
+            Array.Sort(legalMoves);
             if (bestMove == null)
                 return;
-            Move targetMove = legalMoves.Find(move => move.Equals(bestMove));
-            if (targetMove == null) 
-                return;
-            int targetIndex = legalMoves.IndexOf(targetMove);
+
+            int targetIndex = Array.IndexOf(legalMoves, bestMove);
             if (targetIndex == -1) 
                 return;
-            legalMoves.RemoveAt(targetIndex);
-            legalMoves.Insert(0, targetMove);
+            
+            // Swap the bestMove to the front of the array
+            (legalMoves[0], legalMoves[targetIndex]) = (legalMoves[targetIndex], legalMoves[0]);
         }
 
         private static void IncrementPruneCount()
@@ -291,22 +291,24 @@ namespace Othello.AI
                 m_TerminationFlag = true;
         }
 
-        private List<Move> GenerateLegalMoves(Board board)
+        private Move[] GenerateLegalMoves(Board board)
         {
-            List<Move> legalMoves;
+            Move[] legalMoves;
             if (m_ZobristHashingEnabled)
             {
                 var boardHash = board.GetHash();
                 if (m_ZobristMoves.TryGetValue(boardHash, out var move))
                 {
-                    legalMoves = new List<Move>(move);
+                    legalMoves = new Move[move.Length];
+                    Array.Copy(move, legalMoves, legalMoves.Length);
                 }
                 else
                 {
                     legalMoves = board.GenerateLegalMoves();
-                    legalMoves.Sort();
-                    m_ZobristMoves[boardHash] = new List<Move>(legalMoves);
-                    IncrementZobristCount(legalMoves.Count);
+                    Array.Sort(legalMoves);
+                    m_ZobristMoves[boardHash] = new Move[legalMoves.Length];
+                    Array.Copy(legalMoves, m_ZobristMoves[boardHash], legalMoves.Length);
+                    IncrementZobristCount(legalMoves.Length);
                 }
             }
             else
