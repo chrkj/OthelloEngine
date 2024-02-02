@@ -62,10 +62,7 @@ namespace Othello.Core
         public void MakeMove(Move move)
         {
             m_LastMove = move;
-            PlacePiece(move.Index, GetCurrentPlayer());
-            var captures = GetCaptureIndices(move);
-            foreach (var capture in captures)
-                PlacePiece(capture.Index, GetCurrentPlayer());
+            PlacePieces(move);
         }
 
         public bool Equals(Board other)
@@ -236,59 +233,12 @@ namespace Othello.Core
             return (m_BlackPieces & (1UL << index)) == 0 ? Piece.WHITE : Piece.BLACK;
         }
 
-        private int GetCurrentOpponent()
-        {
-            return m_IsWhiteToMove ? Piece.BLACK : Piece.WHITE;
-        }
-
-        private static bool IsOutOfBounds(int index)
-        {
-            return index < 0 || index > 63;
-        }
-
-        private bool IsOpponentPiece(int index)
-        {
-            return GetPieceColor(index) == GetCurrentOpponent();
-        }
-
-        private bool IsFriendlyPiece(int index)
-        {
-            return GetPieceColor(index) == GetCurrentPlayer();
-        }
-
         public int GetWinner()
         {
             var blackPieceCount = GetPieceCount(Piece.BLACK);
             var whitePieceCount = GetPieceCount(Piece.WHITE);
             if (blackPieceCount == whitePieceCount) return 0;
             return blackPieceCount > whitePieceCount ? Piece.BLACK : Piece.WHITE;
-        }
-
-        private HashSet<Move> GetCaptureIndices(Move move)
-        {
-            var allCaptures = new HashSet<Move>();
-            for (var directionOffsetIndex = 0; directionOffsetIndex < 8; directionOffsetIndex++)
-            {
-                var currentCaptures = new HashSet<Move>();
-                var currentSquare = move.Index + MoveData.s_DirectionOffsets[directionOffsetIndex];
-                if (IsOutOfBounds(currentSquare)) continue;
-
-                for (var timesMoved = 1;
-                     timesMoved < MoveData.s_SquaresToEdge[move.Index][directionOffsetIndex];
-                     timesMoved++)
-                {
-                    if (!IsOpponentPiece(currentSquare)) break;
-                    currentCaptures.Add(new Move(currentSquare));
-                    currentSquare += MoveData.s_DirectionOffsets[directionOffsetIndex];
-                }
-
-                if (!IsFriendlyPiece(currentSquare) || currentCaptures.Count <= 0)
-                    continue;
-
-                allCaptures.UnionWith(currentCaptures);
-            }
-
-            return allCaptures;
         }
 
         public List<int> GetPiecePositionsBlack()
@@ -308,5 +258,80 @@ namespace Othello.Core
                 hash = 4239784;
             return m_BlackPieces ^ hash;
         }
+        
+        private void PlacePieces(Move move)
+        {
+            var index = 63 - move.Index;
+            ulong opponentBitBoard;
+            ulong currentPlayerBitboard;
+            if (m_IsWhiteToMove)
+            {
+                opponentBitBoard = m_BlackPieces;
+                currentPlayerBitboard = m_WhitePieces;
+            }
+            else
+            {
+                opponentBitBoard = m_WhitePieces;
+                currentPlayerBitboard = m_BlackPieces;
+            }
+            
+            if (0 <= index && index < 64) 
+            {
+                ulong bit = IndexToBit(index);
+                ulong rev = 0;
+
+                for (int dir = 0; dir < 8; ++dir) 
+                {
+                    ulong rev_ = 0;
+                    ulong mask = MoveDir(bit, dir);
+
+                    while ((mask != 0) && ((mask & opponentBitBoard) != 0)) 
+                    {
+                        rev_ |= mask;
+                        mask = MoveDir(mask, dir);
+                    }
+
+                    if ((mask & currentPlayerBitboard) != 0) 
+                        rev |= rev_;
+                }
+
+                if (m_IsWhiteToMove)
+                {
+                    m_BlackPieces ^= rev;
+                    m_WhitePieces ^= (bit | rev);
+                }
+                else
+                {
+                    m_WhitePieces ^= rev;
+                    m_BlackPieces ^= (bit | rev);
+                }
+            }
+        }
+        
+        private ulong IndexToBit(int id) 
+        {
+            ulong mask = 0x8000000000000000;
+            int x = id >> 3, y = id & 7;
+            mask >>= y;
+            mask >>= (x * 8);
+            return mask;
+        }
+        
+        private ulong MoveDir(ulong id, int dir)
+        {
+            return dir switch
+            {
+                0 => (id << 8) & 0xffffffffffffff00,
+                1 => (id << 7) & 0x7f7f7f7f7f7f7f00,
+                2 => (id >> 1) & 0x7f7f7f7f7f7f7f7f,
+                3 => (id >> 9) & 0x007f7f7f7f7f7f7f,
+                4 => (id >> 8) & 0x00ffffffffffffff,
+                5 => (id >> 7) & 0x00fefefefefefefe,
+                6 => (id << 1) & 0xfefefefefefefefe,
+                7 => (id << 9) & 0xfefefefefefefe00,
+                _ => 0
+            };
+        }
+        
     }
 }
