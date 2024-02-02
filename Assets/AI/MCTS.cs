@@ -1,31 +1,31 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+
+using Othello.UI;
 using Othello.Core;
-using static Othello.Core.Settings;
 using Console = Othello.Core.Console;
 
 namespace Othello.AI
 {
     public class Mcts : ISearchEngine
     {
-        private static readonly object s_Lock = new();
-        private Node m_CachedNode;
-        private const int IS_RUNNING = -1;
-        private const int BLOCK_SIZE = 50;
-        private readonly int m_MaxTime;
-        private readonly int m_MaxIterations;
-        private int m_NodesVisited;
-        private int m_CurrentPlayer;
-        private readonly MctsType m_MctsType;
-        private int m_NumTrees;
-
         public static int s_WhiteIterationsRun;
         public static int s_BlackIterationsRun;
         public static double s_WhiteWinPrediction;
         public static double s_BlackWinPrediction;
+        
+        private const int BLOCK_SIZE = 50;
+        private const int IS_RUNNING = -1;
+        private Node m_CachedNode;
+        private int m_NodesVisited;
+        private int m_CurrentPlayer;
+        private int m_NumTrees;
+        private readonly int m_MaxTime;
+        private readonly int m_MaxIterations;
+        private readonly MenuUI.MctsType m_MctsType;
 
-        public Mcts(int maxIterations, int maxTime, MctsType mctsType)
+        public Mcts(int maxIterations, int maxTime, MenuUI.MctsType mctsType)
         {
             m_MaxTime = maxTime;
             m_MaxIterations = maxIterations;
@@ -39,18 +39,18 @@ namespace Othello.AI
         public Move StartSearch(Board board)
         {
             m_NodesVisited = 0;
-            m_CurrentPlayer = board.GetCurrentPlayer() == Piece.Black ? Piece.Black : Piece.White;
-            if (m_CurrentPlayer == Piece.Black)
+            m_CurrentPlayer = board.GetCurrentPlayer() == Piece.BLACK ? Piece.BLACK : Piece.WHITE;
+            if (m_CurrentPlayer == Piece.BLACK)
                 s_BlackIterationsRun = 0;
             else
                 s_WhiteIterationsRun = 0;
 
             return m_MctsType switch
             {
-                MctsType.Sequential => CalculateMoveSequential(board),
-                MctsType.RootParallel => CalculateMoveRoot(board),
-                MctsType.TreeParallel => CalculateMoveTree(board),
-                MctsType.Testing => CalculateMoveTesting(board),
+                MenuUI.MctsType.Sequential => CalculateMoveSequential(board),
+                MenuUI.MctsType.RootParallel => CalculateMoveRoot(board),
+                MenuUI.MctsType.TreeParallel => CalculateMoveTree(board),
+                MenuUI.MctsType.Testing => CalculateMoveTesting(board),
                 _ => throw new NotImplementedException()
             };
         }
@@ -92,11 +92,11 @@ namespace Othello.AI
             var startTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
             var timeLimit = startTime + m_MaxTime;
 
-            var thread = Parallel.For(0, m_MaxIterations + 1,
+            var _ = Parallel.For(0, m_MaxIterations + 1,
             (i, loopState) =>
             {
                 Node promisingNode;
-                lock (s_Lock)
+                lock (this)
                 {
                     promisingNode = Select(rootNode);
                     Expand(promisingNode);
@@ -108,7 +108,7 @@ namespace Othello.AI
                 var winningPlayer = Simulate(nodeToExplore);
 
                 BackPropagation(nodeToExplore, winningPlayer);
-                IncrementIterarion();
+                IncrementIteration();
 
                 if (DateTimeOffset.Now.ToUnixTimeMilliseconds() > timeLimit)
                     loopState.Break();
@@ -142,7 +142,7 @@ namespace Othello.AI
                     var winningPlayer = Simulate(nodeToExplore);
 
                     BackPropagation(nodeToExplore, winningPlayer);
-                    IncrementIterarion();
+                    IncrementIteration();
                 }
             }
             var bestNode = rootNode.SelectBestNode();
@@ -173,7 +173,7 @@ namespace Othello.AI
                     var winningPlayer = Simulate(nodeToExplore);
 
                     BackPropagation(nodeToExplore, winningPlayer);
-                    IncrementIterarion();
+                    IncrementIteration();
                 }
             }
             var bestNode = rootNode.SelectBestNode();
@@ -186,9 +186,9 @@ namespace Othello.AI
             return bestNode.Board.GetLastMove();
         }
 
-        private void IncrementIterarion()
+        private void IncrementIteration()
         {
-            if (m_CurrentPlayer == Piece.Black)
+            if (m_CurrentPlayer == Piece.BLACK)
                 s_BlackIterationsRun++;
             else
                 s_WhiteIterationsRun++;
@@ -209,7 +209,7 @@ namespace Othello.AI
                     var winningPlayer = Simulate(nodeToExplore);
 
                     BackPropagation(nodeToExplore, winningPlayer);
-                    IncrementIterarion();
+                    IncrementIteration();
                 }
             }
         }
@@ -291,9 +291,9 @@ namespace Othello.AI
         private void PrintSearchData(Node rootNode, long startTime, Node bestNode, long endTime)
         {
             Console.Log("Tree size: " + bestNode.NumVisits);
-            Console.Log(rootNode.Board.GetCurrentPlayerAsString() + " plays " + bestNode.Board.GetLastMove().ToString());
+            Console.Log(rootNode.Board.GetCurrentPlayerAsString() + " plays " + bestNode.Board.GetLastMove());
             Console.Log("Search time: " + (endTime - startTime) + " ms");
-            Console.Log("Iterations: " + (m_CurrentPlayer == Piece.Black ? s_BlackIterationsRun : s_WhiteIterationsRun));
+            Console.Log("Iterations: " + (m_CurrentPlayer == Piece.BLACK ? s_BlackIterationsRun : s_WhiteIterationsRun));
             Console.Log("Nodes visited: " + m_NodesVisited);
             Console.Log("Win prediction: " + (bestNode.NumWins / bestNode.NumVisits * 100).ToString("0.##") + " %");
             Console.Log("----------------------------------------------------");
@@ -301,7 +301,7 @@ namespace Othello.AI
 
         private void SetWinPrediction(Node bestNode)
         {
-            if (m_CurrentPlayer == Piece.Black)
+            if (m_CurrentPlayer == Piece.BLACK)
                 s_BlackWinPrediction = bestNode.NumWins / bestNode.NumVisits * 100;
             else
                 s_WhiteWinPrediction = bestNode.NumWins / bestNode.NumVisits * 100;

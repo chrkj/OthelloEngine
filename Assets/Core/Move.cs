@@ -5,11 +5,9 @@ namespace Othello.Core
 {
     public class Move : IEquatable<Move>, IComparable<Move>
     {
-        public int Index => m_index;
+        public int Index { get; }
 
-        private readonly int m_index;
-        
-        public static readonly int[] m_cellWeight = new int[64]
+        public static readonly int[] s_CellWeight = 
         {
             30,  -12, 0,  -1, -1, 0,  -12, 30,  
             -12, -15, -3, -3, -3, -3, -15, -12,
@@ -23,7 +21,7 @@ namespace Othello.Core
 
         public Move(int index)
         {
-            m_index = index;
+            Index = index;
         }
 
         public override bool Equals(object obj)
@@ -37,7 +35,7 @@ namespace Othello.Core
 
         public bool Equals(Move other)
         {
-            return m_index == other.m_index;
+            return other != null && Index == other.Index;
         }
 
         public static bool operator ==(Move left, Move right)
@@ -52,21 +50,21 @@ namespace Othello.Core
 
         public override int GetHashCode()
         {
-            return m_index.GetHashCode();
+            return Index.GetHashCode();
         }
 
         public override string ToString()
         {
-            var rank = ((m_index >> 3) + 1).ToString();
-            var file = BoardUI.FileChars[m_index & 7].ToUpper();
+            var rank = ((Index >> 3) + 1).ToString();
+            var file = BoardUI.Instance.FileChars[Index & 7].ToUpper();
             return file + rank;
         }
 
         public int CompareTo(Move other)
         {
-            if (m_cellWeight[Index] < m_cellWeight[other.Index])
+            if (s_CellWeight[Index] < s_CellWeight[other.Index])
                 return 1;
-            if (m_cellWeight[Index] > m_cellWeight[other.Index])
+            if (s_CellWeight[Index] > s_CellWeight[other.Index])
                 return -1;
             return 0; 
         }

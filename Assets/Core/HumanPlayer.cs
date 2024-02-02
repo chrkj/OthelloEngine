@@ -1,18 +1,19 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+
+using Othello.UI;
 
 namespace Othello.Core
 {
     public class HumanPlayer : Player
     {
-        private Move[] m_legalMoves;
-        private readonly Camera m_mainCam;
+        private Move[] m_LegalMoves;
+        private readonly Camera m_MainCam;
 
         public HumanPlayer(Board board) : base(board)
         {
-            m_mainCam = Camera.main;
+            m_MainCam = Camera.main;
         }
 
         public override void Update()
@@ -22,18 +23,18 @@ namespace Othello.Core
 
         public override void NotifyTurnToMove()
         {
-            m_legalMoves = m_Board.GenerateLegalMoves();
-            if (m_legalMoves.Length == 0)
+            m_LegalMoves = m_Board.GenerateLegalMoves();
+            if (m_LegalMoves.Length == 0)
             {
                 NoLegalMove();
                 return;
             }
-            m_BoardUI.HighlightLegalMoves(m_legalMoves.ToList());
+            BoardUI.Instance.HighlightLegalMoves(m_LegalMoves.ToList());
         }
 
         private void HandleInput()
         {
-            var mousePosition = m_mainCam.ScreenToWorldPoint(Input.mousePosition);
+            var mousePosition = m_MainCam.ScreenToWorldPoint(Input.mousePosition);
             HandlePieceSelection(mousePosition);
         }
 
@@ -52,11 +53,11 @@ namespace Othello.Core
             if (!isValidSquare)
                 return;
 
-            if (!m_legalMoves.Contains(new Move(selectedIndex))) 
+            if (!m_LegalMoves.Contains(new Move(selectedIndex))) 
                 return;
             
             var chosenMove = new Move(selectedIndex);
-            Console.Log(m_Board.GetCurrentPlayerAsString() + " plays " + chosenMove.ToString());
+            Console.Log(m_Board.GetCurrentPlayerAsString() + " plays " + chosenMove);
             Console.Log("----------------------------------------------------");
             ChooseMove(chosenMove);
         }

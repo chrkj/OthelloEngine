@@ -20,7 +20,7 @@ namespace Othello.Core
         public Board(int playerToStart)
         {
             m_LastMove = null;
-            m_IsWhiteToMove = playerToStart == Piece.White;
+            m_IsWhiteToMove = playerToStart == Piece.WHITE;
         }
 
         public Board Copy()
@@ -40,7 +40,7 @@ namespace Othello.Core
             m_AllPieces = 0;
             m_BlackPieces = 0;
             m_LastMove = null;
-            m_IsWhiteToMove = playerToStart == Piece.White;
+            m_IsWhiteToMove = playerToStart == Piece.WHITE;
         }
 
         public bool IsEmpty(int index)
@@ -73,13 +73,6 @@ namespace Othello.Core
             foreach (var capture in captures)
                 PlacePiece(capture.Index, GetCurrentPlayer());
         }
-
-        public string GetPieceCountAsString(int player)
-        {
-            var count = GetPieceCount(player);
-            return count.ToString();
-        }
-
 
         public bool Equals(Board other)
         {
@@ -167,10 +160,10 @@ namespace Othello.Core
 
         public void LoadStartPosition()
         {
-            PlacePiece(27, Piece.Black);
-            PlacePiece(28, Piece.White);
-            PlacePiece(35, Piece.White);
-            PlacePiece(36, Piece.Black);
+            PlacePiece(27, Piece.BLACK);
+            PlacePiece(28, Piece.WHITE);
+            PlacePiece(35, Piece.WHITE);
+            PlacePiece(36, Piece.BLACK);
         }
 
         public static int GetIndex(int file, int rank)
@@ -183,7 +176,7 @@ namespace Othello.Core
             var index = GetIndex(file, rank);
             if (IsEmpty(index))
                 return 0;
-            return (m_BlackPieces & (1UL << index)) == 0 ? Piece.White : Piece.Black;
+            return (m_BlackPieces & (1UL << index)) == 0 ? Piece.WHITE : Piece.BLACK;
         }
 
         public Move GetLastMove()
@@ -198,7 +191,7 @@ namespace Othello.Core
 
         public int GetCurrentPlayer()
         {
-            return m_IsWhiteToMove ? Piece.White : Piece.Black;
+            return m_IsWhiteToMove ? Piece.WHITE : Piece.BLACK;
         }
 
         public void ChangePlayer()
@@ -231,10 +224,10 @@ namespace Othello.Core
             m_AllPieces |= 1UL << index;
             switch (player)
             {
-                case Piece.Black:
+                case Piece.BLACK:
                     m_BlackPieces |= 1UL << index;
                     break;
-                case Piece.White:
+                case Piece.WHITE:
                     m_BlackPieces &= ~(1UL << index);
                     break;
             }
@@ -242,13 +235,14 @@ namespace Othello.Core
 
         private int GetPieceColor(int index)
         {
-            if (IsEmpty(index)) return 0;
-            return (m_BlackPieces & (1UL << index)) == 0 ? Piece.White : Piece.Black;
+            if (IsEmpty(index)) 
+                return 0;
+            return (m_BlackPieces & (1UL << index)) == 0 ? Piece.WHITE : Piece.BLACK;
         }
 
         private int GetCurrentOpponent()
         {
-            return m_IsWhiteToMove ? Piece.Black : Piece.White;
+            return m_IsWhiteToMove ? Piece.BLACK : Piece.WHITE;
         }
 
         private static bool IsOutOfBounds(int index)
@@ -268,10 +262,10 @@ namespace Othello.Core
 
         public int GetWinner()
         {
-            var blackPieceCount = GetPieceCount(Piece.Black);
-            var whitePieceCount = GetPieceCount(Piece.White);
+            var blackPieceCount = GetPieceCount(Piece.BLACK);
+            var whitePieceCount = GetPieceCount(Piece.WHITE);
             if (blackPieceCount == whitePieceCount) return 0;
-            return blackPieceCount > whitePieceCount ? Piece.Black : Piece.White;
+            return blackPieceCount > whitePieceCount ? Piece.BLACK : Piece.WHITE;
         }
 
         private HashSet<Move> GetCaptureIndices(Move move)
@@ -280,16 +274,16 @@ namespace Othello.Core
             for (var directionOffsetIndex = 0; directionOffsetIndex < 8; directionOffsetIndex++)
             {
                 var currentCaptures = new HashSet<Move>();
-                var currentSquare = move.Index + MoveData.DirectionOffsets[directionOffsetIndex];
+                var currentSquare = move.Index + MoveData.s_DirectionOffsets[directionOffsetIndex];
                 if (IsOutOfBounds(currentSquare)) continue;
 
                 for (var timesMoved = 1;
-                     timesMoved < MoveData.SquaresToEdge[move.Index][directionOffsetIndex];
+                     timesMoved < MoveData.s_SquaresToEdge[move.Index][directionOffsetIndex];
                      timesMoved++)
                 {
                     if (!IsOpponentPiece(currentSquare)) break;
                     currentCaptures.Add(new Move(currentSquare));
-                    currentSquare += MoveData.DirectionOffsets[directionOffsetIndex];
+                    currentSquare += MoveData.s_DirectionOffsets[directionOffsetIndex];
                 }
 
                 if (!IsFriendlyPiece(currentSquare) || currentCaptures.Count <= 0)

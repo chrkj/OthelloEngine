@@ -1,42 +1,45 @@
-using System.Diagnostics;
 using System.Linq;
 using System.Threading;
+using System.Diagnostics;
+using System.Threading.Tasks;
+using UnityEngine;
 
 using Othello.Core;
 using Othello.UI;
-using UnityEngine;
 
 namespace Othello.AI
 {
     public class AIPlayer : Player
     {
-        private bool m_moveFound;
-        private Move m_chosenMove;
-        private readonly ISearchEngine m_searchEngine;
+        public static Stopwatch s_BlackTimeElapsed = new();
+        public static Stopwatch s_WhiteTimeElapsed = new();
+        
+        public readonly CancellationTokenSource Cts = new();
 
-        public static Stopwatch s_BlackTimeElapsed = new Stopwatch();
-        public static Stopwatch s_WhiteTimeElapsed = new Stopwatch();
+        private bool m_MoveFound;
+        private Move m_ChosenMove;
+        private readonly ISearchEngine m_SearchEngine;
 
         public AIPlayer(Board board, ISearchEngine searchEngine) : base(board)
         {
-            m_searchEngine = searchEngine;
+            m_SearchEngine = searchEngine;
         }
 
         public override void Update()
         {
-            if (!m_moveFound)
+            if (!m_MoveFound)
                 return;
-            if (!Settings.AutoMove)
+            if (!MenuUI.Instance.AutoMove)
             {
                 if (!Input.GetKeyDown(KeyCode.Space))
                     return;
-                m_moveFound = false;
-                ChooseMove(m_chosenMove);
+                m_MoveFound = false;
+                ChooseMove(m_ChosenMove);
             }
             else
             {
-                m_moveFound = false;
-                ChooseMove(m_chosenMove);
+                m_MoveFound = false;
+                ChooseMove(m_ChosenMove);
             }
         }
 
@@ -48,44 +51,46 @@ namespace Othello.AI
                 NoLegalMove();
                 return;
             }
-            m_BoardUI.HighlightLegalMoves(legalMoves.ToList());
-            var engineThread = new Thread(StartSearch);
-            engineThread.Start();
+            BoardUI.Instance.HighlightLegalMoves(legalMoves.ToList());
+            Task.Factory.StartNew(Search, 
+                Cts.Token,
+                TaskCreationOptions.LongRunning,
+                TaskScheduler.Default);
         }
 
-        private void StartSearch()
+        private void Search()
         {
             StartStopwatch();
-            m_chosenMove = m_searchEngine.StartSearch(m_Board);
+            m_ChosenMove = m_SearchEngine.StartSearch(m_Board);
             StopStopwatch();
-            m_moveFound = true;
+            m_MoveFound = true;
         }
 
         private void StopStopwatch()
         {
-            if (m_Board.GetCurrentPlayer() == Piece.Black)
+            if (m_Board.GetCurrentPlayer() == Piece.BLACK)
             {
-                BoardUI.s_blackAiPlayerCalculating = false;
+                BoardUI.Instance.BlackAiPlayerCalculating = false;
                 s_BlackTimeElapsed.Stop();
             }
             else
             {
-                BoardUI.s_whiteAiPlayerCalculating = false;
+                BoardUI.Instance.WhiteAiPlayerCalculating = false;
                 s_WhiteTimeElapsed.Stop();
             }
         }
 
         private void StartStopwatch()
         {
-            if (m_Board.GetCurrentPlayer() == Piece.Black)
+            if (m_Board.GetCurrentPlayer() == Piece.BLACK)
             {
-                BoardUI.s_blackAiPlayerCalculating = true;
+                BoardUI.Instance.BlackAiPlayerCalculating = true;
                 s_BlackTimeElapsed.Reset();
                 s_BlackTimeElapsed.Start();
             }
             else
             {
-                BoardUI.s_whiteAiPlayerCalculating = true;
+                BoardUI.Instance.WhiteAiPlayerCalculating = true;
                 s_WhiteTimeElapsed.Reset();
                 s_WhiteTimeElapsed.Start();
             }

@@ -8,45 +8,46 @@ namespace Othello.AI
 {
     public class MiniMax : ISearchEngine
     {
-        private readonly int m_DepthLimit;
-        private readonly int m_MaxTime;
-        private const int MAX_PLAYER = Piece.Black;
-        private const int MIN_PLAYER = Piece.White;
+        public static int s_WhiteCurrentDepth;
+        public static int s_BlackCurrentDepth;
+        public static int s_WhiteZobristSize;
+        public static int s_BlackZobristSize;
+        public static int s_WhiteBranchesPruned;
+        public static int s_BlackBranchesPruned;
+        public static int s_WhitePositionsEvaluated;
+        public static int s_BlackPositionsEvaluated;
+        
+        private const int MAX_PLAYER = Piece.BLACK;
+        private const int MIN_PLAYER = Piece.WHITE;
+        
         private long m_TimeLimit;
-        private static int m_CurrentPlayer;
-        private readonly bool m_IterativeDeepningEnabled;
+        private int m_CurrentPlayer;
+        private bool m_TerminationFlag;
+        private readonly int m_MaxTime;
+        private readonly int m_DepthLimit;
         private readonly bool m_MoveOrderingEnabled;
         private readonly bool m_ZobristHashingEnabled;
-        private bool m_TerminationFlag;
+        private readonly bool m_IterativeDeepeningEnabled;
         private readonly Dictionary<ulong, int> m_Zobrist;
         private readonly Dictionary<ulong, Move[]> m_ZobristMoves;
 
-        public static int s_CurrentDepthWhite;
-        public static int s_CurrentDepthBlack;
-        public static int s_WhitePositionsEvaluated;
-        public static int s_BlackPositionsEvaluated;
-        public static int s_WhiteBranchesPruned;
-        public static int s_BlackBranchesPruned;
-        public static int s_WhiteZobristSize;
-        public static int s_BlackZobristSize;
-
-        public MiniMax(int depth, int timeLimit, bool moveOrderingEnabled, bool iterativeDeepningEnabled, bool zobristHashingEnabled)
+        public MiniMax(int depth, int timeLimit, bool moveOrderingEnabled, bool iterativeDeepeningEnabled, bool zobristHashingEnabled)
         {
-            m_IterativeDeepningEnabled = iterativeDeepningEnabled;
+            m_IterativeDeepeningEnabled = iterativeDeepeningEnabled;
             m_MoveOrderingEnabled = moveOrderingEnabled;
             m_ZobristHashingEnabled = zobristHashingEnabled;
             m_DepthLimit = depth;
             m_MaxTime = timeLimit;
-            m_Zobrist = new Dictionary<ulong, int>();
-            m_ZobristMoves = new Dictionary<ulong, Move[]>();
             s_WhiteZobristSize = 0;
             s_BlackZobristSize = 0;
+            m_Zobrist = new Dictionary<ulong, int>();
+            m_ZobristMoves = new Dictionary<ulong, Move[]>();
         }
 
         public Move StartSearch(Board board)
         {
             m_TerminationFlag = false;
-            m_CurrentPlayer = board.GetCurrentPlayer() == Piece.Black ? Piece.Black : Piece.White;
+            m_CurrentPlayer = board.GetCurrentPlayer() == Piece.BLACK ? Piece.BLACK : Piece.WHITE;
             ResetBranchCount();
 
             var start = DateTimeOffset.Now.ToUnixTimeMilliseconds();
@@ -54,7 +55,7 @@ namespace Othello.AI
 
             int bestEvalThisIteration = 0;
             Move bestMoveThisIteration = board.GenerateLegalMoves().First();
-            if (m_IterativeDeepningEnabled)
+            if (m_IterativeDeepeningEnabled)
             {
                 for (int searchDepth = 1; searchDepth < m_DepthLimit + 1; searchDepth++)
                 {
@@ -73,7 +74,7 @@ namespace Othello.AI
             return bestMoveThisIteration;
         }
 
-        private Move CalculateMove(Board board, ref Move bestMoveThisIteration, ref int bestEvalThisIteration, int depth)
+        private void CalculateMove(Board board, ref Move bestMoveThisIteration, ref int bestEvalThisIteration, int depth)
         {
             ResetPositionCount();
             var currentPlayer = board.GetCurrentPlayer();
@@ -109,7 +110,6 @@ namespace Othello.AI
                     bestMoveThisIteration = legalMove;
                 }
             }
-            return bestMoveThisIteration;
         }
 
         private int MinValue(Board board, int depth, int alpha, int beta)
@@ -137,7 +137,6 @@ namespace Othello.AI
                 }
                 beta = Math.Min(beta, minUtil);
             }
-
             return minUtil;
         }
 
@@ -173,20 +172,18 @@ namespace Othello.AI
         {
             IncrementPositionCount();
 
-            // Check for zobrist eval
             var boardHash = board.GetHash();
             if (m_ZobristHashingEnabled && m_Zobrist.TryGetValue(boardHash, out var zobristEval))
                 return zobristEval;
-
             
             if (!board.IsTerminalBoardState())
             {
                 int eval = EvaluateBoard(board);
-                if (m_ZobristHashingEnabled)
-                {
-                    m_Zobrist[boardHash] = eval;
-                    IncrementZobristCount(1);
-                }
+                if (!m_ZobristHashingEnabled) 
+                    return eval;
+                
+                m_Zobrist[boardHash] = eval;
+                IncrementZobristCount(1);
                 return eval;
             }
             
@@ -197,17 +194,17 @@ namespace Othello.AI
             return 0;
         }
 
-        private static void IncrementZobristCount(int count)
+        private void IncrementZobristCount(int count)
         {
-            if (m_CurrentPlayer == Piece.Black)
+            if (m_CurrentPlayer == Piece.BLACK)
                 s_BlackZobristSize += count;
             else
                 s_WhiteZobristSize += count;
         }
 
-        private static void IncrementPositionCount()
+        private void IncrementPositionCount()
         {
-            if (m_CurrentPlayer == Piece.Black)
+            if (m_CurrentPlayer == Piece.BLACK)
                 s_BlackPositionsEvaluated++;
             else
                 s_WhitePositionsEvaluated++;
@@ -231,16 +228,16 @@ namespace Othello.AI
             int value = 0;
             var positions = board.GetPiecePositionsBlack();
             foreach (var pos in positions)
-                value += Move.m_cellWeight[pos];
+                value += Move.s_CellWeight[pos];
             return value;
         }
 
-        private static void PrintSearchData(Board board, long start, Move bestMove)
+        private void PrintSearchData(Board board, long start, Move bestMove)
         {
             var end = DateTimeOffset.Now.ToUnixTimeMilliseconds();
             Console.Log(board.GetCurrentPlayerAsString() + " plays " + bestMove);
             Console.Log("Search time: " + (end - start) + " ms");
-            Console.Log("Positions examined: " + (m_CurrentPlayer == Piece.Black ? s_BlackPositionsEvaluated : s_WhitePositionsEvaluated));
+            Console.Log("Positions examined: " + (m_CurrentPlayer == Piece.BLACK ? s_BlackPositionsEvaluated : s_WhitePositionsEvaluated));
             Console.Log("----------------------------------------------------");
         }
 
@@ -261,25 +258,25 @@ namespace Othello.AI
             (legalMoves[0], legalMoves[targetIndex]) = (legalMoves[targetIndex], legalMoves[0]);
         }
 
-        private static void IncrementPruneCount()
+        private void IncrementPruneCount()
         {
-            if (m_CurrentPlayer == Piece.Black)
+            if (m_CurrentPlayer == Piece.BLACK)
                 s_BlackBranchesPruned++;
             else
                 s_WhiteBranchesPruned++;
         }
 
-        private static void UpdateSearchDepth(Board board, int searchDepth)
+        private void UpdateSearchDepth(Board board, int searchDepth)
         {
-            if (board.GetCurrentPlayer() == Piece.White)
-                s_CurrentDepthWhite = searchDepth;
+            if (board.GetCurrentPlayer() == Piece.WHITE)
+                s_WhiteCurrentDepth = searchDepth;
             else
-                s_CurrentDepthBlack = searchDepth;
+                s_BlackCurrentDepth = searchDepth;
         }
 
-        private static void ResetBranchCount()
+        private void ResetBranchCount()
         {
-            if (m_CurrentPlayer == Piece.Black)
+            if (m_CurrentPlayer == Piece.BLACK)
                 s_BlackBranchesPruned = 0;
             else
                 s_WhiteBranchesPruned = 0;
@@ -319,9 +316,9 @@ namespace Othello.AI
             return legalMoves;
         }
 
-        private static void ResetPositionCount()
+        private void ResetPositionCount()
         {
-            if (m_CurrentPlayer == Piece.Black)
+            if (m_CurrentPlayer == Piece.BLACK)
                 s_BlackPositionsEvaluated = 0;
             else
                 s_WhitePositionsEvaluated = 0;

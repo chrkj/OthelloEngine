@@ -1,5 +1,6 @@
-﻿using Othello.Core;
-using UnityEngine;
+﻿using UnityEngine;
+
+using Othello.Core;
 
 namespace Othello.UI
 {

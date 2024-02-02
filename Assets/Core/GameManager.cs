@@ -3,33 +3,29 @@ using System.Collections;
 using UnityEngine;
 
 using Othello.UI;
+using Othello.Utility;
 
 namespace Othello.Core
 {
-    public class GameManager : MonoBehaviour
+    public class GameManager : SingletonMono<GameManager>
     {
+        public int Draws;
+        public int BlackWins;
+        public int WhiteWins;
+        public int NumSimsRan;
+        
         private Board m_Board;
-        private BoardUI m_BoardUI;
-
         private Player m_PlayerToMove;
         private Player m_BlackPlayer;
         private Player m_WhitePlayer;
-
         private State m_GameState;
-        private Settings m_Settings;
-        public static int s_GamesToRun;
-        public static int s_BlackWins;
-        public static int s_WhiteWins;
-        public static int s_Draws;
-
         private bool m_LastPlayerHadNoMove;
         private enum State { Playing, GameOver, Idle }
 
-        private void Awake()
+        protected override void Awake()
         {
+            base.Awake();
             Application.runInBackground = true;
-            m_Settings = GetComponent<Settings>();
-            m_BoardUI = FindObjectOfType<BoardUI>();
             MoveData.PrecomputeData();
         }
 
@@ -37,36 +33,38 @@ namespace Othello.Core
         {
             m_Board = new Board();
             m_Board.LoadStartPosition();
-            m_BoardUI.UpdateBoard(m_Board);
-            m_Settings.Setup(m_Board, m_BoardUI);
+            BoardUI.Instance.InitBoard();
+            BoardUI.Instance.UpdateBoard(m_Board);
+            MenuUI.Instance.Setup(m_Board);
             m_GameState = State.Idle;
-            ResetSim();
+            ResetSimCount();
         }
 
         public void NewGame()
         {
-            m_Board.ResetBoard(m_Settings.PlayerToStartNextGame);
+            MenuUI.Instance.CancelGame();
+            m_Board.ResetBoard(MenuUI.Instance.PlayerToStartNextGame);
             m_Board.LoadStartPosition();
-            m_BoardUI.UpdateBoard(m_Board);
-            m_BoardUI.UnhighlightAll();
+            BoardUI.Instance.UpdateBoard(m_Board);
+            BoardUI.Instance.UnhighlightAll();
             Console.Clear();
             TryUnsubscribeEvents();
-            m_Settings.PlayerSelection(Piece.White);
-            m_Settings.PlayerSelection(Piece.Black);
-            m_WhitePlayer = (Player)m_Settings.WhitePlayerNextGame.Clone();
-            m_BlackPlayer = (Player)m_Settings.BlackPlayerNextGame.Clone();
+            MenuUI.Instance.PlayerSelection(Piece.WHITE);
+            MenuUI.Instance.PlayerSelection(Piece.BLACK);
+            m_WhitePlayer = (Player)MenuUI.Instance.WhitePlayerNextGame.Clone();
+            m_BlackPlayer = (Player)MenuUI.Instance.BlackPlayerNextGame.Clone();
             SubscribeEvents();
-            m_PlayerToMove = (m_Settings.PlayerToStartNextGame == Piece.White) ? m_WhitePlayer : m_BlackPlayer;
+            m_PlayerToMove = (MenuUI.Instance.PlayerToStartNextGame == Piece.WHITE) ? m_WhitePlayer : m_BlackPlayer;
             m_GameState = State.Playing;
             m_PlayerToMove.NotifyTurnToMove();
         }
 
-        public void ResetSim()
+        public void ResetSimCount()
         {
-            s_GamesToRun = 1;
-            s_BlackWins = 0;
-            s_WhiteWins = 0;
-            s_Draws = 0;
+            NumSimsRan = 1;
+            BlackWins = 0;
+            WhiteWins = 0;
+            Draws = 0;
         }
 
         private void SubscribeEvents()
@@ -97,12 +95,13 @@ namespace Othello.Core
             {
                 case State.Playing:
                     m_PlayerToMove.Update();
-                    m_BoardUI.UpdateUI(m_Board, m_Settings);
+                    BoardUI.Instance.UpdateBoard(m_Board);
+                    MenuUI.Instance.UpdateManu(m_Board);
                     break;
                 case State.GameOver:
-                    if (s_GamesToRun < int.Parse(m_Settings.numGamesForSim.text))
+                    if (NumSimsRan < MenuUI.Instance.NumSimsToRun)
                     {
-                        s_GamesToRun++;
+                        NumSimsRan++;
                         StartCoroutine(StartNewGameAfterSeconds(1));
                         m_GameState = State.Idle;
                     }
@@ -124,7 +123,6 @@ namespace Othello.Core
         {
             m_Board.MakeMove(move);
             ChangePlayer();
-            m_BoardUI.UpdateBoard(m_Board);
             m_LastPlayerHadNoMove = false;
         }
 
@@ -134,20 +132,20 @@ namespace Othello.Core
             {
                 m_GameState = State.GameOver;
                 var winner = "";
-                if (m_Board.GetWinner() == Piece.Black)
+                if (m_Board.GetWinner() == Piece.BLACK)
                 { 
                     winner = "Black";
-                    s_BlackWins++;
+                    BlackWins++;
                 }
-                else if (m_Board.GetWinner() == Piece.White)
+                else if (m_Board.GetWinner() == Piece.WHITE)
                 { 
                     winner = "White";
-                    s_WhiteWins++;
+                    WhiteWins++;
                 }
                 else if (m_Board.GetWinner() == 0)
                 { 
                     winner = "Draw";
-                    s_Draws++;
+                    Draws++;
                 }
                 Console.Log("---------------- Winner: " + winner + " ----------------");
                 Console.Log("----------------------------------------------------");
@@ -162,11 +160,11 @@ namespace Othello.Core
             switch (m_GameState)
             {
                 case State.Playing:
-                    m_PlayerToMove = (m_Board.GetCurrentPlayer() == Piece.White) ? m_WhitePlayer : m_BlackPlayer;
+                    m_PlayerToMove = (m_Board.GetCurrentPlayer() == Piece.WHITE) ? m_WhitePlayer : m_BlackPlayer;
                     m_PlayerToMove.NotifyTurnToMove();
                     break;
                 case State.GameOver:
-                    // Handle winning animation
+                    // TODO: Handle winning animation
                     break;
                 case State.Idle:
                     break;

@@ -4,8 +4,8 @@ namespace Othello.Core
 {
     public static class MoveData
     {
-        public static readonly int[][] SquaresToEdge = new int[64][];
-        public static readonly int[] DirectionOffsets = { 8, -8, -1, 1, 7, -7, 9, -9 };
+        public static readonly int[][] s_SquaresToEdge = new int[64][];
+        public static readonly int[] s_DirectionOffsets = { 8, -8, -1, 1, 7, -7, 9, -9 };
 
         public static void PrecomputeData()
         {
@@ -22,7 +22,7 @@ namespace Othello.Core
                     var numSquaresDownLeft = Math.Min(numSquaresDown, numSquaresLeft);
                     
                     var squareIndex = Board.GetIndex(file, rank);
-                    SquaresToEdge[squareIndex] = new [] { numSquaresUp, numSquaresDown, numSquaresLeft, numSquaresRight, numSquaresUpLeft, numSquaresDownRight, numSquaresUpRight, numSquaresDownLeft };
+                    s_SquaresToEdge[squareIndex] = new [] { numSquaresUp, numSquaresDown, numSquaresLeft, numSquaresRight, numSquaresUpLeft, numSquaresDownRight, numSquaresUpRight, numSquaresDownLeft };
                 }
         }
 

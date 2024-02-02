@@ -11,7 +11,7 @@ namespace Othello.AI
         public double Score;
         public double NumVisits;
         public readonly Board Board;
-        public readonly List<Node> Children = new List<Node>();
+        public readonly List<Node> Children = new();
         public volatile int NumWins = 0;
         
         public Node(Board board)

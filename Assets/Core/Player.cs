@@ -10,13 +10,14 @@ namespace Othello.Core
         public event Action OnNoLegalMove;
         public event Action<Move> OnMoveChosen;
         
+        public const byte BLACK = 0b01;
+        public const byte WHITE = 0b10;
+        
         protected readonly Board m_Board;
-        protected readonly BoardUI m_BoardUI;
 
         protected Player(Board board)
         {
             m_Board = board;
-            m_BoardUI = Object.FindObjectOfType<BoardUI>();
         }
         
         public abstract void Update();
