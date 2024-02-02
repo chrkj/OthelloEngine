@@ -5,9 +5,9 @@ namespace Othello.Core
 {
     public class Board
     {
-        private ulong m_AllPieces;
-        private ulong m_BlackPieces;
         private Move m_LastMove;
+        private ulong m_BlackPieces;
+        private ulong m_WhitePieces;
         private bool m_IsWhiteToMove;
         private const int MAX_LEGAL_MOVES = 30;
 
@@ -17,41 +17,35 @@ namespace Othello.Core
             m_IsWhiteToMove = false;
         }
 
-        public Board(int playerToStart)
-        {
-            m_LastMove = null;
-            m_IsWhiteToMove = playerToStart == Piece.WHITE;
-        }
-
         public Board Copy()
         {
             var copy = new Board
             {
-                m_AllPieces = m_AllPieces,
                 m_BlackPieces = m_BlackPieces,
                 m_LastMove = m_LastMove,
-                m_IsWhiteToMove = m_IsWhiteToMove
+                m_IsWhiteToMove = m_IsWhiteToMove,
+                m_WhitePieces = m_WhitePieces
             };
             return copy;
         }
 
         public void ResetBoard(int playerToStart)
         {
-            m_AllPieces = 0;
             m_BlackPieces = 0;
+            m_WhitePieces = 0;
             m_LastMove = null;
             m_IsWhiteToMove = playerToStart == Piece.WHITE;
         }
 
         public bool IsEmpty(int index)
         {
-            return (m_AllPieces & (1UL << index)) == 0;
+            return ((m_BlackPieces | m_WhitePieces) & (1UL << index)) == 0;
         }
 
         public bool IsTerminalBoardState()
         {
             // Check if board is full (i.e. all bits are set)
-            if (m_AllPieces == 0xFFFFFFFFFFFFFFFF)
+            if ((m_BlackPieces | m_WhitePieces) == 0xFFFFFFFFFFFFFFFF)
                 return true;
 
             var numLegalMovesCurrentPlayer = GenerateLegalMoves().Length;
@@ -76,7 +70,7 @@ namespace Othello.Core
 
         public bool Equals(Board other)
         {
-            return m_AllPieces == other.m_AllPieces && m_BlackPieces == other.m_BlackPieces && m_IsWhiteToMove == other.m_IsWhiteToMove;
+            return m_WhitePieces == other.m_WhitePieces && m_BlackPieces == other.m_BlackPieces && m_IsWhiteToMove == other.m_IsWhiteToMove;
         }
 
         public Move[] GenerateLegalMoves()
@@ -85,21 +79,22 @@ namespace Othello.Core
             ulong currentPlayerBitboard;
             if (m_IsWhiteToMove)
             {
-                currentPlayerBitboard = m_AllPieces ^ m_BlackPieces;
                 opponentBitBoard = m_BlackPieces;
+                currentPlayerBitboard = m_WhitePieces;
             }
             else
             {
-                opponentBitBoard = m_AllPieces ^ m_BlackPieces;
-                currentPlayerBitboard= m_BlackPieces;
+                opponentBitBoard = m_WhitePieces;
+                currentPlayerBitboard = m_BlackPieces;
             }
             
             ulong horizontalEdgeBitmap = opponentBitBoard & 0x7e7e7e7e7e7e7e7e;
             ulong verticalEdgeBitmap = opponentBitBoard & 0x00FFFFFFFFFFFF00;
             ulong allEdgeBitmap = opponentBitBoard & 0x007e7e7e7e7e7e00;
-            ulong blankBoard = ~(m_AllPieces);
+            ulong blankBoard = ~(m_BlackPieces | m_WhitePieces);
             
-            ulong tmp, legalMovesBitBoard;
+            ulong tmp;
+            ulong legalMovesBitBoard;
             tmp = horizontalEdgeBitmap & (currentPlayerBitboard << 1);
             for (int i = 0; i < 5; ++i)
                 tmp |= horizontalEdgeBitmap & (tmp << 1);
@@ -221,13 +216,14 @@ namespace Othello.Core
 
         private void PlacePiece(int index, int player)
         {
-            m_AllPieces |= 1UL << index;
             switch (player)
             {
                 case Piece.BLACK:
                     m_BlackPieces |= 1UL << index;
+                    m_WhitePieces &= ~(1UL << index);
                     break;
                 case Piece.WHITE:
+                    m_WhitePieces |= 1UL << index;
                     m_BlackPieces &= ~(1UL << index);
                     break;
             }
@@ -298,7 +294,7 @@ namespace Othello.Core
         public List<int> GetPiecePositionsBlack()
         {
             var positions = new List<int>();
-            var blackPositions = m_AllPieces & m_BlackPieces;
+            var blackPositions = m_BlackPieces;
             for (int i = 0; i < 64; i++)
                 if ((blackPositions & (1UL << i)) != 0)
                     positions.Add(i);
@@ -310,7 +306,7 @@ namespace Othello.Core
             ulong hash = 5648423;
             if (m_IsWhiteToMove)
                 hash = 4239784;
-            return m_AllPieces ^ m_BlackPieces ^ hash;
+            return m_BlackPieces ^ hash;
         }
     }
 }
