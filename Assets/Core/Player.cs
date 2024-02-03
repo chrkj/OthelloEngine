@@ -1,7 +1,5 @@
 ﻿using System;
-using Othello.UI;
 using UnityEngine;
-using Object = UnityEngine.Object;
 
 namespace Othello.Core
 {
