@@ -57,7 +57,7 @@ namespace Othello.UI
 
         public void HighlightLastMove(Move move)
         {
-            if (move != null)
+            if (move != Move.NULLMOVE)
                 HighlightSquare(move.Index);
         }
 

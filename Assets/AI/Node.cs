@@ -46,7 +46,7 @@ namespace Othello.AI
 
         private Move GetBestMove(Node bestNode)
         {
-            Move bestMove = null;
+            Move bestMove = Move.NULLMOVE;
             var currentBoard = Board.GetAllPieces();
             var previousBoard = bestNode.Board.GetAllPieces();
 
@@ -73,7 +73,7 @@ namespace Othello.AI
             {
                 var newBoard = Board.Copy();
                 newBoard.MakeMove(legalMove);
-                newBoard.ChangePlayer();
+                newBoard.ChangePlayerToMove();
                 var newNode = new Node(newBoard);
                 notes.Add(newNode);
             }
@@ -85,12 +85,12 @@ namespace Othello.AI
             var legalMoves = Board.GenerateLegalMoves();
             if (legalMoves.Length == 0)
             {
-                Board.ChangePlayer();
+                Board.ChangePlayerToMove();
                 return;
             }
             var randomMove = legalMoves[new Random().Next(legalMoves.Length)];
             Board.MakeMove(randomMove);
-            Board.ChangePlayer();
+            Board.ChangePlayerToMove();
         }
         
         public double CalculateUct()

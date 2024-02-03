@@ -49,9 +49,9 @@ namespace Othello.Core
             if (numLegalMovesCurrentPlayer != 0)
                 return false;
 
-            ChangePlayer();
+            ChangePlayerToMove();
             var numLegalMovesCurrentOpponent = GenerateLegalMoves().Length;
-            ChangePlayer();
+            ChangePlayerToMove();
 
             return numLegalMovesCurrentOpponent == 0;
         }
@@ -130,21 +130,6 @@ namespace Othello.Core
 
             return BitBoardToList(legalMovesBitBoard);
         }
-        
-        private Move[] BitBoardToList(ulong bitboard)
-        {
-            int currIndexPtr = 0;
-            Move[] setBitIndices = new Move[MAX_LEGAL_MOVES];
-            for (int i = 0; i < 64; i++)
-            {
-                ulong mask = (ulong)1 << i;
-                if ((bitboard & mask) != 0)
-                    setBitIndices[currIndexPtr++] = new Move(i);
-            }
-            var returnArray = new Move[currIndexPtr];
-            Array.Copy(setBitIndices, returnArray, currIndexPtr);
-            return returnArray;
-        }
 
         public void LoadStartPosition()
         {
@@ -154,11 +139,21 @@ namespace Othello.Core
             PlacePiece(36, Piece.BLACK);
         }
 
+        public static bool IsOutOfBounds(int file, int rank)
+        {
+            return file < 0 | file > 7 | rank < 0 | rank > 7;
+        }
+
+        public void ChangePlayerToMove()
+        {
+            m_IsWhiteToMove = !m_IsWhiteToMove;
+        }
+        
         public static int GetIndex(int file, int rank)
         {
             return rank * 8 + file;
         }
-
+        
         public int GetPieceColor(int file, int rank)
         {
             var index = GetIndex(file, rank);
@@ -166,20 +161,10 @@ namespace Othello.Core
                 return 0;
             return (m_BlackPieces & (1UL << index)) == 0 ? Piece.WHITE : Piece.BLACK;
         }
-
-        public static bool IsOutOfBounds(int file, int rank)
-        {
-            return file < 0 | file > 7 | rank < 0 | rank > 7;
-        }
-
+        
         public int GetCurrentPlayer()
         {
             return m_IsWhiteToMove ? Piece.WHITE : Piece.BLACK;
-        }
-
-        public void ChangePlayer()
-        {
-            m_IsWhiteToMove = !m_IsWhiteToMove;
         }
 
         public string GetCurrentPlayerAsString()
@@ -200,6 +185,52 @@ namespace Othello.Core
         {
             if (!IsTerminalBoardState()) return -1;
             return GetWinner();
+        }
+        
+        public List<int> GetPiecePositionsBlack()
+        {
+            var positions = new List<int>();
+            var blackPositions = m_BlackPieces;
+            for (int i = 0; i < 64; i++)
+                if ((blackPositions & (1UL << i)) != 0)
+                    positions.Add(i);
+            return positions;
+        }
+
+        public ulong GetHash()
+        {
+            ulong hash = 5648423;
+            if (m_IsWhiteToMove)
+                hash = 4239784;
+            return m_BlackPieces ^ hash;
+        }
+        
+        public ulong GetAllPieces()
+        {
+            return (m_BlackPieces | m_WhitePieces);
+        }
+        
+        public int GetWinner()
+        {
+            var blackPieceCount = GetPieceCount(Piece.BLACK);
+            var whitePieceCount = GetPieceCount(Piece.WHITE);
+            if (blackPieceCount == whitePieceCount) return 0;
+            return blackPieceCount > whitePieceCount ? Piece.BLACK : Piece.WHITE;
+        }
+
+        private Move[] BitBoardToList(ulong bitboard)
+        {
+            int currIndexPtr = 0;
+            Move[] setBitIndices = new Move[MAX_LEGAL_MOVES];
+            for (int i = 0; i < 64; i++)
+            {
+                ulong mask = (ulong)1 << i;
+                if ((bitboard & mask) != 0)
+                    setBitIndices[currIndexPtr++] = new Move(i);
+            }
+            var returnArray = new Move[currIndexPtr];
+            Array.Copy(setBitIndices, returnArray, currIndexPtr);
+            return returnArray;
         }
 
         private void PlacePiece(int index, int player)
@@ -224,32 +255,6 @@ namespace Othello.Core
             return (m_BlackPieces & (1UL << index)) == 0 ? Piece.WHITE : Piece.BLACK;
         }
 
-        public int GetWinner()
-        {
-            var blackPieceCount = GetPieceCount(Piece.BLACK);
-            var whitePieceCount = GetPieceCount(Piece.WHITE);
-            if (blackPieceCount == whitePieceCount) return 0;
-            return blackPieceCount > whitePieceCount ? Piece.BLACK : Piece.WHITE;
-        }
-
-        public List<int> GetPiecePositionsBlack()
-        {
-            var positions = new List<int>();
-            var blackPositions = m_BlackPieces;
-            for (int i = 0; i < 64; i++)
-                if ((blackPositions & (1UL << i)) != 0)
-                    positions.Add(i);
-            return positions;
-        }
-
-        public ulong GetHash()
-        {
-            ulong hash = 5648423;
-            if (m_IsWhiteToMove)
-                hash = 4239784;
-            return m_BlackPieces ^ hash;
-        }
-        
         private void PlacePieces(Move move)
         {
             var index = 63 - move.Index;
@@ -302,7 +307,8 @@ namespace Othello.Core
         private ulong IndexToBit(int id) 
         {
             ulong mask = 0x8000000000000000;
-            int x = id >> 3, y = id & 7;
+            int x = id >> 3;
+            int y = id & 7;
             mask >>= y;
             mask >>= (x * 8);
             return mask;
@@ -323,10 +329,6 @@ namespace Othello.Core
                 _ => 0
             };
         }
-
-        public ulong GetAllPieces()
-        {
-            return (m_BlackPieces | m_WhitePieces);
-        }
+        
     }
 }

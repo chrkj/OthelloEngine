@@ -219,7 +219,7 @@ namespace Othello.AI
         {
             var nextBoardState = board.Copy();
             nextBoardState.MakeMove(legalMove);
-            nextBoardState.ChangePlayer();
+            nextBoardState.ChangePlayerToMove();
             return nextBoardState;
         }
 

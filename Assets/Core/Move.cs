@@ -3,9 +3,10 @@ using Othello.UI;
 
 namespace Othello.Core
 {
-    public class Move : IEquatable<Move>, IComparable<Move>
+    public struct Move : IEquatable<Move>, IComparable<Move>
     {
         public int Index { get; }
+        public static readonly Move NULLMOVE = new Move(-1);
 
         public static readonly int[] s_CellWeight = 
         {
