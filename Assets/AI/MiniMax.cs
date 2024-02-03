@@ -52,7 +52,7 @@ namespace Othello.AI
             m_TimeLimit = start + m_MaxTime;
 
             int bestEvalThisIteration = 0;
-            Span<Move> legalMoves = stackalloc Move[256];
+            Span<Move> legalMoves = stackalloc Move[Board.MAX_LEGAL_MOVES];
             board.GenerateLegalMovesStack(ref legalMoves);
             Move bestMoveThisIteration = legalMoves[0];
             
@@ -83,7 +83,7 @@ namespace Othello.AI
             if (currentPlayer == MAX_PLAYER)
             {
                 var maxEval = int.MinValue;
-                Span<Move> legalMoves = stackalloc Move[256];
+                Span<Move> legalMoves = stackalloc Move[Board.MAX_LEGAL_MOVES];
                 board.GenerateLegalMovesStack(ref legalMoves);
                 foreach (var legalMove in legalMoves)
                 {
@@ -100,7 +100,7 @@ namespace Othello.AI
             else
             {
                 var minEval = int.MaxValue;
-                Span<Move> legalMoves = stackalloc Move[256];
+                Span<Move> legalMoves = stackalloc Move[Board.MAX_LEGAL_MOVES];
                 board.GenerateLegalMovesStack(ref legalMoves);
                 foreach (var legalMove in legalMoves)
                 {
@@ -126,7 +126,7 @@ namespace Othello.AI
 
             var minUtil = int.MaxValue - 1;
 
-            Span<Move> legalMoves = stackalloc Move[256];
+            Span<Move> legalMoves = stackalloc Move[Board.MAX_LEGAL_MOVES];
             board.GenerateLegalMovesStack(ref legalMoves);
             if (legalMoves.Length == 0)
                 minUtil = Math.Min(minUtil, MaxValue(board, depth - 1, alpha, beta));
@@ -155,7 +155,7 @@ namespace Othello.AI
 
             var maxUtil = int.MinValue + 1;
 
-            Span<Move> legalMoves = stackalloc Move[256];
+            Span<Move> legalMoves = stackalloc Move[Board.MAX_LEGAL_MOVES];
             board.GenerateLegalMovesStack(ref legalMoves);
             if (legalMoves.Length == 0)
                 maxUtil = Math.Max(maxUtil, MinValue(board, depth - 1, alpha, beta));
@@ -232,7 +232,7 @@ namespace Othello.AI
         private static int EvaluateBoard(Board board)
         {
             int value = 0;
-            var positions = board.GetPiecePositionsBlack();
+            var positions = board.GetPieces(Player.BLACK);
             foreach (var pos in positions)
                 value += Move.s_CellWeight[pos];
             return value;

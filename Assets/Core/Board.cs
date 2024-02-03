@@ -5,16 +5,11 @@ namespace Othello.Core
 {
     public class Board
     {
+        public const int MAX_LEGAL_MOVES = 30;
+        
         private ulong m_BlackPieces;
         private ulong m_WhitePieces;
         private bool m_IsWhiteToMove;
-        
-        private const int MAX_LEGAL_MOVES = 30;
-
-        public Board()
-        {
-            m_IsWhiteToMove = false;
-        }
 
         public Board Copy()
         {
@@ -98,17 +93,15 @@ namespace Othello.Core
                 currentPlayerBitboard = m_BlackPieces;
             }
 
-            ulong horizontalEdgeBitmap = opponentBitBoard & 0x7e7e7e7e7e7e7e7e;
-            ulong verticalEdgeBitmap = opponentBitBoard & 0x00FFFFFFFFFFFF00;
-            ulong allEdgeBitmap = opponentBitBoard & 0x007e7e7e7e7e7e00;
             ulong blankBoard = ~(m_BlackPieces | m_WhitePieces);
+            ulong allEdgeBitmap = opponentBitBoard & 0x007e7e7e7e7e7e00;
+            ulong verticalEdgeBitmap = opponentBitBoard & 0x00FFFFFFFFFFFF00;
+            ulong horizontalEdgeBitmap = opponentBitBoard & 0x7e7e7e7e7e7e7e7e;
 
-            ulong tmp;
-            ulong legalMovesBitBoard;
-            tmp = horizontalEdgeBitmap & (currentPlayerBitboard << 1);
+            var tmp = horizontalEdgeBitmap & (currentPlayerBitboard << 1);
             for (int i = 0; i < 5; ++i)
                 tmp |= horizontalEdgeBitmap & (tmp << 1);
-            legalMovesBitBoard = blankBoard & (tmp << 1);
+            var legalMovesBitBoard = blankBoard & (tmp << 1);
 
             tmp = horizontalEdgeBitmap & (currentPlayerBitboard >> 1);
             for (int i = 0; i < 5; ++i)
@@ -204,12 +197,12 @@ namespace Othello.Core
             return GetWinner();
         }
         
-        public List<int> GetPiecePositionsBlack()
+        public List<int> GetPieces(int player)
         {
             var positions = new List<int>();
-            var blackPositions = m_BlackPieces;
+            var pieces = (player == Player.BLACK) ? m_BlackPieces : m_WhitePieces;
             for (int i = 0; i < 64; i++)
-                if ((blackPositions & (1UL << i)) != 0)
+                if ((pieces & (1UL << i)) != 0)
                     positions.Add(i);
             return positions;
         }

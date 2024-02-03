@@ -13,11 +13,12 @@ namespace Othello.AI
         public double NumVisits;
         public readonly Board Board;
         public readonly List<Node> Children = new();
-        private Random random;
+        
+        private Random m_Random;
         
         public Node(Board board)
         {
-            random = new Random();  
+            m_Random = new Random();  
             Board = board;
         }
 
@@ -70,7 +71,7 @@ namespace Othello.AI
         public List<Node> CreateChildNodes()
         {
             var notes = new List<Node>();
-            Span<Move> legalMoves = stackalloc Move[256];
+            Span<Move> legalMoves = stackalloc Move[Board.MAX_LEGAL_MOVES];
             Board.GenerateLegalMovesStack(ref legalMoves);
             foreach (var legalMove in legalMoves)
             {
@@ -85,7 +86,7 @@ namespace Othello.AI
             
         public void RandomMove() 
         {
-            Span<Move> legalMoves = stackalloc Move[256];
+            Span<Move> legalMoves = stackalloc Move[Board.MAX_LEGAL_MOVES];
             Board.GenerateLegalMovesStack(ref legalMoves);
             if (legalMoves.Length == 0)
             {
@@ -93,7 +94,7 @@ namespace Othello.AI
                 return;
             }
             
-            var randomMove = legalMoves[random.Next(legalMoves.Length)];
+            var randomMove = legalMoves[m_Random.Next(legalMoves.Length)];
             Board.MakeMove(randomMove);
             Board.ChangePlayerToMove();
         }
