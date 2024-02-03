@@ -20,6 +20,7 @@ namespace Othello.Core
         private Player m_WhitePlayer;
         private State m_GameState;
         private bool m_LastPlayerHadNoMove;
+        private Move m_LastMove;
         private enum State { Playing, GameOver, Idle }
 
         protected override void Awake()
@@ -96,6 +97,7 @@ namespace Othello.Core
                 case State.Playing:
                     m_PlayerToMove.Update();
                     BoardUI.Instance.UpdateBoard(m_Board);
+                    BoardUI.Instance.HighlightLastMove(m_LastMove);
                     MenuUI.Instance.UpdateManu(m_Board);
                     break;
                 case State.GameOver:
@@ -122,6 +124,7 @@ namespace Othello.Core
         private void MakeMove(Move move)
         {
             m_Board.MakeMove(move);
+            m_LastMove = move;
             ChangePlayer();
             m_LastPlayerHadNoMove = false;
         }

@@ -77,13 +77,13 @@ namespace Othello.AI
             }
             Task.WaitAll(tasks);
 
-            var bestNode = rootNode.SelectBestNode();
+            var (bestNode, bestMove) = rootNode.SelectBestNode();
             m_CachedNode = bestNode;
             m_CachedNode.Parent = null;
             var endTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
             SetWinPrediction(bestNode);
-            PrintSearchData(rootNode, startTime, bestNode, endTime);
-            return bestNode.Board.GetLastMove();
+            PrintSearchData(rootNode, startTime, bestNode, bestMove, endTime);
+            return bestMove;
         }
 
         private Move CalculateMoveRoot(Board board)
@@ -115,13 +115,13 @@ namespace Othello.AI
             }
             );
 
-            var bestNode = rootNode.SelectBestNode();
+            var (bestNode, bestMove) = rootNode.SelectBestNode();
             m_CachedNode = bestNode;
             m_CachedNode.Parent = null;
             SetWinPrediction(bestNode);
             var endTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-            PrintSearchData(rootNode, startTime, bestNode, endTime);
-            return bestNode.Board.GetLastMove();
+            PrintSearchData(rootNode, startTime, bestNode, bestMove, endTime);
+            return bestMove;
         }
 
         private Move CalculateMoveSequential(Board board)
@@ -145,14 +145,14 @@ namespace Othello.AI
                     IncrementIteration();
                 }
             }
-            var bestNode = rootNode.SelectBestNode();
+            var (bestNode, bestMove) = rootNode.SelectBestNode();
             m_CachedNode = bestNode;
             m_CachedNode.Parent = null;
 
             var endTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
             SetWinPrediction(bestNode);
-            PrintSearchData(rootNode, startTime, bestNode, endTime);
-            return bestNode.Board.GetLastMove();
+            PrintSearchData(rootNode, startTime, bestNode, bestMove, endTime);
+            return bestMove;
         }
 
         private Move CalculateMoveTesting(Board board)
@@ -176,14 +176,14 @@ namespace Othello.AI
                     IncrementIteration();
                 }
             }
-            var bestNode = rootNode.SelectBestNode();
+            var (bestNode, bestMove) = rootNode.SelectBestNode();
             m_CachedNode = bestNode;
             m_CachedNode.Parent = null;
 
             var endTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
             SetWinPrediction(bestNode);
-            PrintSearchData(rootNode, startTime, bestNode, endTime);
-            return bestNode.Board.GetLastMove();
+            PrintSearchData(rootNode, startTime, bestNode, bestMove, endTime);
+            return bestMove;
         }
 
         private void IncrementIteration()
@@ -288,10 +288,10 @@ namespace Othello.AI
             return selectedNode;
         }
 
-        private void PrintSearchData(Node rootNode, long startTime, Node bestNode, long endTime)
+        private void PrintSearchData(Node rootNode, long startTime, Node bestNode, Move bestMove, long endTime)
         {
             Console.Log("Tree size: " + bestNode.NumVisits);
-            Console.Log(rootNode.Board.GetCurrentPlayerAsString() + " plays " + bestNode.Board.GetLastMove());
+            Console.Log(rootNode.Board.GetCurrentPlayerAsString() + " plays " + bestMove);
             Console.Log("Search time: " + (endTime - startTime) + " ms");
             Console.Log("Iterations: " + (m_CurrentPlayer == Piece.BLACK ? s_BlackIterationsRun : s_WhiteIterationsRun));
             Console.Log("Nodes visited: " + m_NodesVisited);

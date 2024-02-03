@@ -5,15 +5,14 @@ namespace Othello.Core
 {
     public class Board
     {
-        private Move m_LastMove;
         private ulong m_BlackPieces;
         private ulong m_WhitePieces;
         private bool m_IsWhiteToMove;
+        
         private const int MAX_LEGAL_MOVES = 30;
 
         public Board()
         {
-            m_LastMove = null;
             m_IsWhiteToMove = false;
         }
 
@@ -22,7 +21,6 @@ namespace Othello.Core
             var copy = new Board
             {
                 m_BlackPieces = m_BlackPieces,
-                m_LastMove = m_LastMove,
                 m_IsWhiteToMove = m_IsWhiteToMove,
                 m_WhitePieces = m_WhitePieces
             };
@@ -33,7 +31,6 @@ namespace Othello.Core
         {
             m_BlackPieces = 0;
             m_WhitePieces = 0;
-            m_LastMove = null;
             m_IsWhiteToMove = playerToStart == Piece.WHITE;
         }
 
@@ -61,7 +58,6 @@ namespace Othello.Core
 
         public void MakeMove(Move move)
         {
-            m_LastMove = move;
             PlacePieces(move);
         }
 
@@ -139,7 +135,7 @@ namespace Othello.Core
         {
             int currIndexPtr = 0;
             Move[] setBitIndices = new Move[MAX_LEGAL_MOVES];
-            for (int i = 0; i < sizeof(ulong) * 8; i++)
+            for (int i = 0; i < 64; i++)
             {
                 ulong mask = (ulong)1 << i;
                 if ((bitboard & mask) != 0)
@@ -169,11 +165,6 @@ namespace Othello.Core
             if (IsEmpty(index))
                 return 0;
             return (m_BlackPieces & (1UL << index)) == 0 ? Piece.WHITE : Piece.BLACK;
-        }
-
-        public Move GetLastMove()
-        {
-            return m_LastMove;
         }
 
         public static bool IsOutOfBounds(int file, int rank)
@@ -332,6 +323,10 @@ namespace Othello.Core
                 _ => 0
             };
         }
-        
+
+        public ulong GetAllPieces()
+        {
+            return (m_BlackPieces | m_WhitePieces);
+        }
     }
 }

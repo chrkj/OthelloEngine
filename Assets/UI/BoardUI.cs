@@ -53,8 +53,12 @@ namespace Othello.UI
                     UnhighlightSquare(Board.GetIndex(file, rank));
                 }
             HighlightLegalMoves(m_CurrentLegalMoves);
-            if (board.GetLastMove() != null)
-                HighlightSquare(board.GetLastMove().Index);
+        }
+
+        public void HighlightLastMove(Move move)
+        {
+            if (move != null)
+                HighlightSquare(move.Index);
         }
 
         public void HighlightLegalMoves(List<Move> legalMoves)

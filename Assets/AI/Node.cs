@@ -8,11 +8,11 @@ namespace Othello.AI
     public class Node
     {
         public Node Parent;
+        public int NumWins;
         public double Score;
         public double NumVisits;
         public readonly Board Board;
         public readonly List<Node> Children = new();
-        public volatile int NumWins = 0;
         
         public Node(Board board)
         {
@@ -34,15 +34,31 @@ namespace Othello.AI
             return Children[new Random().Next(Children.Count)];
         }
 
-        public Node SelectBestNode()
+        public (Node, Move) SelectBestNode()
         {
             var bestNode = Children[0];
             for(var i = 1; i < Children.Count; ++i) 
-            {
                 if (CalculateScore(Children[i]) > CalculateScore(bestNode))
                     bestNode = Children[i];
+            var bestMove = GetBestMove(bestNode);
+            return (bestNode, bestMove);
+        }
+
+        private Move GetBestMove(Node bestNode)
+        {
+            Move bestMove = null;
+            var currentBoard = Board.GetAllPieces();
+            var previousBoard = bestNode.Board.GetAllPieces();
+
+            var bestMoveBitboard = (currentBoard ^ previousBoard);
+            for (int i = 0; i < 64; i++)
+            {
+                ulong mask = (ulong)1 << i;
+                if ((bestMoveBitboard & mask) != 0)
+                    bestMove = new Move(i);
             }
-            return bestNode;
+
+            return bestMove;
         }
 
         private static double CalculateScore(Node node)
