@@ -45,12 +45,16 @@ namespace Othello.Core
             if ((m_BlackPieces | m_WhitePieces) == 0xFFFFFFFFFFFFFFFF)
                 return true;
 
-            var numLegalMovesCurrentPlayer = GenerateLegalMoves().Length;
+            Span<Move> legalMovesCurrentPlayer = stackalloc Move[256];
+            GenerateLegalMovesStack(ref legalMovesCurrentPlayer);
+            var numLegalMovesCurrentPlayer = legalMovesCurrentPlayer.Length;
             if (numLegalMovesCurrentPlayer != 0)
                 return false;
 
             ChangePlayerToMove();
-            var numLegalMovesCurrentOpponent = GenerateLegalMoves().Length;
+            Span<Move> legalMovesCurrentOpponent = stackalloc Move[256];
+            GenerateLegalMovesStack(ref legalMovesCurrentOpponent);
+            var numLegalMovesCurrentOpponent = legalMovesCurrentOpponent.Length;
             ChangePlayerToMove();
 
             return numLegalMovesCurrentOpponent == 0;
@@ -66,7 +70,20 @@ namespace Othello.Core
             return m_WhitePieces == other.m_WhitePieces && m_BlackPieces == other.m_BlackPieces && m_IsWhiteToMove == other.m_IsWhiteToMove;
         }
 
-        public Move[] GenerateLegalMoves()
+        public void GenerateLegalMovesStack(ref Span<Move> legalMoves)
+        {
+            var legalMoveBitboard = GenerateLegalMoveBitboard();
+            int currIndexPtr = 0;
+            for (int i = 0; i < 64; i++)
+            {
+                ulong mask = (ulong)1 << i;
+                if ((legalMoveBitboard & mask) != 0)
+                    legalMoves[currIndexPtr++] = new Move(i);
+            }
+            legalMoves = legalMoves.Slice(0, currIndexPtr);
+        }
+
+        private ulong GenerateLegalMoveBitboard()
         {
             ulong opponentBitBoard;
             ulong currentPlayerBitboard;
@@ -80,12 +97,12 @@ namespace Othello.Core
                 opponentBitBoard = m_WhitePieces;
                 currentPlayerBitboard = m_BlackPieces;
             }
-            
+
             ulong horizontalEdgeBitmap = opponentBitBoard & 0x7e7e7e7e7e7e7e7e;
             ulong verticalEdgeBitmap = opponentBitBoard & 0x00FFFFFFFFFFFF00;
             ulong allEdgeBitmap = opponentBitBoard & 0x007e7e7e7e7e7e00;
             ulong blankBoard = ~(m_BlackPieces | m_WhitePieces);
-            
+
             ulong tmp;
             ulong legalMovesBitBoard;
             tmp = horizontalEdgeBitmap & (currentPlayerBitboard << 1);
@@ -128,7 +145,7 @@ namespace Othello.Core
                 tmp |= allEdgeBitmap & (tmp >> 7);
             legalMovesBitBoard |= blankBoard & (tmp >> 7);
 
-            return BitBoardToList(legalMovesBitBoard);
+            return legalMovesBitBoard;
         }
 
         public void LoadStartPosition()
@@ -216,21 +233,6 @@ namespace Othello.Core
             var whitePieceCount = GetPieceCount(Piece.WHITE);
             if (blackPieceCount == whitePieceCount) return 0;
             return blackPieceCount > whitePieceCount ? Piece.BLACK : Piece.WHITE;
-        }
-
-        private Move[] BitBoardToList(ulong bitboard)
-        {
-            int currIndexPtr = 0;
-            Move[] setBitIndices = new Move[MAX_LEGAL_MOVES];
-            for (int i = 0; i < 64; i++)
-            {
-                ulong mask = (ulong)1 << i;
-                if ((bitboard & mask) != 0)
-                    setBitIndices[currIndexPtr++] = new Move(i);
-            }
-            var returnArray = new Move[currIndexPtr];
-            Array.Copy(setBitIndices, returnArray, currIndexPtr);
-            return returnArray;
         }
 
         private void PlacePiece(int index, int player)

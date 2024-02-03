@@ -69,7 +69,9 @@ namespace Othello.AI
         public List<Node> CreateChildNodes()
         {
             var notes = new List<Node>();
-            foreach (var legalMove in Board.GenerateLegalMoves())
+            Span<Move> legalMoves = stackalloc Move[256];
+            Board.GenerateLegalMovesStack(ref legalMoves);
+            foreach (var legalMove in legalMoves)
             {
                 var newBoard = Board.Copy();
                 newBoard.MakeMove(legalMove);
@@ -82,7 +84,8 @@ namespace Othello.AI
             
         public void RandomMove() 
         {
-            var legalMoves = Board.GenerateLegalMoves();
+            Span<Move> legalMoves = stackalloc Move[256];
+            Board.GenerateLegalMovesStack(ref legalMoves);
             if (legalMoves.Length == 0)
             {
                 Board.ChangePlayerToMove();

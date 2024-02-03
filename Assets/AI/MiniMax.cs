@@ -54,7 +54,9 @@ namespace Othello.AI
             m_TimeLimit = start + m_MaxTime;
 
             int bestEvalThisIteration = 0;
-            Move bestMoveThisIteration = board.GenerateLegalMoves().First();
+            Span<Move> legalMoves = stackalloc Move[256];
+            board.GenerateLegalMovesStack(ref legalMoves);
+            Move bestMoveThisIteration = legalMoves[0];
             if (m_IterativeDeepeningEnabled)
             {
                 for (int searchDepth = 1; searchDepth < m_DepthLimit + 1; searchDepth++)
@@ -81,8 +83,8 @@ namespace Othello.AI
             if (currentPlayer == MAX_PLAYER)
             {
                 var highestUtil = int.MinValue;
-                var legalMoves = board.GenerateLegalMoves();
-                MoveOrdering(bestMoveThisIteration, ref legalMoves);
+                Span<Move> legalMoves = stackalloc Move[256];
+                board.GenerateLegalMovesStack(ref legalMoves);
                 foreach (var legalMove in legalMoves)
                 {
                     if (m_TerminationFlag)
@@ -98,8 +100,8 @@ namespace Othello.AI
             else
             {
                 var minUtil = int.MaxValue;
-                var legalMoves = board.GenerateLegalMoves();
-                MoveOrdering(bestMoveThisIteration, ref legalMoves);
+                Span<Move> legalMoves = stackalloc Move[256];
+                board.GenerateLegalMovesStack(ref legalMoves);
                 foreach (var legalMove in legalMoves)
                 {
                     var possibleNextState = MakeMove(board, legalMove);
@@ -122,7 +124,8 @@ namespace Othello.AI
 
             var minUtil = int.MaxValue - 1;
 
-            var legalMoves = GenerateLegalMoves(board);
+            Span<Move> legalMoves = stackalloc Move[256];
+            board.GenerateLegalMovesStack(ref legalMoves);
             if (legalMoves.Length == 0)
                 minUtil = Math.Min(minUtil, MaxValue(board, depth - 1, alpha, beta));
 
@@ -150,7 +153,8 @@ namespace Othello.AI
 
             var maxUtil = int.MinValue + 1;
 
-            var legalMoves = GenerateLegalMoves(board);
+            Span<Move> legalMoves = stackalloc Move[256];
+            board.GenerateLegalMovesStack(ref legalMoves);
             if (legalMoves.Length == 0)
                 maxUtil = Math.Max(maxUtil, MinValue(board, depth - 1, alpha, beta));
 
@@ -286,34 +290,6 @@ namespace Othello.AI
         {
             if (DateTimeOffset.Now.ToUnixTimeMilliseconds() > m_TimeLimit)
                 m_TerminationFlag = true;
-        }
-
-        private Move[] GenerateLegalMoves(Board board)
-        {
-            Move[] legalMoves;
-            if (m_ZobristHashingEnabled)
-            {
-                var boardHash = board.GetHash();
-                if (m_ZobristMoves.TryGetValue(boardHash, out var move))
-                {
-                    legalMoves = new Move[move.Length];
-                    Array.Copy(move, legalMoves, legalMoves.Length);
-                }
-                else
-                {
-                    legalMoves = board.GenerateLegalMoves();
-                    Array.Sort(legalMoves);
-                    m_ZobristMoves[boardHash] = new Move[legalMoves.Length];
-                    Array.Copy(legalMoves, m_ZobristMoves[boardHash], legalMoves.Length);
-                    IncrementZobristCount(legalMoves.Length);
-                }
-            }
-            else
-            {
-                legalMoves = board.GenerateLegalMoves();
-            }
-
-            return legalMoves;
         }
 
         private void ResetPositionCount()

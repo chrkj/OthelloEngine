@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.Threading;
 using System.Diagnostics;
@@ -45,13 +46,14 @@ namespace Othello.AI
 
         public override void NotifyTurnToMove()
         {
-            var legalMoves = m_Board.GenerateLegalMoves();
+            Span<Move> legalMoves = stackalloc Move[256];
+            m_Board.GenerateLegalMovesStack(ref legalMoves);
             if (legalMoves.Length == 0)
             {
                 NoLegalMove();
                 return;
             }
-            BoardUI.Instance.HighlightLegalMoves(legalMoves.ToList());
+            BoardUI.Instance.HighlightLegalMoves(legalMoves.ToArray().ToList());
             Task.Factory.StartNew(Search, 
                 Cts.Token,
                 TaskCreationOptions.LongRunning,
