@@ -13,9 +13,11 @@ namespace Othello.AI
         public double NumVisits;
         public readonly Board Board;
         public readonly List<Node> Children = new();
+        private Random random;
         
         public Node(Board board)
         {
+            random = new Random();  
             Board = board;
         }
 
@@ -57,7 +59,6 @@ namespace Othello.AI
                 if ((bestMoveBitboard & mask) != 0)
                     bestMove = new Move(i);
             }
-
             return bestMove;
         }
 
@@ -91,7 +92,8 @@ namespace Othello.AI
                 Board.ChangePlayerToMove();
                 return;
             }
-            var randomMove = legalMoves[new Random().Next(legalMoves.Length)];
+            
+            var randomMove = legalMoves[random.Next(legalMoves.Length)];
             Board.MakeMove(randomMove);
             Board.ChangePlayerToMove();
         }
