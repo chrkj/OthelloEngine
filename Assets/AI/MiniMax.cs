@@ -29,7 +29,6 @@ namespace Othello.AI
         private readonly bool m_ZobristHashingEnabled;
         private readonly bool m_IterativeDeepeningEnabled;
         private readonly Dictionary<ulong, int> m_Zobrist;
-        private readonly Dictionary<ulong, Move[]> m_ZobristMoves;
 
         public MiniMax(int depth, int timeLimit, bool moveOrderingEnabled, bool iterativeDeepeningEnabled, bool zobristHashingEnabled)
         {
@@ -41,7 +40,6 @@ namespace Othello.AI
             s_WhiteZobristSize = 0;
             s_BlackZobristSize = 0;
             m_Zobrist = new Dictionary<ulong, int>();
-            m_ZobristMoves = new Dictionary<ulong, Move[]>();
         }
 
         public Move StartSearch(Board board)
@@ -57,12 +55,14 @@ namespace Othello.AI
             Span<Move> legalMoves = stackalloc Move[256];
             board.GenerateLegalMovesStack(ref legalMoves);
             Move bestMoveThisIteration = legalMoves[0];
+            
             if (m_IterativeDeepeningEnabled)
             {
                 for (int searchDepth = 1; searchDepth < m_DepthLimit + 1; searchDepth++)
                 {
                     ResetBranchCount();
                     UpdateSearchDepth(board, searchDepth);
+                    MoveOrdering(bestMoveThisIteration, ref legalMoves);
                     CalculateMove(board, ref bestMoveThisIteration, ref bestEvalThisIteration, searchDepth);
                     if (m_TerminationFlag)
                         break;
@@ -192,9 +192,9 @@ namespace Othello.AI
             }
             
             if (board.GetPieceCount(MAX_PLAYER) > board.GetPieceCount(MIN_PLAYER))
-                return int.MaxValue - 1;;
+                return int.MaxValue - 1;
             if (board.GetPieceCount(MAX_PLAYER) < board.GetPieceCount(MIN_PLAYER))
-                return int.MinValue + 1;;
+                return int.MinValue + 1;
             return 0;
         }
 
@@ -245,19 +245,16 @@ namespace Othello.AI
             Console.Log("----------------------------------------------------");
         }
 
-        private void MoveOrdering(Move bestMove, ref Move[] legalMoves)
+        private void MoveOrdering(Move bestMove, ref Span<Move> legalMoves)
         {
             if (!m_MoveOrderingEnabled)
                 return;
-            
-            Array.Sort(legalMoves);
-            if (bestMove == null)
+            if (bestMove == Move.NULLMOVE)
                 return;
 
-            int targetIndex = Array.IndexOf(legalMoves, bestMove);
-            if (targetIndex == -1) 
-                return;
+            // TODO: Sort the span for move ordering
             
+            var targetIndex = legalMoves.IndexOf(bestMove);
             // Swap the bestMove to the front of the array
             (legalMoves[0], legalMoves[targetIndex]) = (legalMoves[targetIndex], legalMoves[0]);
         }

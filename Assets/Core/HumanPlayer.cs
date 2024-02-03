@@ -25,12 +25,13 @@ namespace Othello.Core
         {
             Span<Move> legalMoves = stackalloc Move[256];
             m_Board.GenerateLegalMovesStack(ref legalMoves);
-            if (m_LegalMoves.Length == 0)
+            m_LegalMoves = legalMoves.ToArray();
+            if (legalMoves.Length == 0)
             {
                 NoLegalMove();
                 return;
             }
-            BoardUI.Instance.HighlightLegalMoves(m_LegalMoves.ToList());
+            BoardUI.Instance.SetLegalMoves(legalMoves);
         }
 
         private void HandleInput()

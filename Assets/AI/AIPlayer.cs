@@ -53,7 +53,7 @@ namespace Othello.AI
                 NoLegalMove();
                 return;
             }
-            BoardUI.Instance.HighlightLegalMoves(legalMoves.ToArray().ToList());
+            BoardUI.Instance.SetLegalMoves(legalMoves);
             Task.Factory.StartNew(Search, 
                 Cts.Token,
                 TaskCreationOptions.LongRunning,

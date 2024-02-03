@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 using Othello.Core;
@@ -55,15 +57,19 @@ namespace Othello.UI
             HighlightLegalMoves(m_CurrentLegalMoves);
         }
 
+        public void SetLegalMoves(Span<Move> legalMoves)
+        {
+            m_CurrentLegalMoves = legalMoves.ToArray().ToList();
+        }
+
         public void HighlightLastMove(Move move)
         {
             if (move != Move.NULLMOVE)
                 HighlightSquare(move.Index);
         }
 
-        public void HighlightLegalMoves(List<Move> legalMoves)
+        private void HighlightLegalMoves(List<Move> legalMoves)
         {
-            m_CurrentLegalMoves = legalMoves;
             if (!m_HighLightLegalMoves)
                 return;
             foreach (var legalMove in legalMoves)
@@ -75,7 +81,8 @@ namespace Othello.UI
             m_HighLightLegalMoves = isOn;
             if (!m_HighLightLegalMoves) 
                 UnhighlightAll();
-            else HighlightLegalMoves(m_CurrentLegalMoves);
+            else 
+                HighlightLegalMoves(m_CurrentLegalMoves);
 
         }
 
