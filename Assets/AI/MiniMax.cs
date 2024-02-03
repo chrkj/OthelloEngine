@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
+
 using Othello.Core;
 using Console = Othello.Core.Console;
 
@@ -82,7 +82,7 @@ namespace Othello.AI
             var currentPlayer = board.GetCurrentPlayer();
             if (currentPlayer == MAX_PLAYER)
             {
-                var highestUtil = int.MinValue;
+                var maxEval = int.MinValue;
                 Span<Move> legalMoves = stackalloc Move[256];
                 board.GenerateLegalMovesStack(ref legalMoves);
                 foreach (var legalMove in legalMoves)
@@ -91,24 +91,26 @@ namespace Othello.AI
                         break;
                     var possibleNextState = MakeMove(board, legalMove);
                     bestEvalThisIteration = MinValue(possibleNextState, depth - 1, int.MinValue, int.MaxValue);
-                    if (bestEvalThisIteration <= highestUtil)
+                    if (bestEvalThisIteration <= maxEval)
                         continue;
-                    highestUtil = bestEvalThisIteration;
+                    maxEval = bestEvalThisIteration;
                     bestMoveThisIteration = legalMove;
                 }
             }
             else
             {
-                var minUtil = int.MaxValue;
+                var minEval = int.MaxValue;
                 Span<Move> legalMoves = stackalloc Move[256];
                 board.GenerateLegalMovesStack(ref legalMoves);
                 foreach (var legalMove in legalMoves)
                 {
+                    if (m_TerminationFlag)
+                        break;
                     var possibleNextState = MakeMove(board, legalMove);
                     bestEvalThisIteration = MaxValue(possibleNextState, depth - 1, int.MinValue, int.MaxValue);
-                    if (bestEvalThisIteration >= minUtil)
+                    if (bestEvalThisIteration >= minEval)
                         continue;
-                    minUtil = bestEvalThisIteration;
+                    minEval = bestEvalThisIteration;
                     bestMoveThisIteration = legalMove;
                 }
             }

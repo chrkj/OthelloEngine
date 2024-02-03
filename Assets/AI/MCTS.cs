@@ -92,8 +92,8 @@ namespace Othello.AI
             var startTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
             var timeLimit = startTime + m_MaxTime;
 
-            var _ = Parallel.For(0, m_MaxIterations + 1,
-            (i, loopState) =>
+            Parallel.For(0, m_MaxIterations + 1,
+            (_, loopState) =>
             {
                 Node promisingNode;
                 lock (this)
