@@ -8,13 +8,18 @@ namespace Othello.AI
     public class Node
     {
         public Node Parent;
+        public readonly Board Board;
+        public readonly List<Node> Children = new();
+        private readonly Random m_Random;
+        
         public int NumWins;
         public double Score;
         public double NumVisits;
-        public readonly Board Board;
-        public readonly List<Node> Children = new();
         
-        private Random m_Random;
+        public int RaveVisits;
+        public double RaveScore;
+        
+        private const int RAVE_CONST = 200;
         
         public Node(Board board)
         {
@@ -37,16 +42,6 @@ namespace Othello.AI
             return Children[new Random().Next(Children.Count)];
         }
 
-        public (Node, Move) SelectBestNode()
-        {
-            var bestNode = Children[0];
-            for(var i = 1; i < Children.Count; ++i) 
-                if (CalculateScore(Children[i]) > CalculateScore(bestNode))
-                    bestNode = Children[i];
-            var bestMove = GetBestMove(bestNode);
-            return (bestNode, bestMove);
-        }
-
         private Move GetBestMove(Node bestNode)
         {
             Move bestMove = Move.NULLMOVE;
@@ -65,7 +60,7 @@ namespace Othello.AI
 
         private static double CalculateScore(Node node)
         {
-            return node.NumVisits;
+            return node.NumWins / node.NumVisits;
         }
         
         public List<Node> CreateChildNodes()
@@ -99,11 +94,56 @@ namespace Othello.AI
             Board.ChangePlayerToMove();
         }
         
+        public (int player, Move move) RandomMoveRave()
+        {
+            var player = Board.GetCurrentPlayer();
+            Span<Move> legalMoves = stackalloc Move[Board.MAX_LEGAL_MOVES];
+            Board.GenerateLegalMovesStack(ref legalMoves);
+            if (legalMoves.Length == 0)
+            {
+                Board.ChangePlayerToMove();
+                return (player, Move.NULLMOVE);
+            }
+            
+            var randomMove = legalMoves[m_Random.Next(legalMoves.Length)];
+            Board.MakeMove(randomMove);
+            Board.ChangePlayerToMove();
+            return (player, randomMove);
+        }
+        
         public double CalculateUct()
         {
             if (NumVisits == 0) 
                 return int.MaxValue;
             return (Score / NumVisits) + Math.Sqrt(2.0) * Math.Sqrt(Math.Log(Parent.NumVisits) / NumVisits);
+        }
+        
+        public double CalculateUctRave()
+        {
+            // TODO: Fix rave score / rave selection of notes. (Do the math!)
+            if (NumVisits == 0) 
+                return int.MaxValue;
+
+            var alpha = Math.Max(0, (RAVE_CONST - NumVisits) / RAVE_CONST);
+            var utc = Score / NumVisits + Math.Sqrt(2.0) * Math.Sqrt(Math.Log(Parent.NumVisits) / NumVisits);
+            
+            double amaf;
+            if (RaveVisits != 0)
+                amaf = RaveScore / RaveVisits;
+            else
+                amaf = 0;
+
+            return (1 - alpha) * utc + alpha * amaf;
+        }
+        
+        public (Node, Move) SelectBestNode()
+        {
+            var bestNode = Children[0];
+            for(var i = 1; i < Children.Count; ++i) 
+                if (CalculateScore(Children[i]) > CalculateScore(bestNode))
+                    bestNode = Children[i];
+            var bestMove = GetBestMove(bestNode);
+            return (bestNode, bestMove);
         }
     }
 }

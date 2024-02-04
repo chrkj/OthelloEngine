@@ -274,7 +274,8 @@ namespace Othello.UI
                 Player.WHITE => m_WhiteWins,
                 _ => throw new NotImplementedException("Invalid player.")
             };
-            winsDisplay.text = "White wins: " + wins;
+            var playerString = player == Player.BLACK ? "Black wins: " : "White wins: ";
+            winsDisplay.text = playerString + wins;
         }
 
         private void SetBranchPruneCount(int player, int branchPruneCount)

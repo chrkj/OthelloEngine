@@ -299,7 +299,7 @@ namespace Othello.Core
             }
         }
         
-        private ulong IndexToBit(int id) 
+        public static ulong IndexToBit(int id) 
         {
             ulong mask = 0x8000000000000000;
             int x = id >> 3;
