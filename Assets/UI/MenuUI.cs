@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.InteropServices;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -258,7 +259,7 @@ namespace Othello.UI
                 Player.WHITE => m_WhiteZobristSize,
                 _ => throw new NotImplementedException("Invalid player.")
             };
-            zobristSizeDisplay.text = "Size: " + size * 32 / 8 / 1000000 + "MB";
+            zobristSizeDisplay.text = "Size: " + size * (Marshal.SizeOf<ulong>() + Marshal.SizeOf<int>()) / 1000000 + "MB";
         }
 
         private void SetGameDraws(int draws)
