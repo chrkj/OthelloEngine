@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 
 using Othello.Core;
+using Othello.Utility;
 using Console = Othello.Core.Console;
 
 namespace Othello.AI
@@ -57,23 +58,25 @@ namespace Othello.AI
             Move bestMoveThisIteration = legalMoves[0];
             
             if (m_IterativeDeepeningEnabled)
-            {
-                for (int searchDepth = 1; searchDepth < m_DepthLimit + 1; searchDepth++)
-                {
-                    ResetBranchCount();
-                    UpdateSearchDepth(board, searchDepth);
-                    MoveOrdering(bestMoveThisIteration, ref legalMoves);
-                    CalculateMove(board, ref bestMoveThisIteration, ref bestEvalThisIteration, searchDepth);
-                    if (m_TerminationFlag)
-                        break;
-                }
-            }
+                IterativeSearch(board, ref bestMoveThisIteration,  ref bestEvalThisIteration, legalMoves);
             else
-            {
                 CalculateMove(board, ref bestMoveThisIteration, ref bestEvalThisIteration, m_DepthLimit);
-            }
+
             PrintSearchData(board, start, bestMoveThisIteration);
             return bestMoveThisIteration;
+        }
+
+        private void IterativeSearch(Board board, ref Move bestMoveThisIteration, ref int bestEvalThisIteration, Span<Move> legalMoves)
+        {
+            for (int searchDepth = 1; searchDepth < m_DepthLimit + 1; searchDepth++)
+            {
+                ResetBranchCount();
+                UpdateSearchDepth(board, searchDepth);
+                
+                CalculateMove(board, ref bestMoveThisIteration, ref bestEvalThisIteration, searchDepth);
+                if (m_TerminationFlag)
+                    break;
+            }
         }
 
         private void CalculateMove(Board board, ref Move bestMoveThisIteration, ref int bestEvalThisIteration, int depth)
@@ -85,6 +88,7 @@ namespace Othello.AI
                 var maxEval = int.MinValue;
                 Span<Move> legalMoves = stackalloc Move[Board.MAX_LEGAL_MOVES];
                 board.GenerateLegalMoves(ref legalMoves);
+                SwapBestMoveToFront(bestMoveThisIteration, ref legalMoves);
                 foreach (var legalMove in legalMoves)
                 {
                     if (m_TerminationFlag)
@@ -128,6 +132,7 @@ namespace Othello.AI
 
             Span<Move> legalMoves = stackalloc Move[Board.MAX_LEGAL_MOVES];
             board.GenerateLegalMoves(ref legalMoves);
+            MoveOrdering(ref legalMoves);
             if (legalMoves.Length == 0)
                 minUtil = Math.Min(minUtil, MaxValue(board, depth - 1, alpha, beta));
 
@@ -157,6 +162,7 @@ namespace Othello.AI
 
             Span<Move> legalMoves = stackalloc Move[Board.MAX_LEGAL_MOVES];
             board.GenerateLegalMoves(ref legalMoves);
+            MoveOrdering(ref legalMoves);
             if (legalMoves.Length == 0)
                 maxUtil = Math.Max(maxUtil, MinValue(board, depth - 1, alpha, beta));
 
@@ -247,18 +253,19 @@ namespace Othello.AI
             Console.Log("----------------------------------------------------");
         }
 
-        private void MoveOrdering(Move bestMove, ref Span<Move> legalMoves)
+        private void SwapBestMoveToFront(Move bestMove, ref Span<Move> legalMoves)
+        {
+            
+            // Swap the bestMove to the front of the array
+            var targetIndex = legalMoves.IndexOf(bestMove);
+            (legalMoves[0], legalMoves[targetIndex]) = (legalMoves[targetIndex], legalMoves[0]);
+        }
+
+        private void MoveOrdering(ref Span<Move> legalMoves)
         {
             if (!m_MoveOrderingEnabled)
                 return;
-            if (bestMove == Move.NULLMOVE)
-                return;
-
-            // TODO: Sort the span for move ordering
-            
-            var targetIndex = legalMoves.IndexOf(bestMove);
-            // Swap the bestMove to the front of the array
-            (legalMoves[0], legalMoves[targetIndex]) = (legalMoves[targetIndex], legalMoves[0]);
+            legalMoves.Sort();
         }
 
         private void IncrementPruneCount()
