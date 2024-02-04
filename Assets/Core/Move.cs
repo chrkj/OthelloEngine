@@ -29,14 +29,12 @@ namespace Othello.Core
         {
             if (obj is null) 
                 return false;
-            if (ReferenceEquals(this, obj)) 
-                return true;
             return obj.GetType() == GetType() && Equals((Move) obj);
         }
 
         public bool Equals(Move other)
         {
-            return other != null && Index == other.Index;
+            return Index == other.Index;
         }
 
         public static bool operator ==(Move left, Move right)
