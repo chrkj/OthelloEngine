@@ -47,7 +47,7 @@ namespace Othello.AI
         public override void NotifyTurnToMove()
         {
             Span<Move> legalMoves = stackalloc Move[256];
-            m_Board.GenerateLegalMovesStack(ref legalMoves);
+            m_Board.GenerateLegalMoves(ref legalMoves);
             if (legalMoves.Length == 0)
             {
                 NoLegalMove();

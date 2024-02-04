@@ -53,7 +53,7 @@ namespace Othello.AI
 
             int bestEvalThisIteration = 0;
             Span<Move> legalMoves = stackalloc Move[Board.MAX_LEGAL_MOVES];
-            board.GenerateLegalMovesStack(ref legalMoves);
+            board.GenerateLegalMoves(ref legalMoves);
             Move bestMoveThisIteration = legalMoves[0];
             
             if (m_IterativeDeepeningEnabled)
@@ -84,7 +84,7 @@ namespace Othello.AI
             {
                 var maxEval = int.MinValue;
                 Span<Move> legalMoves = stackalloc Move[Board.MAX_LEGAL_MOVES];
-                board.GenerateLegalMovesStack(ref legalMoves);
+                board.GenerateLegalMoves(ref legalMoves);
                 foreach (var legalMove in legalMoves)
                 {
                     if (m_TerminationFlag)
@@ -101,7 +101,7 @@ namespace Othello.AI
             {
                 var minEval = int.MaxValue;
                 Span<Move> legalMoves = stackalloc Move[Board.MAX_LEGAL_MOVES];
-                board.GenerateLegalMovesStack(ref legalMoves);
+                board.GenerateLegalMoves(ref legalMoves);
                 foreach (var legalMove in legalMoves)
                 {
                     if (m_TerminationFlag)
@@ -127,7 +127,7 @@ namespace Othello.AI
             var minUtil = int.MaxValue - 1;
 
             Span<Move> legalMoves = stackalloc Move[Board.MAX_LEGAL_MOVES];
-            board.GenerateLegalMovesStack(ref legalMoves);
+            board.GenerateLegalMoves(ref legalMoves);
             if (legalMoves.Length == 0)
                 minUtil = Math.Min(minUtil, MaxValue(board, depth - 1, alpha, beta));
 
@@ -156,7 +156,7 @@ namespace Othello.AI
             var maxUtil = int.MinValue + 1;
 
             Span<Move> legalMoves = stackalloc Move[Board.MAX_LEGAL_MOVES];
-            board.GenerateLegalMovesStack(ref legalMoves);
+            board.GenerateLegalMoves(ref legalMoves);
             if (legalMoves.Length == 0)
                 maxUtil = Math.Max(maxUtil, MinValue(board, depth - 1, alpha, beta));
 
