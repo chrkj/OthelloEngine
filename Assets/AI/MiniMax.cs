@@ -68,11 +68,11 @@ namespace Othello.AI
         {
             for (int searchDepth = 1; searchDepth < m_DepthLimit + 1; searchDepth++)
             {
+                if (m_TerminationFlag)
+                    break;
                 ResetBranchCount();
                 UpdateSearchDepth(board, searchDepth);
                 CalculateMove(board, ref bestMoveThisIteration, ref bestEvalThisIteration, searchDepth);
-                if (m_TerminationFlag)
-                    break;
             }
         }
 
@@ -89,6 +89,8 @@ namespace Othello.AI
                 SwapBestMoveToFront(bestMoveThisIteration, ref legalMoves);
                 foreach (var legalMove in legalMoves)
                 {
+                    if (m_TerminationFlag)
+                        break;
                     var possibleNextState = MakeMove(board, legalMove);
                     bestEvalThisIteration = MinValue(possibleNextState, depth - 1, int.MinValue, int.MaxValue);
                     if (bestEvalThisIteration <= maxEval)
@@ -97,6 +99,7 @@ namespace Othello.AI
                     bestMoveThisIteration = legalMove;
                 }
             }
+            
             else
             {
                 var minEval = int.MaxValue;
@@ -105,6 +108,8 @@ namespace Othello.AI
                 SwapBestMoveToFront(bestMoveThisIteration, ref legalMoves);
                 foreach (var legalMove in legalMoves)
                 {
+                    if (m_TerminationFlag)
+                        break;
                     var possibleNextState = MakeMove(board, legalMove);
                     bestEvalThisIteration = MaxValue(possibleNextState, depth - 1, int.MinValue, int.MaxValue);
                     if (bestEvalThisIteration >= minEval)
@@ -217,11 +222,17 @@ namespace Othello.AI
         
         private static int EvaluateBoard(Board board)
         {
-            int value = 0;
-            var positions = board.GetPieces(Player.BLACK);
-            foreach (var pos in positions)
-                value += Move.s_CellWeight[pos];
-            return value;
+            int blackValue = 0;
+            var positionsBlack = board.GetPieces(Player.BLACK);
+            for (int i = 0; i < positionsBlack.Count; i++)
+                blackValue += Move.s_CellWeight[i];
+
+            int whiteValue = 0;
+            var positionsWhite = board.GetPieces(Player.WHITE);
+            for (int i = 0; i < positionsWhite.Count; i++)
+                whiteValue += Move.s_CellWeight[i];
+
+            return blackValue - whiteValue;
         }
 
         private static bool IsTerminal(Board board, int depth)
