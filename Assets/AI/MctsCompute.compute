@@ -1,0 +1,302 @@
+#pragma kernel CSMain
+#pragma use_dxc
+
+enum Player
+{
+    BLACK = 0,
+    WHITE = 1
+};
+
+struct Board
+{
+    uint64_t WhitePieces;
+    uint64_t BlackPieces;
+};
+
+StructuredBuffer<uint64_t> _Pieces;
+StructuredBuffer<uint64_t> _CurrentPlayer;
+
+RWStructuredBuffer<uint64_t> _Result;
+RWStructuredBuffer<uint64_t> _Debug;
+
+groupshared int sharedResult;
+
+uint64_t GenerateLegalMoves(bool isWhiteToMove, uint64_t blackPieces, uint64_t whitePieces)
+{
+    uint64_t opponentBitBoard;
+    uint64_t currentPlayerBitboard;
+    if (isWhiteToMove)
+    {
+        opponentBitBoard = blackPieces;
+        currentPlayerBitboard = whitePieces;
+    }
+    else
+    {
+        opponentBitBoard = whitePieces;
+        currentPlayerBitboard = blackPieces;
+    }
+
+    uint64_t blankBoard = ~(opponentBitBoard | currentPlayerBitboard);
+    uint64_t allEdgeBitmap = opponentBitBoard & 0x007e7e7e7e7e7e00;
+    uint64_t verticalEdgeBitmap = opponentBitBoard & 0x00FFFFFFFFFFFF00;
+    uint64_t horizontalEdgeBitmap = opponentBitBoard & 0x7e7e7e7e7e7e7e7e;
+
+    uint64_t tmp = horizontalEdgeBitmap & (currentPlayerBitboard << 1);
+    for (int i = 0; i < 5; ++i)
+        tmp |= horizontalEdgeBitmap & (tmp << 1);
+    uint64_t legalMovesBitBoard = blankBoard & (tmp << 1);
+
+    tmp = horizontalEdgeBitmap & (currentPlayerBitboard >> 1);
+    for (int i = 0; i < 5; ++i)
+        tmp |= horizontalEdgeBitmap & (tmp >> 1);
+    legalMovesBitBoard |= blankBoard & (tmp >> 1);
+
+    tmp = verticalEdgeBitmap & (currentPlayerBitboard << 8);
+    for (int i = 0; i < 5; ++i)
+        tmp |= verticalEdgeBitmap & (tmp << 8);
+    legalMovesBitBoard |= blankBoard & (tmp << 8);
+
+    tmp = verticalEdgeBitmap & (currentPlayerBitboard >> 8);
+    for (int i = 0; i < 5; ++i)
+        tmp |= verticalEdgeBitmap & (tmp >> 8);
+    legalMovesBitBoard |= blankBoard & (tmp >> 8);
+
+    tmp = allEdgeBitmap & (currentPlayerBitboard << 7);
+    for (int i = 0; i < 5; ++i)
+        tmp |= allEdgeBitmap & (tmp << 7);
+    legalMovesBitBoard |= blankBoard & (tmp << 7);
+
+    tmp = allEdgeBitmap & (currentPlayerBitboard << 9);
+    for (int i = 0; i < 5; ++i)
+        tmp |= allEdgeBitmap & (tmp << 9);
+    legalMovesBitBoard |= blankBoard & (tmp << 9);
+
+    tmp = allEdgeBitmap & (currentPlayerBitboard >> 9);
+    for (int i = 0; i < 5; ++i)
+        tmp |= allEdgeBitmap & (tmp >> 9);
+    legalMovesBitBoard |= blankBoard & (tmp >> 9);
+
+    tmp = allEdgeBitmap & (currentPlayerBitboard >> 7);
+    for (int i = 0; i < 5; ++i)
+        tmp |= allEdgeBitmap & (tmp >> 7);
+    legalMovesBitBoard |= blankBoard & (tmp >> 7);
+
+    return legalMovesBitBoard;
+}
+
+bool IsTerminalBoardState(bool isWhiteToMove, uint64_t blackPieces, uint64_t whitePieces)
+{
+    // Check if board is full (i.e. all bits are set)
+    if ((blackPieces | whitePieces) == 0xFFFFFFFFFFFFFFFF)
+    {
+        _Debug[0] = 10;
+        return true;
+    }
+    
+    uint64_t legalMovesWhite = GenerateLegalMoves(true, blackPieces, whitePieces);
+    if (legalMovesWhite != 0)
+        return false;
+    
+    uint64_t legalMovesBlack = GenerateLegalMoves(false, blackPieces, whitePieces);
+    if (legalMovesWhite == 0 && legalMovesBlack == 0)
+    {
+        _Debug[0] = 11;
+        
+    }
+    return legalMovesBlack == 0;
+}
+
+// Function to count the number of set bits in a uint64_t
+int CountSetBits(uint64_t number)
+{
+    int count = 0;
+    while (number != 0)
+    {
+        count += number & 1;
+        number >>= 1;
+    }
+    return count;
+}
+
+// Function to get the index of a random set bit in a uint64_t
+int GetRandomSetBitIndex(uint64_t number, uint randomValue)
+{
+    int bitCount = CountSetBits(number);
+    if (bitCount == 0)
+    {
+        return -1; // No bits set
+    }
+
+    // Map randomValue to range [0, bitCount - 1]
+    int randomBitPosition = randomValue % bitCount;
+
+    int index = 0;
+    for (int i = 0; i < 64; i++)
+    {
+        if ((number & (1UL << i)) != 0)
+        {
+            if (index == randomBitPosition)
+            {
+                return i;
+            }
+            index++;
+        }
+    }
+
+    return -1; // Should never reach here
+}
+
+uint64_t MoveDir(uint64_t id, int dir)
+{
+    switch (dir)
+    {  
+    case 0:
+        return (id << 8) & 0xffffffffffffff00;
+    case 1:
+        return (id << 7) & 0x7f7f7f7f7f7f7f00;
+    case 2:
+        return (id >> 1) & 0x7f7f7f7f7f7f7f7f;
+    case 3:
+        return (id >> 9) & 0x007f7f7f7f7f7f7f;
+    case 4:
+        return (id >> 8) & 0x00ffffffffffffff;
+    case 5:
+        return (id >> 7) & 0x00fefefefefefefe;
+    case 6:
+        return (id << 1) & 0xfefefefefefefefe;
+    case 7:
+        return (id << 9) & 0xfefefefefefefe00;
+    default:
+        return 0;
+    };
+}
+
+uint64_t IndexToBit(int id)
+{
+    uint64_t mask = 0x8000000000000000;
+    int x = id >> 3;
+    int y = id & 7;
+    mask >>= y;
+    mask >>= (x * 8);
+    return mask;
+}
+
+Board PlacePieces(int moveIndex, uint64_t blackPieces, uint64_t whitePieces, bool isWhiteToMove)
+{
+    int index = 63 - moveIndex;
+    uint64_t opponentBitBoard;
+    uint64_t currentPlayerBitboard;
+    
+    if (isWhiteToMove)
+    {
+        opponentBitBoard = blackPieces;
+        currentPlayerBitboard = whitePieces;
+    }
+    else
+    {
+        opponentBitBoard = whitePieces;
+        currentPlayerBitboard = blackPieces;
+    }
+
+    Board newBoardState;
+    if (0 <= index && index < 64)
+    {
+        uint64_t bit = IndexToBit(index);
+        uint64_t rev = 0;
+
+        for (int dir = 0; dir < 8; ++dir)
+        {
+            uint64_t rev_ = 0;
+            uint64_t mask = MoveDir(bit, dir);
+
+            while ((mask != 0) && ((mask & opponentBitBoard) != 0))
+            {
+                rev_ |= mask;
+                mask = MoveDir(mask, dir);
+            }
+
+            if ((mask & currentPlayerBitboard) != 0)
+                rev |= rev_;
+        }
+
+        if (isWhiteToMove)
+        {
+            newBoardState.BlackPieces ^= rev;
+            newBoardState.WhitePieces ^= (bit | rev);
+        }
+        else
+        {
+            newBoardState.WhitePieces ^= rev;
+            newBoardState.BlackPieces ^= (bit | rev);
+        }
+    }
+    return newBoardState;
+}
+
+[numthreads(1,1,1)]
+void CSMain(uint3 id : SV_DispatchThreadID, uint3 groupID : SV_GroupID, uint3 groupThreadID : SV_GroupThreadID)
+{
+    if (groupThreadID.x == 0) {
+        sharedResult = 0.0;
+    }
+    
+    // Ensure all threads see the initialized value
+    GroupMemoryBarrierWithGroupSync();
+
+    // Set local parameters
+    bool isTerminal = false;
+    bool isWhiteToMove = _CurrentPlayer[0] == WHITE;
+    uint64_t blackPieces = _Pieces[BLACK];
+    uint64_t whitePieces = _Pieces[WHITE];
+    int count = 0;
+    while (!isTerminal)
+    {
+        // Get legal moves
+        uint64_t legalMoves = GenerateLegalMoves(isWhiteToMove, blackPieces, whitePieces);
+        
+        // Check if there are legal moves else change player and continue
+        if (legalMoves == 0) {
+            isWhiteToMove = !isWhiteToMove;
+            continue;
+        }
+        
+        // Random value passed from the CPU or generated within the shader
+        uint randomValue = id.x;
+
+        // Get the random set bit index
+        int randomMove = GetRandomSetBitIndex(legalMoves, randomValue);
+        
+        // Make random move update board state
+        Board pieces = PlacePieces(randomMove, blackPieces, whitePieces, isWhiteToMove);
+        whitePieces = pieces.WhitePieces;
+        blackPieces = pieces.BlackPieces;
+
+        // Change player
+        isWhiteToMove = !isWhiteToMove;
+
+        isTerminal = IsTerminalBoardState(isWhiteToMove, blackPieces, whitePieces);
+        if (isTerminal)
+        {
+            _Result[0] = whitePieces;
+            _Result[1] = blackPieces;
+            _Debug[0] = GenerateLegalMoves(isWhiteToMove, blackPieces, whitePieces);
+        }
+        count++;
+    }
+    _Result[0] = whitePieces;
+    _Result[1] = blackPieces;
+    _Debug[0] = GenerateLegalMoves(isWhiteToMove, blackPieces, whitePieces);
+
+    // Check if winner is the same as _CurrentPlayer, if so increment sharedResult by 1
+    // Atomically add the result to the shared memory
+    //InterlockedAdd(sharedResult, value);
+
+    // Ensure all threads have completed the addition
+    //GroupMemoryBarrierWithGroupSync();
+
+    // Write the shared result to the result buffer by the first thread of the group
+    //if (groupThreadID.x == 0) {
+    //    _Result[groupID.x] = sharedResult;
+    //}
+}
+

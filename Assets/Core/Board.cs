@@ -7,8 +7,8 @@ namespace Othello.Core
     {
         public const int MAX_LEGAL_MOVES = 30;
 
-        private ulong m_BlackPieces;
-        private ulong m_WhitePieces;
+        public ulong m_BlackPieces;
+        public ulong m_WhitePieces;
         private bool m_IsWhiteToMove;
 
         /// <summary>
@@ -208,6 +208,14 @@ namespace Othello.Core
                 if ((pieces & (1UL << i)) != 0)
                     positions.Add(i);
             return positions;
+        }
+        
+        public ulong GetPiecesBitBoard(int player)
+        {
+            if (player == Player.BLACK)
+                return m_BlackPieces;
+            else
+                return m_WhitePieces;
         }
 
         /// <summary>

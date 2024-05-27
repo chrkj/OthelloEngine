@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using Othello.AI;
 using UnityEngine;
 
 using Othello.UI;
@@ -13,6 +14,7 @@ namespace Othello.Core
         public int BlackWins;
         public int WhiteWins;
         public int NumSimsRan;
+        public ComputeShader ComputeShader;
         
         private Board m_Board;
         private Player m_PlayerToMove;
@@ -22,6 +24,12 @@ namespace Othello.Core
         private bool m_LastPlayerHadNoMove;
         private Move m_LastMove = Move.NULLMOVE;
         private enum State { Playing, GameOver, Idle }
+
+        public void RunGpu()
+        {
+            var mctsgpu = new MctsGpu(ComputeShader);
+            mctsgpu.RunGpu(m_Board);
+        }
 
         protected override void Awake()
         {
