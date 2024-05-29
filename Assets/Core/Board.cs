@@ -9,7 +9,7 @@ namespace Othello.Core
 
         public ulong m_BlackPieces;
         public ulong m_WhitePieces;
-        private bool m_IsWhiteToMove;
+        public bool m_IsWhiteToMove;
 
         /// <summary>
         /// Creates a deep copy of the current board.

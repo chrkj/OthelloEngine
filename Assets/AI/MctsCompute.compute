@@ -13,13 +13,11 @@ struct Board
     uint64_t BlackPieces;
 };
 
+StructuredBuffer<int> _Seed;
+StructuredBuffer<int> _CurrentPlayer;
 StructuredBuffer<uint64_t> _Pieces;
-StructuredBuffer<uint64_t> _CurrentPlayer;
 
-RWStructuredBuffer<uint64_t> _Result;
-RWStructuredBuffer<uint64_t> _Debug;
-RWStructuredBuffer<int> _Moves;
-RWStructuredBuffer<uint64_t> _LegalMovesBB;
+RWStructuredBuffer<int> _Result;
 
 groupshared int sharedResult;
 
@@ -116,12 +114,12 @@ int CountSetBits(uint64_t number)
 }
 
 // Function to get the index of a random set bit in a uint64_t
-int GetRandomMoveIndex(uint64_t legalMovesBitBoard, uint randomValue)
+int GetRandomMoveIndex(uint64_t legalMovesBitBoard, uint3 threadGroupX)
 {
     int bitCount = CountSetBits(legalMovesBitBoard);
 
     // Map randomValue to range [0, bitCount - 1]
-    int randomBitPosition = randomValue % bitCount;
+    int randomBitPosition = (_Seed[0] + threadGroupX) % bitCount;
 
     int index = 0;
     for (int i = 0; i < 64; i++)
@@ -228,12 +226,20 @@ Board PlacePieces(int move, uint64_t m_BlackPieces, uint64_t m_WhitePieces, bool
     return returnBoard;
 }
 
-[numthreads(1,1,1)]
-void CSMain(uint3 id : SV_DispatchThreadID, uint3 groupID : SV_GroupID, uint3 groupThreadID : SV_GroupThreadID)
+int GetWinner(uint64_t blackPieces, uint64_t whitePieces)
 {
-    if (groupThreadID.x == 0) {
-        sharedResult = 0.0;
-    }
+    int blackPieceCount = CountSetBits(blackPieces);
+    int whitePieceCount = CountSetBits(whitePieces);
+    if (blackPieceCount == whitePieceCount)
+        return -1;
+    return blackPieceCount > whitePieceCount ? BLACK : WHITE;
+}
+
+[numthreads(256,4,1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x == 0)
+        sharedResult = 0;
     
     // Ensure all threads see the initialized value
     GroupMemoryBarrierWithGroupSync();
@@ -244,7 +250,6 @@ void CSMain(uint3 id : SV_DispatchThreadID, uint3 groupID : SV_GroupID, uint3 gr
     uint64_t whitePieces = _Pieces[WHITE];
     
     // Sim loop
-    //int count = 0;
     while (true)
     {
         if (IsTerminalBoardState(blackPieces, whitePieces))
@@ -252,22 +257,17 @@ void CSMain(uint3 id : SV_DispatchThreadID, uint3 groupID : SV_GroupID, uint3 gr
 
         // Get legal moves
         uint64_t legalMovesBitBoard = GenerateLegalMoves(isWhiteToMove, blackPieces, whitePieces);
-        //_LegalMovesBB[count] = legalMovesBitBoard;
         
         // Check if there are legal moves else change player and continue
-        if (legalMovesBitBoard == 0) {
+        if (legalMovesBitBoard == 0)
+        {
             isWhiteToMove = !isWhiteToMove;
             continue;
         }
         
-        // Random value passed from the CPU or generated within the shader
-        uint randomValue = id.x;
-
         // Get the random set bit index
-        int randomMove = GetRandomMoveIndex(legalMovesBitBoard, randomValue);
-        //_Moves[count] = randomMove;
-        //_Result[count] = blackPieces;
-        //_Debug[count] = whitePieces;
+        int uniqueValue = id.x;
+        int randomMove = GetRandomMoveIndex(legalMovesBitBoard, uniqueValue);
         
         // Make random move update board state
         Board pieces = PlacePieces(randomMove, blackPieces, whitePieces, isWhiteToMove);
@@ -276,22 +276,18 @@ void CSMain(uint3 id : SV_DispatchThreadID, uint3 groupID : SV_GroupID, uint3 gr
 
         // Change player
         isWhiteToMove = !isWhiteToMove;
-        
-        //count++;
     }
-    _Result[0] = blackPieces;
-    _Debug[0] = whitePieces;
-
+    
     // Check if winner is the same as _CurrentPlayer, if so increment sharedResult by 1
-    // Atomically add the result to the shared memory
-    //InterlockedAdd(sharedResult, value);
+    int winner = GetWinner(blackPieces, whitePieces);
+    if (winner == _CurrentPlayer[0])
+        InterlockedAdd(sharedResult, 1);
 
     // Ensure all threads have completed the addition
-    //GroupMemoryBarrierWithGroupSync();
+    GroupMemoryBarrierWithGroupSync();
 
     // Write the shared result to the result buffer by the first thread of the group
-    //if (groupThreadID.x == 0) {
-    //    _Result[groupID.x] = sharedResult;
-    //}
+    if (id.x == 0)
+        _Result[0] = sharedResult;
 }
 
