@@ -17,9 +17,11 @@ StructuredBuffer<int> _Seed;
 StructuredBuffer<int> _CurrentPlayer;
 StructuredBuffer<uint64_t> _Pieces;
 
-RWStructuredBuffer<int> _Result;
+RWStructuredBuffer<int> _Wins;
+RWStructuredBuffer<int> _Draws;
 
-groupshared int sharedResult;
+groupshared int sharedWinResult;
+groupshared int sharedDrawResult;
 
 uint64_t GenerateLegalMoves(bool isWhiteToMove, uint64_t blackPieces, uint64_t whitePieces)
 {
@@ -239,7 +241,10 @@ int GetWinner(uint64_t blackPieces, uint64_t whitePieces)
 void CSMain(uint3 id : SV_DispatchThreadID)
 {
     if (id.x == 0)
-        sharedResult = 0;
+    {
+        sharedWinResult = 0;
+        sharedDrawResult = 0;
+    }
     
     // Ensure all threads see the initialized value
     GroupMemoryBarrierWithGroupSync();
@@ -281,13 +286,18 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     // Check if winner is the same as _CurrentPlayer, if so increment sharedResult by 1
     int winner = GetWinner(blackPieces, whitePieces);
     if (winner == _CurrentPlayer[0])
-        InterlockedAdd(sharedResult, 1);
+        InterlockedAdd(sharedWinResult, 1);
+    if (winner == -1)
+        InterlockedAdd(sharedDrawResult, 1);
 
     // Ensure all threads have completed the addition
     GroupMemoryBarrierWithGroupSync();
 
     // Write the shared result to the result buffer by the first thread of the group
     if (id.x == 0)
-        _Result[0] = sharedResult;
+    {
+        _Wins[0] = sharedWinResult;
+        _Draws[0] = sharedDrawResult;
+    }
 }
 

@@ -42,21 +42,29 @@ namespace Othello.AI
             seedBuffer.SetData(new int[] {new Random().Next()});
             m_ComputeShader.SetBuffer(0, "_Seed", seedBuffer);
             
-            ComputeBuffer resultBuffer = new ComputeBuffer(1, sizeof(int), ComputeBufferType.Default);
-            m_ComputeShader.SetBuffer(0, "_Result", resultBuffer);
+            ComputeBuffer winBuffer = new ComputeBuffer(1, sizeof(int), ComputeBufferType.Default);
+            m_ComputeShader.SetBuffer(0, "_Wins", winBuffer);
             
-            m_ComputeShader.Dispatch(0, 1, 1, 1); // execute compute shader
-            var result = new int[1];
-            resultBuffer.GetData(result);
-
-            Debug.Log(result[0].ToString());
+            ComputeBuffer drawBuffer = new ComputeBuffer(1, sizeof(int), ComputeBufferType.Default);
+            m_ComputeShader.SetBuffer(0, "_Draws", drawBuffer);
+            
+            m_ComputeShader.Dispatch(0, 1, 1, 1);
+            
+            var wins = new int[1];
+            winBuffer.GetData(wins);
+            var draws = new int[1];
+            drawBuffer.GetData(draws);
             
             pieceBuffer.Release();
             currentPlayerBuffer.Release();  
             seedBuffer.Release();
-            resultBuffer.Release();
+            winBuffer.Release();
+            drawBuffer.Release();
             sw.Stop();
-            Debug.Log("Time: " + sw.Elapsed.Milliseconds);
+            
+            Debug.Log("Wins: " + wins[0]);
+            Debug.Log("Draws: " + draws[0]);
+            Debug.Log("Time: " + sw.Elapsed.Milliseconds + "ms");
         }
     }
 }
