@@ -237,7 +237,7 @@ int GetWinner(uint64_t blackPieces, uint64_t whitePieces)
     return blackPieceCount > whitePieceCount ? BLACK : WHITE;
 }
 
-[numthreads(256,4,1)]
+[numthreads(10,10,1)]
 void CSMain(uint3 id : SV_DispatchThreadID)
 {
     if (id.x == 0)

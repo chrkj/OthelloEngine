@@ -5,7 +5,9 @@ using System.Collections.Generic;
 
 using Othello.UI;
 using Othello.Core;
+using UnityEngine;
 using Console = Othello.Core.Console;
+using Random = System.Random;
 
 namespace Othello.AI
 {
@@ -18,6 +20,7 @@ namespace Othello.AI
 
         private const int BLOCK_SIZE = 50;
         private const int IS_RUNNING = -1;
+        private const int NUM_GPU_SIMS = 1024;
 
         private Node m_CachedNode;
         private int m_NodesVisited;
@@ -26,8 +29,11 @@ namespace Othello.AI
 
         private readonly int m_MaxTime;
         private readonly int m_MaxIterations;
-        private readonly MenuUI.MctsType m_MctsType;
-
+        public readonly MenuUI.MctsType m_MctsType;
+        
+        private ComputeShader m_ComputeShader;
+        private Random rng;
+        
         public Mcts(int maxIterations, int maxTime, MenuUI.MctsType mctsType)
         {
             m_MaxTime = maxTime;
@@ -37,6 +43,8 @@ namespace Othello.AI
             s_WhiteWinPrediction = 0;
             s_BlackWinPrediction = 0;
             m_MctsType = mctsType;
+            m_ComputeShader = GameManager.Instance.ComputeShader;
+            rng = new Random();
         }
 
         public Move StartSearch(Board board)
@@ -53,7 +61,7 @@ namespace Othello.AI
                 MenuUI.MctsType.Sequential => CalculateMoveSequential(board),
                 MenuUI.MctsType.RootParallel => CalculateMoveRoot(board),
                 MenuUI.MctsType.TreeParallel => CalculateMoveTree(board),
-                MenuUI.MctsType.Testing => CalculateMoveTesting(board),
+                MenuUI.MctsType.Testing => CalculateGpu(board),
                 _ => throw new NotImplementedException()
             };
         }
@@ -196,6 +204,43 @@ namespace Othello.AI
             PrintSearchData(rootNode, startTime, bestNode, bestMove, endTime);
             return bestMove;
         }
+        
+        private Move CalculateGpu(Board board)
+        {
+            var rootNode = SetRootNode(board);
+            var startTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+            var timeLimit = startTime + m_MaxTime;
+            for (var iterations = 0;
+                 (iterations < m_MaxIterations) & DateTimeOffset.Now.ToUnixTimeMilliseconds() < timeLimit;
+                 iterations += BLOCK_SIZE)
+            {
+                for (var i = 0; i < BLOCK_SIZE; i++)
+                {
+                    var promisingNode = Select(rootNode);
+                    Expand(promisingNode);
+
+                    var nodeToExplore = promisingNode;
+                    if (promisingNode.Children.Count > 0)
+                        nodeToExplore = promisingNode.GetRandomChildNode();
+                    (int simWins, int simDraws) = SimulateGpu(nodeToExplore);
+
+                    BackPropagationGpu(nodeToExplore, simWins, simDraws, nodeToExplore.Board.GetCurrentPlayer());
+                    if (m_CurrentPlayer == Piece.BLACK)
+                        s_BlackIterationsRun += NUM_GPU_SIMS;
+                    else
+                        s_WhiteIterationsRun += NUM_GPU_SIMS;
+                }
+            }
+
+            var (bestNode, bestMove) = rootNode.SelectBestNode();
+            m_CachedNode = bestNode;
+            m_CachedNode.Parent = null;
+
+            var endTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+            SetWinPrediction(bestNode);
+            PrintSearchData(rootNode, startTime, bestNode, bestMove, endTime);
+            return bestMove;
+        }
 
         private void IncrementIteration()
         {
@@ -283,6 +328,20 @@ namespace Othello.AI
                 currentNode = currentNode.Parent;
             }
         }
+        
+        private static void BackPropagationGpu(Node nodeToExplore, int simWins, int simDraws, int simPlayer)
+        {
+            int simSize = NUM_GPU_SIMS;
+            var currentNode = nodeToExplore;
+            while (currentNode != null)
+            {
+                double simulationScore = simWins + 0.5 * simDraws;
+                currentNode.NumVisits += simSize;
+                currentNode.NumWins += (simPlayer == currentNode.Board.GetCurrentPlayer()) ? simWins : simSize - simWins - simDraws;
+                currentNode.Score += simulationScore;
+                currentNode = currentNode.Parent;
+            }
+        }
 
         private static void BackPropagationRave(Node nodeToExplore, int winningPlayer, List<Move> whiteMoves,
             List<Move> blackMoves)
@@ -333,6 +392,48 @@ namespace Othello.AI
             }
 
             return winningPlayer;
+        }
+        
+        private (int, int) SimulateGpu(Node node)
+        {
+            var blackPieces = node.Board.GetPiecesBitBoard(Player.BLACK);
+            var whitePieces = node.Board.GetPiecesBitBoard(Player.WHITE);
+            var currentPlayer = node.Board.GetCurrentPlayer() == 2 ? 0 : 1;
+            
+            var pieceBuffer = new ComputeBuffer(2, sizeof(ulong), ComputeBufferType.Default);
+            pieceBuffer.SetData(new ulong[] {blackPieces, whitePieces});
+            m_ComputeShader.SetBuffer(0, "_Pieces", pieceBuffer);
+            
+            var currentPlayerBuffer = new ComputeBuffer(1, sizeof(int), ComputeBufferType.Default);
+            currentPlayerBuffer.SetData(new int[] {currentPlayer});
+            m_ComputeShader.SetBuffer(0, "_CurrentPlayer", currentPlayerBuffer);
+            
+            var seedBuffer = new ComputeBuffer(1, sizeof(int), ComputeBufferType.Default);
+            seedBuffer.SetData(new int[] {rng.Next()});
+            m_ComputeShader.SetBuffer(0, "_Seed", seedBuffer);
+            
+            var winBuffer = new ComputeBuffer(1, sizeof(int), ComputeBufferType.Default);
+            m_ComputeShader.SetBuffer(0, "_Wins", winBuffer);
+            
+            var drawBuffer = new ComputeBuffer(1, sizeof(int), ComputeBufferType.Default);
+            m_ComputeShader.SetBuffer(0, "_Draws", drawBuffer);
+            
+            m_ComputeShader.Dispatch(0, 1, 1, 1);
+            
+            var simWins = new int[1];
+            winBuffer.GetData(simWins);
+            var simDraws = new int[1];
+            drawBuffer.GetData(simDraws);
+            
+            pieceBuffer.Release();
+            currentPlayerBuffer.Release();  
+            seedBuffer.Release();
+            winBuffer.Release();
+            drawBuffer.Release();
+            Debug.Log("Wins: " + simWins[0]);
+            Debug.Log("Draws: " + simDraws[0]);
+
+            return (simWins[0], simDraws[0]);
         }
 
         private (int, List<Move> whiteMoves, List<Move> blackMoves) SimulateRave(Node node)

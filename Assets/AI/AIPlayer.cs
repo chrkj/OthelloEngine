@@ -54,10 +54,28 @@ namespace Othello.AI
                 return;
             }
             BoardUI.Instance.SetLegalMoves(legalMoves);
-            Task.Factory.StartNew(Search, 
-                Cts.Token,
-                TaskCreationOptions.LongRunning,
-                TaskScheduler.Default);
+            
+            if (m_SearchEngine is Mcts mcts)
+            {
+                if (mcts.m_MctsType == MenuUI.MctsType.Testing)
+                {
+                    Search();
+                }
+                else
+                {
+                    Task.Factory.StartNew(Search,
+                        Cts.Token,
+                        TaskCreationOptions.LongRunning,
+                        TaskScheduler.Default);
+                }
+            }
+            else
+            {
+                Task.Factory.StartNew(Search,
+                    Cts.Token,
+                    TaskCreationOptions.LongRunning,
+                    TaskScheduler.Default);
+            }
         }
 
         private void Search()
