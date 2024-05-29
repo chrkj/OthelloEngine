@@ -26,8 +26,8 @@ namespace Othello.AI
             var currentPlayer = board.GetCurrentPlayer();
             if (m_ComputeShader == null) 
                 return;
-            board.m_BlackPieces = 68727766655;
-            board.m_WhitePieces = 36498932096;
+            board.m_BlackPieces = 562949953421313;
+            board.m_WhitePieces = 791101568;
             
             Span<Move> legalMoves = stackalloc Move[Board.MAX_LEGAL_MOVES];
             board.GenerateLegalMoves(ref legalMoves);
@@ -40,18 +40,27 @@ namespace Othello.AI
             currentPlayerBuffer.SetData(new int[] {currentPlayer});
             m_ComputeShader.SetBuffer(0, "_CurrentPlayer", currentPlayerBuffer);
             
-            ComputeBuffer resultBuffer = new ComputeBuffer(2, sizeof(ulong), ComputeBufferType.Default);
+            ComputeBuffer resultBuffer = new ComputeBuffer(60, sizeof(ulong), ComputeBufferType.Default);
             m_ComputeShader.SetBuffer(0, "_Result", resultBuffer);
             
-            ComputeBuffer debugBuffer = new ComputeBuffer(1, sizeof(ulong), ComputeBufferType.Default);
+            ComputeBuffer debugBuffer = new ComputeBuffer(60, sizeof(ulong), ComputeBufferType.Default);
             m_ComputeShader.SetBuffer(0, "_Debug", debugBuffer);
             
+            ComputeBuffer moveBuffer = new ComputeBuffer(60, sizeof(int), ComputeBufferType.Default);
+            m_ComputeShader.SetBuffer(0, "_Moves", moveBuffer);
+            
+            ComputeBuffer legalBufferBB = new ComputeBuffer(60, sizeof(ulong), ComputeBufferType.Default);
+            m_ComputeShader.SetBuffer(0, "_LegalMovesBB", legalBufferBB);
+            
             m_ComputeShader.Dispatch(0, 1, 1, 1); // execute compute shader
-            var result = new ulong[2];
+            var result = new ulong[60];
             resultBuffer.GetData(result);
-            var debug = new ulong[1];
+            var debug = new ulong[60];
             debugBuffer.GetData(debug);
-
+            var moves = new int[60];
+            moveBuffer.GetData(moves);
+            var movesBB = new ulong[60];
+            legalBufferBB.GetData(movesBB);
             
             Debug.Log(result[0].ToString());
             Debug.Log(result[1].ToString());

@@ -131,6 +131,7 @@ namespace Othello.Core
 
         private void MakeMove(Move move)
         {
+            Debug.Log(move.Index);
             m_Board.MakeMove(move);
             m_LastMove = move;
             ChangePlayer();

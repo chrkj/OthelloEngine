@@ -18,6 +18,8 @@ StructuredBuffer<uint64_t> _CurrentPlayer;
 
 RWStructuredBuffer<uint64_t> _Result;
 RWStructuredBuffer<uint64_t> _Debug;
+RWStructuredBuffer<int> _Moves;
+RWStructuredBuffer<uint64_t> _LegalMovesBB;
 
 groupshared int sharedResult;
 
@@ -84,12 +86,11 @@ uint64_t GenerateLegalMoves(bool isWhiteToMove, uint64_t blackPieces, uint64_t w
     return legalMovesBitBoard;
 }
 
-bool IsTerminalBoardState(bool isWhiteToMove, uint64_t blackPieces, uint64_t whitePieces)
+bool IsTerminalBoardState(uint64_t blackPieces, uint64_t whitePieces)
 {
     // Check if board is full (i.e. all bits are set)
     if ((blackPieces | whitePieces) == 0xFFFFFFFFFFFFFFFF)
     {
-        _Debug[0] = 10;
         return true;
     }
     
@@ -98,11 +99,7 @@ bool IsTerminalBoardState(bool isWhiteToMove, uint64_t blackPieces, uint64_t whi
         return false;
     
     uint64_t legalMovesBlack = GenerateLegalMoves(false, blackPieces, whitePieces);
-    if (legalMovesWhite == 0 && legalMovesBlack == 0)
-    {
-        _Debug[0] = 11;
-        
-    }
+ 
     return legalMovesBlack == 0;
 }
 
@@ -110,22 +107,18 @@ bool IsTerminalBoardState(bool isWhiteToMove, uint64_t blackPieces, uint64_t whi
 int CountSetBits(uint64_t number)
 {
     int count = 0;
-    while (number != 0)
+    for (int i = 0; i < 64; i++)
     {
-        count += number & 1;
-        number >>= 1;
+        if ((number & ((uint64_t)1 << i)) != 0)
+            count++;
     }
     return count;
 }
 
 // Function to get the index of a random set bit in a uint64_t
-int GetRandomSetBitIndex(uint64_t number, uint randomValue)
+int GetRandomMoveIndex(uint64_t legalMovesBitBoard, uint randomValue)
 {
-    int bitCount = CountSetBits(number);
-    if (bitCount == 0)
-    {
-        return -1; // No bits set
-    }
+    int bitCount = CountSetBits(legalMovesBitBoard);
 
     // Map randomValue to range [0, bitCount - 1]
     int randomBitPosition = randomValue % bitCount;
@@ -133,7 +126,7 @@ int GetRandomSetBitIndex(uint64_t number, uint randomValue)
     int index = 0;
     for (int i = 0; i < 64; i++)
     {
-        if ((number & (1UL << i)) != 0)
+        if ((legalMovesBitBoard & ((uint64_t)1 << i)) != 0)
         {
             if (index == randomBitPosition)
             {
@@ -181,24 +174,22 @@ uint64_t IndexToBit(int id)
     return mask;
 }
 
-Board PlacePieces(int moveIndex, uint64_t blackPieces, uint64_t whitePieces, bool isWhiteToMove)
+Board PlacePieces(int move, uint64_t m_BlackPieces, uint64_t m_WhitePieces, bool m_IsWhiteToMove)
 {
-    int index = 63 - moveIndex;
+    int index = 63 - move;
     uint64_t opponentBitBoard;
     uint64_t currentPlayerBitboard;
-    
-    if (isWhiteToMove)
+    if (m_IsWhiteToMove)
     {
-        opponentBitBoard = blackPieces;
-        currentPlayerBitboard = whitePieces;
+        opponentBitBoard = m_BlackPieces;
+        currentPlayerBitboard = m_WhitePieces;
     }
     else
     {
-        opponentBitBoard = whitePieces;
-        currentPlayerBitboard = blackPieces;
+        opponentBitBoard = m_WhitePieces;
+        currentPlayerBitboard = m_BlackPieces;
     }
-
-    Board newBoardState;
+    
     if (0 <= index && index < 64)
     {
         uint64_t bit = IndexToBit(index);
@@ -219,18 +210,22 @@ Board PlacePieces(int moveIndex, uint64_t blackPieces, uint64_t whitePieces, boo
                 rev |= rev_;
         }
 
-        if (isWhiteToMove)
+        if (m_IsWhiteToMove)
         {
-            newBoardState.BlackPieces ^= rev;
-            newBoardState.WhitePieces ^= (bit | rev);
+            m_BlackPieces ^= rev;
+            m_WhitePieces ^= (bit | rev);
         }
         else
         {
-            newBoardState.WhitePieces ^= rev;
-            newBoardState.BlackPieces ^= (bit | rev);
+            m_WhitePieces ^= rev;
+            m_BlackPieces ^= (bit | rev);
         }
     }
-    return newBoardState;
+    
+    Board returnBoard;
+    returnBoard.BlackPieces = m_BlackPieces;
+    returnBoard.WhitePieces = m_WhitePieces;
+    return returnBoard;
 }
 
 [numthreads(1,1,1)]
@@ -244,18 +239,23 @@ void CSMain(uint3 id : SV_DispatchThreadID, uint3 groupID : SV_GroupID, uint3 gr
     GroupMemoryBarrierWithGroupSync();
 
     // Set local parameters
-    bool isTerminal = false;
     bool isWhiteToMove = _CurrentPlayer[0] == WHITE;
     uint64_t blackPieces = _Pieces[BLACK];
     uint64_t whitePieces = _Pieces[WHITE];
-    int count = 0;
-    while (!isTerminal)
+    
+    // Sim loop
+    //int count = 0;
+    while (true)
     {
+        if (IsTerminalBoardState(blackPieces, whitePieces))
+            break;
+
         // Get legal moves
-        uint64_t legalMoves = GenerateLegalMoves(isWhiteToMove, blackPieces, whitePieces);
+        uint64_t legalMovesBitBoard = GenerateLegalMoves(isWhiteToMove, blackPieces, whitePieces);
+        //_LegalMovesBB[count] = legalMovesBitBoard;
         
         // Check if there are legal moves else change player and continue
-        if (legalMoves == 0) {
+        if (legalMovesBitBoard == 0) {
             isWhiteToMove = !isWhiteToMove;
             continue;
         }
@@ -264,7 +264,10 @@ void CSMain(uint3 id : SV_DispatchThreadID, uint3 groupID : SV_GroupID, uint3 gr
         uint randomValue = id.x;
 
         // Get the random set bit index
-        int randomMove = GetRandomSetBitIndex(legalMoves, randomValue);
+        int randomMove = GetRandomMoveIndex(legalMovesBitBoard, randomValue);
+        //_Moves[count] = randomMove;
+        //_Result[count] = blackPieces;
+        //_Debug[count] = whitePieces;
         
         // Make random move update board state
         Board pieces = PlacePieces(randomMove, blackPieces, whitePieces, isWhiteToMove);
@@ -273,19 +276,11 @@ void CSMain(uint3 id : SV_DispatchThreadID, uint3 groupID : SV_GroupID, uint3 gr
 
         // Change player
         isWhiteToMove = !isWhiteToMove;
-
-        isTerminal = IsTerminalBoardState(isWhiteToMove, blackPieces, whitePieces);
-        if (isTerminal)
-        {
-            _Result[0] = whitePieces;
-            _Result[1] = blackPieces;
-            _Debug[0] = GenerateLegalMoves(isWhiteToMove, blackPieces, whitePieces);
-        }
-        count++;
+        
+        //count++;
     }
-    _Result[0] = whitePieces;
-    _Result[1] = blackPieces;
-    _Debug[0] = GenerateLegalMoves(isWhiteToMove, blackPieces, whitePieces);
+    _Result[0] = blackPieces;
+    _Debug[0] = whitePieces;
 
     // Check if winner is the same as _CurrentPlayer, if so increment sharedResult by 1
     // Atomically add the result to the shared memory
