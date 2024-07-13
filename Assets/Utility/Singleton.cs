@@ -12,7 +12,7 @@ namespace Othello.Utility
     {
         protected override void Awake()
         {
-            if (Instance != null) 
+            if (Instance) 
                 Destroy(gameObject);
             else
                 base.Awake();

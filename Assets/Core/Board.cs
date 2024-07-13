@@ -155,6 +155,14 @@ namespace Othello.Core
         {
             return m_IsWhiteToMove ? Player.WHITE : Player.BLACK;
         }
+        /// <summary>
+        /// Gets the current opponent.
+        /// </summary>
+        /// <returns>The current opponent.</returns>
+        public int GetCurrentOpponent()
+        {
+            return m_IsWhiteToMove ? Player.BLACK : Player.WHITE;
+        }
 
         /// <summary>
         /// Gets the current player as a string.

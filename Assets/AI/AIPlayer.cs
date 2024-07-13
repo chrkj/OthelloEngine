@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using System.Threading;
 using System.Diagnostics;
 using System.Threading.Tasks;
@@ -30,6 +29,7 @@ namespace Othello.AI
         {
             if (!m_MoveFound)
                 return;
+            
             if (!MenuUI.Instance.AutoMove)
             {
                 if (!Input.GetKeyDown(KeyCode.Space))
@@ -57,24 +57,14 @@ namespace Othello.AI
             
             if (m_SearchEngine is Mcts mcts)
             {
-                if (mcts.m_MctsType == MenuUI.MctsType.Testing)
-                {
+                if (mcts.m_MctsType == MenuUI.MctsType.GpuParallel)
                     Search();
-                }
                 else
-                {
-                    Task.Factory.StartNew(Search,
-                        Cts.Token,
-                        TaskCreationOptions.LongRunning,
-                        TaskScheduler.Default);
-                }
+                    Task.Factory.StartNew(Search, Cts.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
             }
             else
             {
-                Task.Factory.StartNew(Search,
-                    Cts.Token,
-                    TaskCreationOptions.LongRunning,
-                    TaskScheduler.Default);
+                Task.Factory.StartNew(Search, Cts.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
             }
         }
 

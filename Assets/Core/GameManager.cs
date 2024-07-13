@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections;
-using Othello.AI;
 using UnityEngine;
 
 using Othello.UI;
@@ -25,17 +24,10 @@ namespace Othello.Core
         private Move m_LastMove = Move.NULLMOVE;
         private enum State { Playing, GameOver, Idle }
 
-        public void RunGpu()
-        {
-            var mctsgpu = new MctsGpu(ComputeShader);
-            mctsgpu.RunGpu(m_Board);
-        }
-
         protected override void Awake()
         {
             base.Awake();
             Application.runInBackground = true;
-            MoveData.PrecomputeData();
         }
 
         private void Start()
@@ -47,6 +39,31 @@ namespace Othello.Core
             MenuUI.Instance.Setup(m_Board);
             m_GameState = State.Idle;
             ResetSimCount();
+        }
+        
+        private void Update()
+        {
+            switch (m_GameState)
+            {
+                case State.Playing:
+                    m_PlayerToMove.Update();
+                    BoardUI.Instance.UpdateBoard(m_Board);
+                    BoardUI.Instance.HighlightLastMove(m_LastMove);
+                    MenuUI.Instance.UpdateManu(m_Board);
+                    break;
+                case State.GameOver:
+                    if (NumSimsRan < MenuUI.Instance.NumSimsToRun)
+                    {
+                        NumSimsRan++;
+                        StartCoroutine(StartNewGameAfterSeconds(1));
+                        m_GameState = State.Idle;
+                    }
+                    break;
+                case State.Idle:
+                    break;
+                default:
+                    throw new NotImplementedException();
+            }
         }
 
         public void NewGame()
@@ -96,31 +113,6 @@ namespace Othello.Core
                 return;
             m_WhitePlayer.OnMoveChosen -= MakeMove;
             m_WhitePlayer.OnNoLegalMove -= NoLegalMove;
-        }
-
-        private void Update()
-        {
-            switch (m_GameState)
-            {
-                case State.Playing:
-                    m_PlayerToMove.Update();
-                    BoardUI.Instance.UpdateBoard(m_Board);
-                    BoardUI.Instance.HighlightLastMove(m_LastMove);
-                    MenuUI.Instance.UpdateManu(m_Board);
-                    break;
-                case State.GameOver:
-                    if (NumSimsRan < MenuUI.Instance.NumSimsToRun)
-                    {
-                        NumSimsRan++;
-                        StartCoroutine(StartNewGameAfterSeconds(1));
-                        m_GameState = State.Idle;
-                    }
-                    break;
-                case State.Idle:
-                    break;
-                default:
-                    throw new NotImplementedException();
-            }
         }
         
         private IEnumerator StartNewGameAfterSeconds(int seconds)
@@ -184,6 +176,5 @@ namespace Othello.Core
                     throw new ArgumentOutOfRangeException();
             }
         }
-
     }
 }

@@ -17,7 +17,7 @@ namespace Othello.UI
         public Player WhitePlayerNextGame => m_WhitePlayerNextGame;
         public Player BlackPlayerNextGame => m_BlackPlayerNextGame;
         public int NumSimsToRun => int.Parse(m_NumGamesForSim.text);
-        public enum MctsType { Sequential = 0, RootParallel = 1, TreeParallel = 2, Testing = 3 }
+        public enum MctsType { Sequential = 0, RootParallel = 1, TreeParallel = 2, GpuParallel = 3 }
         
         private Board m_Board;
         private Player m_WhitePlayerNextGame;
@@ -87,8 +87,8 @@ namespace Othello.UI
             SetCurrentDepth(Player.BLACK, MiniMax.s_BlackCurrentDepth);
             SetPositionEvalCount(Player.WHITE, MiniMax.s_WhitePositionsEvaluated);
             SetPositionEvalCount(Player.BLACK, MiniMax.s_BlackPositionsEvaluated);
-            SetCurrentSimulationCount(Player.WHITE, Mcts.s_WhiteIterationsRun);
-            SetCurrentSimulationCount(Player.BLACK, Mcts.s_BlackIterationsRun);
+            SetCurrentSimulationCount(Player.WHITE, Mcts.s_WhiteSimulationsRun);
+            SetCurrentSimulationCount(Player.BLACK, Mcts.s_BlackSimulationsRun);
             SetWinPrediction(Player.WHITE, Mcts.s_WhiteWinPrediction);
             SetWinPrediction(Player.BLACK, Mcts.s_BlackWinPrediction);
             SetTimeElapsed(Player.WHITE, AIPlayer.s_WhiteTimeElapsed.Elapsed.TotalMilliseconds);
@@ -108,23 +108,24 @@ namespace Othello.UI
 
         public void PlayerSelection(int player)
         {
-            ref Player playerRef = ref (player == Piece.BLACK) ? ref m_BlackPlayerNextGame : ref m_WhitePlayerNextGame;
-            var playerType = (player == Piece.BLACK) ? m_BlackPlayer.value : m_WhitePlayer.value;
-            var inputFieldIterations = (player == Piece.BLACK) ? m_BlackIterations : m_WhiteIterations;
-            var inputFieldDepth = (player == Piece.BLACK) ? m_BlackDepth : m_WhiteDepth;
-            var inputFieldTimeLimit = (player == Piece.BLACK) ? m_BlackTimeLimit : m_WhiteTimeLimit;
-            var currentDepth = (player == Piece.BLACK) ? m_BlackCurrentDepth : m_WhiteCurrentDepth;
-            var inputMoveOrdering = (player == Piece.BLACK) ? m_BlackMoveOrdering : m_WhiteMoveOrdering;
-            var inputIterativeDeepening = (player == Piece.BLACK) ? m_BlackIterativeDeepning : m_WhiteIterativeDeepning;
-            var timeElapsed = (player == Piece.BLACK) ? m_BlackTimeElapsed : m_WhiteTimeElapsed;
-            var currentSimulation = (player == Piece.BLACK) ? m_BlackCurrentSimulation : m_WhiteCurrentSimulation;
-            var currentPositionsEvaluated = (player == Piece.BLACK) ? m_BlackPositionsEvaluated : m_WhitePositionsEvaluated;
-            var currentWinPrediction = (player == Piece.BLACK) ? m_BlackCurrentWinPrediction : m_WhiteCurrentWinPrediction;
-            var branchesPruned = (player == Piece.BLACK) ? m_BlackBranchesPruned : m_WhiteBranchesPruned;
-            var mctsTypeInput = (player == Piece.BLACK) ? m_BlackMctsMode : m_WhiteMtcsMode;
-            var mctsType = (player == Piece.BLACK) ? m_BlackMctsMode.value : m_WhiteMtcsMode.value;
-            var zobristHashing = (player == Piece.BLACK) ? m_BlackZobristHashing : m_WhiteZobristHashing;
-            var zobristSize = (player == Piece.BLACK) ? m_BlackZobristSize : m_WhiteZobristSize;
+            var isBlack = player == Piece.BLACK;
+            ref Player playerRef = ref isBlack ? ref m_BlackPlayerNextGame : ref m_WhitePlayerNextGame;
+            var playerType = isBlack ? m_BlackPlayer.value : m_WhitePlayer.value;
+            var inputFieldIterations = isBlack ? m_BlackIterations : m_WhiteIterations;
+            var inputFieldDepth = isBlack ? m_BlackDepth : m_WhiteDepth;
+            var inputFieldTimeLimit = isBlack ? m_BlackTimeLimit : m_WhiteTimeLimit;
+            var currentDepth = isBlack ? m_BlackCurrentDepth : m_WhiteCurrentDepth;
+            var inputMoveOrdering = isBlack ? m_BlackMoveOrdering : m_WhiteMoveOrdering;
+            var inputIterativeDeepening = isBlack ? m_BlackIterativeDeepning : m_WhiteIterativeDeepning;
+            var timeElapsed = isBlack ? m_BlackTimeElapsed : m_WhiteTimeElapsed;
+            var currentSimulation = isBlack ? m_BlackCurrentSimulation : m_WhiteCurrentSimulation;
+            var currentPositionsEvaluated = isBlack ? m_BlackPositionsEvaluated : m_WhitePositionsEvaluated;
+            var currentWinPrediction = isBlack ? m_BlackCurrentWinPrediction : m_WhiteCurrentWinPrediction;
+            var branchesPruned = isBlack ? m_BlackBranchesPruned : m_WhiteBranchesPruned;
+            var mctsTypeInput = isBlack ? m_BlackMctsMode : m_WhiteMtcsMode;
+            var mctsType = isBlack ? m_BlackMctsMode.value : m_WhiteMtcsMode.value;
+            var zobristHashing = isBlack ? m_BlackZobristHashing : m_WhiteZobristHashing;
+            var zobristSize = isBlack ? m_BlackZobristSize : m_WhiteZobristSize;
 
             if (inputFieldDepth.text.Length == 0)
                 inputFieldDepth.text = "1";
