@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 
 using Othello.UI;
@@ -22,6 +21,8 @@ namespace Othello.Core
         private State m_GameState;
         private bool m_LastPlayerHadNoMove;
         private Move m_LastMove = Move.NULLMOVE;
+        [SerializeField] private int m_TimeBetweenGamesSimulation = 1;
+
         private enum State { Playing, GameOver, Idle }
 
         protected override void Awake()
@@ -47,28 +48,24 @@ namespace Othello.Core
             {
                 case State.Playing:
                     m_PlayerToMove.Update();
-                    BoardUI.Instance.UpdateBoard(m_Board);
-                    BoardUI.Instance.HighlightLastMove(m_LastMove);
-                    MenuUI.Instance.UpdateManu(m_Board);
+                    MenuUI.Instance.UpdateMenu(m_Board);
                     break;
                 case State.GameOver:
                     if (NumSimsRan < MenuUI.Instance.NumSimsToRun)
                     {
                         NumSimsRan++;
-                        StartCoroutine(StartNewGameAfterSeconds(1));
+                        StartCoroutine(StartNewGameAfterSeconds(m_TimeBetweenGamesSimulation));
                         m_GameState = State.Idle;
                     }
                     break;
                 case State.Idle:
                     break;
-                default:
-                    throw new NotImplementedException();
             }
         }
 
         public void NewGame()
         {
-            MenuUI.Instance.CancelGame();
+            MenuUI.Instance.CancelAiThread();
             m_Board.ResetBoard(MenuUI.Instance.PlayerToStartNextGame);
             m_Board.LoadStartPosition();
             BoardUI.Instance.UpdateBoard(m_Board);
@@ -108,11 +105,11 @@ namespace Othello.Core
                 m_BlackPlayer.OnMoveChosen -= MakeMove;
                 m_BlackPlayer.OnNoLegalMove -= NoLegalMove;
             }
-
-            if (m_WhitePlayer == null)
-                return;
-            m_WhitePlayer.OnMoveChosen -= MakeMove;
-            m_WhitePlayer.OnNoLegalMove -= NoLegalMove;
+            if (m_WhitePlayer != null)
+            {
+                m_WhitePlayer.OnMoveChosen -= MakeMove;
+                m_WhitePlayer.OnNoLegalMove -= NoLegalMove;
+            }
         }
         
         private IEnumerator StartNewGameAfterSeconds(int seconds)
@@ -123,58 +120,53 @@ namespace Othello.Core
 
         private void MakeMove(Move move)
         {
-            Debug.Log(move.Index);
             m_Board.MakeMove(move);
             m_LastMove = move;
             ChangePlayer();
             m_LastPlayerHadNoMove = false;
+            BoardUI.Instance.UpdateBoard(m_Board);
+            BoardUI.Instance.HighlightLastMove(m_LastMove);
         }
 
         private void NoLegalMove()
         {
-            if (m_LastPlayerHadNoMove)
-            {
-                m_GameState = State.GameOver;
-                var winner = "";
-                if (m_Board.GetWinner() == Piece.BLACK)
-                { 
-                    winner = "Black";
-                    BlackWins++;
-                }
-                else if (m_Board.GetWinner() == Piece.WHITE)
-                { 
-                    winner = "White";
-                    WhiteWins++;
-                }
-                else if (m_Board.GetWinner() == 0)
-                { 
-                    winner = "Draw";
-                    Draws++;
-                }
-                Console.Log("---------------- Winner: " + winner + " ----------------");
-                Console.Log("----------------------------------------------------");
-            }
+            if (IsGameOver())
+                return;
             m_LastPlayerHadNoMove = true;
             ChangePlayer();
         }
 
+        private bool IsGameOver()
+        {
+            if (!m_LastPlayerHadNoMove) 
+                return false;
+            m_GameState = State.GameOver;
+            var winner = "";
+            if (m_Board.GetWinner() == Piece.BLACK)
+            { 
+                winner = "Black";
+                BlackWins++;
+            }
+            else if (m_Board.GetWinner() == Piece.WHITE)
+            { 
+                winner = "White";
+                WhiteWins++;
+            }
+            else if (m_Board.GetWinner() == 0)
+            { 
+                winner = "Draw";
+                Draws++;
+            }
+            Console.Log("---------------- Winner: " + winner + " ----------------");
+            Console.Log("----------------------------------------------------");
+            return true;
+        }
+
         private void ChangePlayer()
         {
-            m_Board.ChangePlayerToMove();
-            switch (m_GameState)
-            {
-                case State.Playing:
-                    m_PlayerToMove = (m_Board.GetCurrentPlayer() == Piece.WHITE) ? m_WhitePlayer : m_BlackPlayer;
-                    m_PlayerToMove.NotifyTurnToMove();
-                    break;
-                case State.GameOver:
-                    // TODO: Handle winning animation
-                    break;
-                case State.Idle:
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
+            m_Board.ChangePlayer();
+            m_PlayerToMove = (m_Board.GetCurrentPlayer() == Piece.WHITE) ? m_WhitePlayer : m_BlackPlayer;
+            m_PlayerToMove.NotifyTurnToMove();
         }
     }
 }

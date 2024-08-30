@@ -76,7 +76,7 @@ namespace Othello.UI
                 m_SquareRenderers[legalMove.Index].material.color = highlightColor;
         }
 
-        public void ToggleLegalMoves(bool isOn)
+        public void ToggleShowLegalMoves(bool isOn)
         {
             m_HighLightLegalMoves = isOn;
             if (!m_HighLightLegalMoves) 

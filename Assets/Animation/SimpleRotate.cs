@@ -4,9 +4,10 @@ namespace Othello.Animation
 {
     public class SimpleRotate : MonoBehaviour 
     {
-        private RectTransform m_RectComponent;
         public float rotateSpeed = 200f;
+        
         private float m_CurrentValue;
+        private RectTransform m_RectComponent;
 
         private void Start()
         {

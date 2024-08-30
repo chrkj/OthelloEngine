@@ -21460,7 +21460,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 681138027}
         m_TargetAssemblyTypeName: Othello.UI.MenuUI, Assembly-CSharp
-        m_MethodName: CancelGame
+        m_MethodName: CancelAiThread
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}

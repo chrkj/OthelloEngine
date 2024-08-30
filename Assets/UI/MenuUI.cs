@@ -81,7 +81,7 @@ namespace Othello.UI
             PlayerSelection(Piece.WHITE);
         }
 
-        public void UpdateManu(Board board)
+        public void UpdateMenu(Board board)
         {
             SetCurrentDepth(Player.WHITE, MiniMax.s_WhiteCurrentDepth);
             SetCurrentDepth(Player.BLACK, MiniMax.s_BlackCurrentDepth);
@@ -224,7 +224,7 @@ namespace Othello.UI
             }
         }
 
-        public void CancelGame()
+        public void CancelAiThread()
         {
             if (m_WhitePlayerNextGame is AIPlayer whitePlayer)
                 whitePlayer.Cts.Cancel();
@@ -234,7 +234,7 @@ namespace Othello.UI
 
         public void ToggleLegalMoves()
         {
-            BoardUI.Instance.ToggleLegalMoves(m_ShowLegalMoves.isOn);
+            BoardUI.Instance.ToggleShowLegalMoves(m_ShowLegalMoves.isOn);
         }
 
         public void ToggleAutoMove()

@@ -72,7 +72,7 @@ namespace Othello.AI
             {
                 var newBoard = Board.Copy();
                 newBoard.MakeMove(legalMove);
-                newBoard.ChangePlayerToMove();
+                newBoard.ChangePlayer();
                 var newNode = new Node(newBoard);
                 notes.Add(newNode);
             }
@@ -85,13 +85,13 @@ namespace Othello.AI
             Board.GenerateLegalMoves(ref legalMoves);
             if (legalMoves.Length == 0)
             {
-                Board.ChangePlayerToMove();
+                Board.ChangePlayer();
                 return;
             }
             
             var randomMove = legalMoves[m_Random.Next(legalMoves.Length)];
             Board.MakeMove(randomMove);
-            Board.ChangePlayerToMove();
+            Board.ChangePlayer();
         }
         
         public (int player, Move move) RandomMoveRave()
@@ -101,13 +101,13 @@ namespace Othello.AI
             Board.GenerateLegalMoves(ref legalMoves);
             if (legalMoves.Length == 0)
             {
-                Board.ChangePlayerToMove();
+                Board.ChangePlayer();
                 return (player, Move.NULLMOVE);
             }
             
             var randomMove = legalMoves[m_Random.Next(legalMoves.Length)];
             Board.MakeMove(randomMove);
-            Board.ChangePlayerToMove();
+            Board.ChangePlayer();
             return (player, randomMove);
         }
         

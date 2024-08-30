@@ -63,11 +63,11 @@ namespace Othello.Core
             if (numLegalMovesCurrentPlayer != 0)
                 return false;
 
-            ChangePlayerToMove();
+            ChangePlayer();
             Span<Move> legalMovesCurrentOpponent = stackalloc Move[256];
             GenerateLegalMoves(ref legalMovesCurrentOpponent);
             var numLegalMovesCurrentOpponent = legalMovesCurrentOpponent.Length;
-            ChangePlayerToMove();
+            ChangePlayer();
 
             return numLegalMovesCurrentOpponent == 0;
         }
@@ -128,7 +128,7 @@ namespace Othello.Core
         /// Changes the player to move. If the current player is white, it changes it to black,
         /// and if the current player is black, it changes it to white.
         /// </summary>
-        public void ChangePlayerToMove()
+        public void ChangePlayer()
         {
             m_IsWhiteToMove = !m_IsWhiteToMove;
         }
