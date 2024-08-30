@@ -1,7 +1,9 @@
 using System;
 
 using Othello.Core;
+using UnityEngine;
 using Console = Othello.Core.Console;
+using Random = System.Random;
 
 namespace Othello.AI
 {
@@ -18,8 +20,9 @@ namespace Othello.AI
             board.GenerateLegalMoves(ref legalMoves);
             var index = new Random().Next(legalMoves.Length);
             var move = legalMoves[index];
+            Console.Log("■■■■■■■■■■■■■■■■■■■■■■■■■■■■", board.IsWhiteToMove ? Color.white : Color.black);
             Console.Log(board.GetCurrentPlayerAsString() + " plays " + move);
-            Console.Log("----------------------------------------------------");
+            Console.Log("■■■■■■■■■■■■■■■■■■■■■■■■■■■■", board.IsWhiteToMove ? Color.white : Color.black);
             return move;
         }
     }

@@ -5,11 +5,11 @@ namespace Othello.Core
 {
     public class Board
     {
+        public bool IsWhiteToMove;
         public const int MAX_LEGAL_MOVES = 30;
 
-        public ulong m_BlackPieces;
-        public ulong m_WhitePieces;
-        public bool m_IsWhiteToMove;
+        private ulong m_BlackPieces;
+        private ulong m_WhitePieces;
 
         /// <summary>
         /// Creates a deep copy of the current board.
@@ -20,7 +20,7 @@ namespace Othello.Core
             var copy = new Board
             {
                 m_BlackPieces = m_BlackPieces,
-                m_IsWhiteToMove = m_IsWhiteToMove,
+                IsWhiteToMove = IsWhiteToMove,
                 m_WhitePieces = m_WhitePieces
             };
             return copy;
@@ -34,7 +34,7 @@ namespace Othello.Core
         {
             m_BlackPieces = 0;
             m_WhitePieces = 0;
-            m_IsWhiteToMove = playerToStart == Piece.WHITE;
+            IsWhiteToMove = playerToStart == Piece.WHITE;
         }
 
         /// <summary>
@@ -89,7 +89,7 @@ namespace Othello.Core
         public bool Equals(Board other)
         {
             return m_WhitePieces == other.m_WhitePieces && m_BlackPieces == other.m_BlackPieces &&
-                   m_IsWhiteToMove == other.m_IsWhiteToMove;
+                   IsWhiteToMove == other.IsWhiteToMove;
         }
 
         /// <summary>
@@ -130,7 +130,7 @@ namespace Othello.Core
         /// </summary>
         public void ChangePlayer()
         {
-            m_IsWhiteToMove = !m_IsWhiteToMove;
+            IsWhiteToMove = !IsWhiteToMove;
         }
 
         /// <summary>
@@ -153,7 +153,7 @@ namespace Othello.Core
         /// <returns>The current player. Returns Player.WHITE if it's the white player's turn, otherwise returns Player.BLACK.</returns>
         public int GetCurrentPlayer()
         {
-            return m_IsWhiteToMove ? Player.WHITE : Player.BLACK;
+            return IsWhiteToMove ? Player.WHITE : Player.BLACK;
         }
         /// <summary>
         /// Gets the current opponent.
@@ -161,7 +161,7 @@ namespace Othello.Core
         /// <returns>The current opponent.</returns>
         public int GetCurrentOpponent()
         {
-            return m_IsWhiteToMove ? Player.BLACK : Player.WHITE;
+            return IsWhiteToMove ? Player.BLACK : Player.WHITE;
         }
 
         /// <summary>
@@ -170,7 +170,7 @@ namespace Othello.Core
         /// <returns>The current player as a string. Returns "White" if it is white player's turn, "Black" otherwise.</returns>
         public string GetCurrentPlayerAsString()
         {
-            return m_IsWhiteToMove ? "White" : "Black";
+            return IsWhiteToMove ? "White" : "Black";
         }
 
         /// <summary>
@@ -233,7 +233,7 @@ namespace Othello.Core
         public ulong GetHash()
         {
             ulong hash = 5648423;
-            if (m_IsWhiteToMove)
+            if (IsWhiteToMove)
                 hash = 4239784;
             return m_BlackPieces ^ hash;
         }
@@ -340,7 +340,7 @@ namespace Othello.Core
             var index = 63 - move.Index;
             ulong opponentBitBoard;
             ulong currentPlayerBitboard;
-            if (m_IsWhiteToMove)
+            if (IsWhiteToMove)
             {
                 opponentBitBoard = m_BlackPieces;
                 currentPlayerBitboard = m_WhitePieces;
@@ -371,7 +371,7 @@ namespace Othello.Core
                         rev |= rev_;
                 }
 
-                if (m_IsWhiteToMove)
+                if (IsWhiteToMove)
                 {
                     m_BlackPieces ^= rev;
                     m_WhitePieces ^= (bit | rev);
@@ -397,7 +397,7 @@ namespace Othello.Core
         {
             ulong opponentBitBoard;
             ulong currentPlayerBitboard;
-            if (m_IsWhiteToMove)
+            if (IsWhiteToMove)
             {
                 opponentBitBoard = m_BlackPieces;
                 currentPlayerBitboard = m_WhitePieces;

@@ -142,13 +142,16 @@ namespace Othello.Core
                 return false;
             m_GameState = State.GameOver;
             var winner = "";
+            var winnerColor = Color.yellow;
             if (m_Board.GetWinner() == Piece.BLACK)
-            { 
+            {
+                winnerColor = Color.black;
                 winner = "Black";
                 BlackWins++;
             }
             else if (m_Board.GetWinner() == Piece.WHITE)
-            { 
+            {
+                winnerColor = Color.white;
                 winner = "White";
                 WhiteWins++;
             }
@@ -157,8 +160,14 @@ namespace Othello.Core
                 winner = "Draw";
                 Draws++;
             }
-            Console.Log("---------------- Winner: " + winner + " ----------------");
-            Console.Log("----------------------------------------------------");
+            
+            
+            Console.Log("■■■■■■■■■■■■■■■■■■■■■■■■■■■■", winnerColor);
+            if (winner == "Draw")
+                Console.Log("■■■■■■■■■■■■ Draw ■■■■■■■■■■■", winnerColor);
+            else
+                Console.Log("■■■■■■■■ Winner: " + winner + " ■■■■■■■■", winnerColor);
+            Console.Log("■■■■■■■■■■■■■■■■■■■■■■■■■■■■", winnerColor);
             return true;
         }
 

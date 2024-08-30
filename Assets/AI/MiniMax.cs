@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
+using UnityEngine;
 using Othello.Core;
 using Othello.Utility;
 using Console = Othello.Core.Console;
@@ -320,12 +321,13 @@ namespace Othello.AI
         private void PrintSearchData(Board board, long start, Move bestMove, int bestEval)
         {
             var end = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+            Console.Log("■■■■■■■■■■■■■■■■■■■■■■■■■■■■", board.IsWhiteToMove ? Color.white : Color.black);
             Console.Log(board.GetCurrentPlayerAsString() + " plays " + bestMove);
             Console.Log("Search time: " + (end - start) + " ms");
             Console.Log("Positions examined: " +
                         (m_CurrentPlayer == Player.BLACK ? s_BlackPositionsEvaluated : s_WhitePositionsEvaluated));
             Console.Log("Best eval: " + bestEval);
-            Console.Log("----------------------------------------------------");
+            Console.Log("■■■■■■■■■■■■■■■■■■■■■■■■■■■■", board.IsWhiteToMove ? Color.white : Color.black);
         }
     }
 }

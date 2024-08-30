@@ -1,7 +1,6 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Collections.Generic;
 
 using Othello.UI;
 using Othello.Core;
@@ -118,7 +117,7 @@ namespace Othello.AI
             m_CachedNode.Parent = null;
             var endTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
             SetWinPrediction(bestNode);
-            PrintSearchData(rootNode, startTime, bestNode, bestMove, endTime);
+            PrintSearchData(rootNode, startTime, bestNode, bestMove, endTime, board.IsWhiteToMove);
             return bestMove;
         }
 
@@ -156,7 +155,7 @@ namespace Othello.AI
             m_CachedNode.Parent = null;
             SetWinPrediction(bestNode);
             var endTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-            PrintSearchData(rootNode, startTime, bestNode, bestMove, endTime);
+            PrintSearchData(rootNode, startTime, bestNode, bestMove, endTime, board.IsWhiteToMove);
             return bestMove;
         }
 
@@ -187,45 +186,9 @@ namespace Othello.AI
             var (bestNode, bestMove) = rootNode.SelectBestNode();
             m_CachedNode = bestNode;
             m_CachedNode.Parent = null;
-
             var endTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
             SetWinPrediction(bestNode);
-            PrintSearchData(rootNode, startTime, bestNode, bestMove, endTime);
-            return bestMove;
-        }
-
-        private Move CalculateMoveTesting(Board board)
-        {
-            //Rave test
-            var rootNode = SetRootNode(board);
-            var startTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-            var timeLimit = startTime + m_MaxTime;
-            for (var iterations = 0;
-                 (iterations < m_MaxIterations) & DateTimeOffset.Now.ToUnixTimeMilliseconds() < timeLimit;
-                 iterations += BLOCK_SIZE)
-            {
-                for (var i = 0; i < BLOCK_SIZE; i++)
-                {
-                    var promisingNode = SelectRave(rootNode);
-                    Expand(promisingNode);
-
-                    var nodeToExplore = promisingNode;
-                    if (promisingNode.Children.Count > 0)
-                        nodeToExplore = promisingNode.GetRandomChildNode();
-                    var (winningPlayer, whiteMoves, blackMoves) = SimulateRave(nodeToExplore);
-
-                    BackPropagationRave(nodeToExplore, winningPlayer, whiteMoves, blackMoves);
-                    IncrementIteration();
-                }
-            }
-
-            var (bestNode, bestMove) = rootNode.SelectBestNode();
-            m_CachedNode = bestNode;
-            m_CachedNode.Parent = null;
-
-            var endTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-            SetWinPrediction(bestNode);
-            PrintSearchData(rootNode, startTime, bestNode, bestMove, endTime);
+            PrintSearchData(rootNode, startTime, bestNode, bestMove, endTime, board.IsWhiteToMove);
             return bestMove;
         }
         
@@ -260,7 +223,7 @@ namespace Othello.AI
 
             var endTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
             SetWinPrediction(bestNode);
-            PrintSearchData(rootNode, startTime, bestNode, bestMove, endTime);
+            PrintSearchData(rootNode, startTime, bestNode, bestMove, endTime, board.IsWhiteToMove);
             return bestMove;
         }
 
@@ -327,14 +290,6 @@ namespace Othello.AI
             return currentNode;
         }
 
-        private static Node SelectRave(Node node)
-        {
-            var currentNode = node;
-            while (currentNode.Children.Count > 0)
-                currentNode = SelectNodeWithRave(currentNode);
-            return currentNode;
-        }
-
         private static void Expand(Node node)
         {
             var childNodes = node.CreateChildNodes();
@@ -358,43 +313,6 @@ namespace Othello.AI
                 currentNode.Score += simulationScore;
                 currentNode = currentNode.Parent;
             }
-        }
-
-        private static void BackPropagationRave(Node nodeToExplore, int winningPlayer, List<Move> whiteMoves,
-            List<Move> blackMoves)
-        {
-            var currentNode = nodeToExplore;
-            while (currentNode.Parent != null)
-            {
-                var currentPlayer = currentNode.Parent.Board.GetCurrentPlayer();
-                
-                double reward = (winningPlayer == currentPlayer) ? 1 : -1;
-                if (winningPlayer == 0)
-                    reward = 0;
-                
-                currentNode.NumVisits++;
-                currentNode.NumWins += (winningPlayer == currentPlayer) ? 1 : 0;
-                currentNode.Score += reward;
-
-                // Rave updates
-                if (currentNode.Parent != null)
-                {
-                    var movesForCurrentPlayer = (currentPlayer == Player.WHITE) ? whiteMoves : blackMoves;
-                    foreach (var childNode in currentNode.Parent.Children)
-                    {
-                        var childMove = currentNode.Parent.Board.GetAllPieces() ^ childNode.Board.GetAllPieces();
-                        foreach (var move in movesForCurrentPlayer)
-                        {
-                            if (childMove != Board.IndexToBit(move.Index)) 
-                                continue;
-                            childNode.RaveScore += reward;
-                            childNode.RaveVisits++;
-                        }
-                    }
-                }
-                currentNode = currentNode.Parent;
-            }
-            currentNode.NumVisits++;
         }
 
         private int Simulate(Node node)
@@ -448,26 +366,6 @@ namespace Othello.AI
             return winningPlayer;
         }
 
-        private (int, List<Move> whiteMoves, List<Move> blackMoves) SimulateRave(Node node)
-        {
-            var whiteMoves = new List<Move>();
-            var blackMoves = new List<Move>();
-            var tempNode = node.Copy();
-            var winningPlayer = tempNode.Board.GetBoardState();
-            while (winningPlayer == IS_RUNNING)
-            {
-                var (player, move) = tempNode.RandomMoveRave();
-                if (player == Player.BLACK)
-                    blackMoves.Add(move);
-                else
-                    whiteMoves.Add(move);
-                m_NodesVisited++;
-                winningPlayer = tempNode.Board.GetBoardState();
-            }
-
-            return (winningPlayer, whiteMoves, blackMoves);
-        }
-
         private static Node SelectNodeWithUct(Node node)
         {
             var selectedNode = node.Children[0];
@@ -481,28 +379,16 @@ namespace Othello.AI
             return selectedNode;
         }
 
-        private static Node SelectNodeWithRave(Node node)
+        private void PrintSearchData(Node rootNode, long startTime, Node bestNode, Move bestMove, long endTime, bool isWhiteToMove)
         {
-            var selectedNode = node.Children[0];
-            for (var i = 1; i < node.Children.Count; i++)
-            {
-                var currentNode = node.Children[i];
-                if (currentNode.CalculateUctRave() > selectedNode.CalculateUctRave())
-                    selectedNode = currentNode;
-            }
-
-            return selectedNode;
-        }
-
-        private void PrintSearchData(Node rootNode, long startTime, Node bestNode, Move bestMove, long endTime)
-        {
-            Console.Log("Tree size: " + bestNode.NumVisits);
+            Console.Log("■■■■■■■■■■■■■■■■■■■■■■■■■■■■", isWhiteToMove ? Color.white : Color.black);
             Console.Log(rootNode.Board.GetCurrentPlayerAsString() + " plays " + bestMove);
+            Console.Log("Tree size: " + bestNode.NumVisits);
             Console.Log("Search time: " + (endTime - startTime) + " ms");
             Console.Log("Iterations: " + (m_CurrentPlayer == Piece.BLACK ? s_BlackIterationsRun : s_WhiteIterationsRun));
             Console.Log("Nodes visited: " + m_NodesVisited);
             Console.Log("Win prediction: " + (bestNode.NumWins / bestNode.NumVisits * 100).ToString("0.##") + " %");
-            Console.Log("----------------------------------------------------");
+            Console.Log("■■■■■■■■■■■■■■■■■■■■■■■■■■■■", isWhiteToMove ? Color.white : Color.black);
         }
 
         private void SetWinPrediction(Node bestNode)

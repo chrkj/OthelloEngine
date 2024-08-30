@@ -28,7 +28,6 @@ namespace Othello.Core
         protected void NoLegalMove()
         {
             Console.Log("No legal moves for " + m_Board.GetCurrentPlayerAsString(), Color.red);
-            Console.Log("----------------------------------------------------");
             OnNoLegalMove?.Invoke();
         }
         

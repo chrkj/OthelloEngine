@@ -21,8 +21,8 @@ namespace Othello.AI
             RunGpu(board);
             return new Move();
         }
-        
-        public void RunGpu(Board board)
+
+        private void RunGpu(Board board)
         {
             Stopwatch sw = new Stopwatch();
             sw.Start();

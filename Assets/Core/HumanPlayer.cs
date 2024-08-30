@@ -59,8 +59,9 @@ namespace Othello.Core
                 return;
             
             var chosenMove = new Move(selectedIndex);
+            Console.Log("■■■■■■■■■■■■■■■■■■■■■■■■■■■■", m_Board.IsWhiteToMove ? Color.white : Color.black);
             Console.Log(m_Board.GetCurrentPlayerAsString() + " plays " + chosenMove);
-            Console.Log("----------------------------------------------------");
+            Console.Log("■■■■■■■■■■■■■■■■■■■■■■■■■■■■", m_Board.IsWhiteToMove ? Color.white : Color.black);
             ChooseMove(chosenMove);
         }
         
