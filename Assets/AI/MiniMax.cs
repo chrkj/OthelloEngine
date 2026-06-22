@@ -226,12 +226,12 @@ namespace Othello.AI
             int blackValue = 0;
             var positionsBlack = board.GetPieces(Player.BLACK);
             for (int i = 0; i < positionsBlack.Count; i++)
-                blackValue += Move.s_CellWeight[i];
+                blackValue += Move.s_CellWeight[positionsBlack[i]];
 
             int whiteValue = 0;
             var positionsWhite = board.GetPieces(Player.WHITE);
             for (int i = 0; i < positionsWhite.Count; i++)
-                whiteValue += Move.s_CellWeight[i];
+                whiteValue += Move.s_CellWeight[positionsWhite[i]];
 
             return blackValue - whiteValue;
         }
