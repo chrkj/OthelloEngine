@@ -235,7 +235,7 @@ namespace Othello.Core
             ulong hash = 5648423;
             if (IsWhiteToMove)
                 hash = 4239784;
-            return m_BlackPieces ^ hash;
+            return m_BlackPieces ^ m_WhitePieces ^ hash;
         }
 
         /// <summary>
