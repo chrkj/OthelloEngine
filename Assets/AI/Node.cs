@@ -34,7 +34,7 @@ namespace Othello.AI
 
         public Node GetRandomChildNode()
         {
-            return Children[new Random().Next(Children.Count)];
+            return Children[m_Random.Next(Children.Count)];
         }
 
         private Move GetBestMove(Node bestNode)
