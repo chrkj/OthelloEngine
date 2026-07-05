@@ -1,5 +1,6 @@
 ﻿using System;
 using UnityEngine;
+using Console = Othello.UI.Console;
 
 namespace Othello.Core
 {

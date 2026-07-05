@@ -3,6 +3,7 @@ using System.Linq;
 using UnityEngine;
 
 using Othello.UI;
+using Console = Othello.UI.Console;
 
 namespace Othello.Core
 {

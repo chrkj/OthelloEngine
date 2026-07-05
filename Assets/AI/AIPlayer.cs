@@ -57,7 +57,7 @@ namespace Othello.AI
             
             if (m_SearchEngine is Mcts mcts)
             {
-                if (mcts.m_MctsType == MenuUI.MctsType.GpuParallel)
+                if (mcts.Variant == MctsType.GpuParallel)
                     Search();
                 else
                     Task.Factory.StartNew(Search, Cts.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);

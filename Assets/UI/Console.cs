@@ -1,10 +1,10 @@
 using TMPro;
 using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace Othello.Core
+namespace Othello.UI
 {
     public class Console : MonoBehaviour
     {
@@ -14,8 +14,7 @@ namespace Othello.Core
 
         private ScrollRect m_ScrollRect;
         private static GameObject m_ChatPanel;
-        private static readonly Queue<Color>  m_MessageColor = new();
-        private static readonly Queue<string>  m_MessagesToLog = new();
+        private static readonly ConcurrentQueue<(string text, Color color)> m_MessagesToLog = new();
         private static readonly Color m_StandardColor = new(0.96f, 0.67f, 0.39f);
 
         private void Start()
@@ -26,8 +25,8 @@ namespace Othello.Core
 
         private void Update()
         {
-            if (m_MessagesToLog.Count == 0) return;  
-            LogMessage(m_MessagesToLog.Dequeue(), m_MessageColor.Dequeue());
+            if (!m_MessagesToLog.TryDequeue(out var message)) return;
+            LogMessage(message.text, message.color);
             m_ScrollRect.velocity = new Vector2(0f, 1000f);
         }
 
@@ -45,14 +44,12 @@ namespace Othello.Core
 
         public static void Log(string text)
         {
-            m_MessagesToLog.Enqueue(text);
-            m_MessageColor.Enqueue(m_StandardColor);
+            m_MessagesToLog.Enqueue((text, m_StandardColor));
         }
-        
+
         public static void Log(string text, Color color)
         {
-            m_MessagesToLog.Enqueue(text);
-            m_MessageColor.Enqueue(color);
+            m_MessagesToLog.Enqueue((text, color));
         }
 
         public static void Clear()

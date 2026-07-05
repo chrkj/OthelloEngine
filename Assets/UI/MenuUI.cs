@@ -17,8 +17,7 @@ namespace Othello.UI
         public Player WhitePlayerNextGame => m_WhitePlayerNextGame;
         public Player BlackPlayerNextGame => m_BlackPlayerNextGame;
         public int NumSimsToRun => int.Parse(m_NumGamesForSim.text);
-        public enum MctsType { Sequential = 0, RootParallel = 1, TreeParallel = 2, GpuParallel = 3 }
-        
+
         private Board m_Board;
         private Player m_WhitePlayerNextGame;
         private Player m_BlackPlayerNextGame;
@@ -184,7 +183,7 @@ namespace Othello.UI
                         var iterations = int.Parse(inputFieldIterations.text);
                         if (iterations < 1)
                             iterations = 1;
-                        playerRef = new AIPlayer(m_Board, new Mcts(iterations, timeLimit, (MctsType)mctsType));
+                        playerRef = new AIPlayer(m_Board, new Mcts(iterations, timeLimit, (MctsType)mctsType, GameManager.Instance.ComputeShader));
                         inputFieldDepth.gameObject.SetActive(false);
                         inputFieldIterations.gameObject.SetActive(true);
                         inputFieldTimeLimit.gameObject.SetActive(true);

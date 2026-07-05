@@ -1,5 +1,4 @@
 using System;
-using Othello.UI;
 
 namespace Othello.Core
 {
@@ -54,9 +53,11 @@ namespace Othello.Core
 
         public override string ToString()
         {
-            var rank = ((Index >> 3) + 1).ToString();
-            var file = BoardUI.Instance.FileChars[Index & 7].ToUpper();
-            return file + rank;
+            if (Index < 0)
+                return "null";
+            var rank = (Index >> 3) + 1;
+            var file = (char)('A' + (Index & 7));
+            return file + rank.ToString();
         }
 
         public int CompareTo(Move other)

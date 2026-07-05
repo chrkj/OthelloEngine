@@ -2,14 +2,15 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-using Othello.UI;
 using Othello.Core;
 using UnityEngine;
 using Random = System.Random;
-using Console = Othello.Core.Console;
+using Console = Othello.UI.Console;
 
 namespace Othello.AI
 {
+    public enum MctsType { Sequential = 0, RootParallel = 1, TreeParallel = 2, GpuParallel = 3 }
+
     public class Mcts : ISearchEngine
     {
         public static int s_WhiteIterationsRun;
@@ -30,10 +31,10 @@ namespace Othello.AI
 
         private readonly int m_MaxTime;
         private readonly int m_MaxIterations;
-        public readonly MenuUI.MctsType m_MctsType;
-        
+        public readonly MctsType Variant;
+
         private Random m_Rng;
-        private ComputeShader m_ComputeShader;
+        private readonly ComputeShader m_ComputeShader;
         
         private ComputeBuffer m_PieceBuffer;
         private ComputeBuffer m_CurrentPlayerBuffer;
@@ -47,7 +48,7 @@ namespace Othello.AI
         private readonly int m_CurrentPlayerId = Shader.PropertyToID("_CurrentPlayer");
         private readonly int m_PiecesId = Shader.PropertyToID("_Pieces");
 
-        public Mcts(int maxIterations, int maxTime, MenuUI.MctsType mctsType)
+        public Mcts(int maxIterations, int maxTime, MctsType mctsType, ComputeShader computeShader = null)
         {
             m_MaxTime = maxTime;
             m_MaxIterations = maxIterations;
@@ -55,8 +56,8 @@ namespace Othello.AI
             s_BlackIterationsRun = 0;
             s_WhiteWinPrediction = 0;
             s_BlackWinPrediction = 0;
-            m_MctsType = mctsType;
-            m_ComputeShader = GameManager.Instance.ComputeShader;
+            Variant = mctsType;
+            m_ComputeShader = computeShader;
             m_Rng = new Random();
         }
 
@@ -65,12 +66,12 @@ namespace Othello.AI
             m_NodesVisited = 0;
             m_CurrentPlayer = board.GetCurrentPlayer() == Piece.BLACK ? Piece.BLACK : Piece.WHITE;
             ResetSimCount();
-            return m_MctsType switch
+            return Variant switch
             {
-                MenuUI.MctsType.Sequential => CalculateMoveSequential(board),
-                MenuUI.MctsType.RootParallel => CalculateMoveRoot(board),
-                MenuUI.MctsType.TreeParallel => CalculateMoveTree(board),
-                MenuUI.MctsType.GpuParallel => CalculateGpu(board),
+                MctsType.Sequential => CalculateMoveSequential(board),
+                MctsType.RootParallel => CalculateMoveRoot(board),
+                MctsType.TreeParallel => CalculateMoveTree(board),
+                MctsType.GpuParallel => CalculateGpu(board),
                 _ => throw new NotImplementedException()
             };
         }

@@ -2,7 +2,7 @@ using System;
 
 using Othello.Core;
 using UnityEngine;
-using Console = Othello.Core.Console;
+using Console = Othello.UI.Console;
 using Random = System.Random;
 
 namespace Othello.AI

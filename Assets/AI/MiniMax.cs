@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 using UnityEngine;
 using Othello.Core;
 using Othello.Utility;
-using Console = Othello.Core.Console;
+using Console = Othello.UI.Console;
 
 namespace Othello.AI
 {
