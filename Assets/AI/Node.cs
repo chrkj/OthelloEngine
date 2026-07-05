@@ -8,8 +8,8 @@ namespace Othello.AI
     public class Node
     {
         public int NumWins;
-        public double Score;
-        public double NumVisits;
+        public int NumVisits;
+        public int Score;
         public Node Parent;
         public readonly Board Board;
         public readonly List<Node> Children = new();
@@ -26,7 +26,7 @@ namespace Othello.AI
         {
             var copyNode = new Node(Board.Copy())
             {
-                NumVisits = NumVisits, 
+                NumVisits = NumVisits,
                 Score = Score
             };
             return copyNode;
@@ -55,7 +55,9 @@ namespace Othello.AI
 
         private static double CalculateScore(Node node)
         {
-            return node.NumWins / node.NumVisits;
+            if (node.NumVisits == 0)
+                return -1;
+            return (double)node.NumWins / node.NumVisits;
         }
         
         public List<Node> CreateChildNodes()
@@ -91,9 +93,9 @@ namespace Othello.AI
         
         public double CalculateUct()
         {
-            if (NumVisits == 0) 
+            if (NumVisits == 0)
                 return int.MaxValue;
-            return (Score / NumVisits) + Math.Sqrt(2.0) * Math.Sqrt(Math.Log(Parent.NumVisits) / NumVisits);
+            return (Score / (2.0 * NumVisits)) + Math.Sqrt(2.0) * Math.Sqrt(Math.Log(Parent.NumVisits) / NumVisits);
         }
         
         public (Node, Move) SelectBestNode()

@@ -90,8 +90,8 @@ namespace Othello.AI
                 IterationsRun = m_IterationsRun,
                 SimulationsRun = m_SimulationsRun,
                 NodesVisited = m_NodesVisited,
-                TreeSize = (int)bestNode.NumVisits,
-                WinPrediction = bestNode.NumVisits > 0 ? bestNode.NumWins / bestNode.NumVisits * 100 : 0
+                TreeSize = bestNode.NumVisits,
+                WinPrediction = bestNode.NumVisits > 0 ? 100.0 * bestNode.NumWins / bestNode.NumVisits : 0
             };
             return result;
         }
@@ -246,15 +246,22 @@ namespace Othello.AI
 
         private static void BackPropagation(Node nodeToExplore, int winningPlayer)
         {
+            // Interlocked updates: the parallel variants back-propagate into shared nodes
+            // (root-parallel from Parallel.For, tree-parallel where subtrees meet at the root).
             var currentNode = nodeToExplore;
             while (currentNode != null)
             {
-                double simulationScore = (winningPlayer == currentNode.Board.GetCurrentPlayer()) ? 0 : 1;
+                Interlocked.Increment(ref currentNode.NumVisits);
                 if (winningPlayer == 0)
-                    simulationScore = 0.5;
-                currentNode.NumVisits++;
-                currentNode.NumWins += (winningPlayer == currentNode.Board.GetCurrentPlayer()) ? 0 : 1;
-                currentNode.Score += simulationScore;
+                {
+                    Interlocked.Increment(ref currentNode.NumWins);
+                    Interlocked.Add(ref currentNode.Score, 1);
+                }
+                else if (winningPlayer != currentNode.Board.GetCurrentPlayer())
+                {
+                    Interlocked.Increment(ref currentNode.NumWins);
+                    Interlocked.Add(ref currentNode.Score, 2);
+                }
                 currentNode = currentNode.Parent;
             }
         }
