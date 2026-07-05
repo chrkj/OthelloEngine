@@ -14,7 +14,10 @@ namespace Othello.Core
         public int WhiteWins;
         public int NumSimsRan;
         public ComputeShader ComputeShader;
-        
+
+        public Player BlackPlayer => m_BlackPlayer;
+        public Player WhitePlayer => m_WhitePlayer;
+
         private Board m_Board;
         private Player m_PlayerToMove;
         private Player m_BlackPlayer;

@@ -82,27 +82,32 @@ namespace Othello.UI
 
         public void UpdateMenu(Board board)
         {
-            SetCurrentDepth(Player.WHITE, MiniMax.s_WhiteCurrentDepth);
-            SetCurrentDepth(Player.BLACK, MiniMax.s_BlackCurrentDepth);
-            SetPositionEvalCount(Player.WHITE, MiniMax.s_WhitePositionsEvaluated);
-            SetPositionEvalCount(Player.BLACK, MiniMax.s_BlackPositionsEvaluated);
-            SetCurrentSimulationCount(Player.WHITE, Mcts.s_WhiteSimulationsRun);
-            SetCurrentSimulationCount(Player.BLACK, Mcts.s_BlackSimulationsRun);
-            SetWinPrediction(Player.WHITE, Mcts.s_WhiteWinPrediction);
-            SetWinPrediction(Player.BLACK, Mcts.s_BlackWinPrediction);
-            SetTimeElapsed(Player.WHITE, AIPlayer.s_WhiteTimeElapsed.Elapsed.TotalMilliseconds);
-            SetTimeElapsed(Player.BLACK, AIPlayer.s_BlackTimeElapsed.Elapsed.TotalMilliseconds);
-            SetBranchPruneCount(Player.WHITE, MiniMax.s_WhiteBranchesPruned);
-            SetBranchPruneCount(Player.BLACK, MiniMax.s_BlackBranchesPruned);
+            UpdatePlayerStats(Player.WHITE, GameManager.Instance.WhitePlayer);
+            UpdatePlayerStats(Player.BLACK, GameManager.Instance.BlackPlayer);
             SetPlayerWins(Player.WHITE, GameManager.Instance.WhiteWins);
             SetPlayerWins(Player.BLACK, GameManager.Instance.BlackWins);
             SetGameDraws(GameManager.Instance.Draws);
             SetCurrentSimCount(GameManager.Instance.NumSimsRan);
-            SetZobristSize(Piece.WHITE, MiniMax.s_WhiteZobristSize);
-            SetZobristSize(Piece.BLACK, MiniMax.s_BlackZobristSize);
             SetCurrentPlayer(board.GetCurrentPlayerAsString());
             SetCurrentPieceCount(Player.BLACK, board.GetPieceCount(Player.BLACK));
             SetCurrentPieceCount(Player.WHITE, board.GetPieceCount(Player.WHITE));
+        }
+
+        private void UpdatePlayerStats(int player, Player gamePlayer)
+        {
+            if (gamePlayer is not AIPlayer aiPlayer)
+                return;
+            SetTimeElapsed(player, aiPlayer.TimeElapsed.Elapsed.TotalMilliseconds);
+
+            var result = aiPlayer.LastResult;
+            if (result == null)
+                return;
+            SetCurrentDepth(player, result.Depth);
+            SetPositionEvalCount(player, result.PositionsEvaluated);
+            SetBranchPruneCount(player, result.BranchesPruned);
+            SetZobristSize(player, result.ZobristSize);
+            SetCurrentSimulationCount(player, result.SimulationsRun);
+            SetWinPrediction(player, result.WinPrediction);
         }
 
         public void PlayerSelection(int player)

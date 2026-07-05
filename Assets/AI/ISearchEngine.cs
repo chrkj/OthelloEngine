@@ -4,6 +4,6 @@ namespace Othello.AI
 {
     public interface ISearchEngine
     {
-        public Move StartSearch(Board board);
+        public SearchResult StartSearch(Board board);
     }
 }

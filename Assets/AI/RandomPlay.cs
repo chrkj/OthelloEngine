@@ -9,9 +9,9 @@ namespace Othello.AI
 {
     public class RandomPlay : ISearchEngine
     {
-        public Move StartSearch(Board board)
+        public SearchResult StartSearch(Board board)
         {
-            return CalculateMove(board);
+            return new SearchResult { BestMove = CalculateMove(board) };
         }
 
         private Move CalculateMove(Board board)

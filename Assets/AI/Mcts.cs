@@ -13,20 +13,14 @@ namespace Othello.AI
 
     public class Mcts : ISearchEngine
     {
-        public static int s_WhiteIterationsRun;
-        public static int s_BlackIterationsRun;
-        public static int s_WhiteSimulationsRun;
-        public static int s_BlackSimulationsRun;
-        public static double s_WhiteWinPrediction;
-        public static double s_BlackWinPrediction;
-
         private const int BLOCK_SIZE = 50;
         private const int IS_RUNNING = -1;
         private const int NUM_GPU_SIMS = 100;
 
         private Node m_CachedNode;
         private int m_NodesVisited;
-        private int m_CurrentPlayer;
+        private int m_IterationsRun;
+        private int m_SimulationsRun;
         private int m_NumTrees;
 
         private readonly int m_MaxTime;
@@ -35,13 +29,13 @@ namespace Othello.AI
 
         private Random m_Rng;
         private readonly ComputeShader m_ComputeShader;
-        
+
         private ComputeBuffer m_PieceBuffer;
         private ComputeBuffer m_CurrentPlayerBuffer;
         private ComputeBuffer m_SeedBuffer;
         private ComputeBuffer m_WinBuffer;
         private ComputeBuffer m_DrawBuffer;
-        
+
         private readonly int m_DrawsId = Shader.PropertyToID("_Draws");
         private readonly int m_WinsId = Shader.PropertyToID("_Wins");
         private readonly int m_SeedId = Shader.PropertyToID("_Seed");
@@ -52,82 +46,82 @@ namespace Othello.AI
         {
             m_MaxTime = maxTime;
             m_MaxIterations = maxIterations;
-            s_WhiteIterationsRun = 0;
-            s_BlackIterationsRun = 0;
-            s_WhiteWinPrediction = 0;
-            s_BlackWinPrediction = 0;
             Variant = mctsType;
             m_ComputeShader = computeShader;
             m_Rng = new Random();
         }
 
-        public Move StartSearch(Board board)
+        public SearchResult StartSearch(Board board)
         {
             m_NodesVisited = 0;
-            m_CurrentPlayer = board.GetCurrentPlayer() == Piece.BLACK ? Piece.BLACK : Piece.WHITE;
-            ResetSimCount();
-            return Variant switch
-            {
-                MctsType.Sequential => CalculateMoveSequential(board),
-                MctsType.RootParallel => CalculateMoveRoot(board),
-                MctsType.TreeParallel => CalculateMoveTree(board),
-                MctsType.GpuParallel => CalculateGpu(board),
-                _ => throw new NotImplementedException()
-            };
-        }
-
-        private void ResetSimCount()
-        {
-            if (m_CurrentPlayer == Piece.BLACK)
-            {
-                s_BlackIterationsRun = 0;
-                s_BlackSimulationsRun = 0;
-            }
-            else
-            {
-                s_WhiteIterationsRun = 0;
-                s_WhiteSimulationsRun = 0;
-            }
-        }
-
-        private Move CalculateMoveTree(Board board)
-        {
-            var rootNode = SetRootNode(board);
-            if (rootNode.Children.Count == 0)
-                Expand(rootNode);
-            m_NumTrees = rootNode.Children.Count;
+            m_IterationsRun = 0;
+            m_SimulationsRun = 0;
 
             var startTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
             var timeLimit = startTime + m_MaxTime;
+            var rootNode = SetRootNode(board);
 
-            Task[] tasks = new Task[rootNode.Children.Count];
-            for (int i = 0; i < rootNode.Children.Count; i++)
+            switch (Variant)
             {
-                var treeNode = rootNode.Children[i];
-                Expand(treeNode);
-                tasks[i] = Task.Factory.StartNew(() => { RunTree(treeNode, timeLimit); },
-                    CancellationToken.None,
-                    TaskCreationOptions.LongRunning,
-                    TaskScheduler.Default);
+                case MctsType.Sequential:
+                    RunSequential(rootNode, timeLimit);
+                    break;
+                case MctsType.RootParallel:
+                    RunRootParallel(rootNode, timeLimit);
+                    break;
+                case MctsType.TreeParallel:
+                    RunTreeParallel(rootNode, timeLimit);
+                    break;
+                case MctsType.GpuParallel:
+                    RunGpuParallel(rootNode, timeLimit);
+                    break;
+                default:
+                    throw new NotImplementedException();
             }
-
-            Task.WaitAll(tasks);
 
             var (bestNode, bestMove) = rootNode.SelectBestNode();
             m_CachedNode = bestNode;
             m_CachedNode.Parent = null;
             var endTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-            SetWinPrediction(bestNode);
-            PrintSearchData(rootNode, startTime, bestNode, bestMove, endTime, board.IsWhiteToMove);
-            return bestMove;
+
+            var result = new SearchResult
+            {
+                BestMove = bestMove,
+                TimeMs = endTime - startTime,
+                IterationsRun = m_IterationsRun,
+                SimulationsRun = m_SimulationsRun,
+                NodesVisited = m_NodesVisited,
+                TreeSize = (int)bestNode.NumVisits,
+                WinPrediction = bestNode.NumVisits > 0 ? bestNode.NumWins / bestNode.NumVisits * 100 : 0
+            };
+            PrintSearchData(board, result);
+            return result;
         }
 
-        private Move CalculateMoveRoot(Board board)
+        private void RunSequential(Node rootNode, long timeLimit)
         {
-            var rootNode = SetRootNode(board);
-            var startTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-            var timeLimit = startTime + m_MaxTime;
+            for (var iterations = 0;
+                 (iterations < m_MaxIterations) & DateTimeOffset.Now.ToUnixTimeMilliseconds() < timeLimit;
+                 iterations += BLOCK_SIZE)
+            {
+                for (var i = 0; i < BLOCK_SIZE; i++)
+                {
+                    var promisingNode = Select(rootNode);
+                    Expand(promisingNode);
 
+                    var nodeToExplore = promisingNode;
+                    if (promisingNode.Children.Count > 0)
+                        nodeToExplore = promisingNode.GetRandomChildNode();
+                    var winningPlayer = Simulate(nodeToExplore);
+
+                    BackPropagation(nodeToExplore, winningPlayer);
+                    Interlocked.Increment(ref m_IterationsRun);
+                }
+            }
+        }
+
+        private void RunRootParallel(Node rootNode, long timeLimit)
+        {
             Parallel.For(0, m_MaxIterations + 1,
                 (_, loopState) =>
                 {
@@ -144,27 +138,37 @@ namespace Othello.AI
                     var winningPlayer = Simulate(nodeToExplore);
 
                     BackPropagation(nodeToExplore, winningPlayer);
-                    IncrementIteration();
+                    Interlocked.Increment(ref m_IterationsRun);
 
                     if (DateTimeOffset.Now.ToUnixTimeMilliseconds() > timeLimit)
                         loopState.Break();
                 }
             );
-
-            var (bestNode, bestMove) = rootNode.SelectBestNode();
-            m_CachedNode = bestNode;
-            m_CachedNode.Parent = null;
-            SetWinPrediction(bestNode);
-            var endTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-            PrintSearchData(rootNode, startTime, bestNode, bestMove, endTime, board.IsWhiteToMove);
-            return bestMove;
         }
 
-        private Move CalculateMoveSequential(Board board)
+        private void RunTreeParallel(Node rootNode, long timeLimit)
         {
-            var rootNode = SetRootNode(board);
-            var startTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-            var timeLimit = startTime + m_MaxTime;
+            if (rootNode.Children.Count == 0)
+                Expand(rootNode);
+            m_NumTrees = rootNode.Children.Count;
+
+            Task[] tasks = new Task[rootNode.Children.Count];
+            for (int i = 0; i < rootNode.Children.Count; i++)
+            {
+                var treeNode = rootNode.Children[i];
+                Expand(treeNode);
+                tasks[i] = Task.Factory.StartNew(() => { RunTree(treeNode, timeLimit); },
+                    CancellationToken.None,
+                    TaskCreationOptions.LongRunning,
+                    TaskScheduler.Default);
+            }
+
+            Task.WaitAll(tasks);
+        }
+
+        private void RunGpuParallel(Node rootNode, long timeLimit)
+        {
+            InitializeBuffers();
             for (var iterations = 0;
                  (iterations < m_MaxIterations) & DateTimeOffset.Now.ToUnixTimeMilliseconds() < timeLimit;
                  iterations += BLOCK_SIZE)
@@ -177,73 +181,14 @@ namespace Othello.AI
                     var nodeToExplore = promisingNode;
                     if (promisingNode.Children.Count > 0)
                         nodeToExplore = promisingNode.GetRandomChildNode();
-                    var winningPlayer = Simulate(nodeToExplore);
-
-                    BackPropagation(nodeToExplore, winningPlayer);
-                    IncrementIteration();
-                }
-            }
-
-            var (bestNode, bestMove) = rootNode.SelectBestNode();
-            m_CachedNode = bestNode;
-            m_CachedNode.Parent = null;
-            var endTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-            SetWinPrediction(bestNode);
-            PrintSearchData(rootNode, startTime, bestNode, bestMove, endTime, board.IsWhiteToMove);
-            return bestMove;
-        }
-        
-        private Move CalculateGpu(Board board)
-        {
-            var rootNode = SetRootNode(board);
-            var startTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-            var timeLimit = startTime + m_MaxTime;
-            
-            InitializeBuffers();
-            for (var iterations = 0; (iterations < m_MaxIterations) & DateTimeOffset.Now.ToUnixTimeMilliseconds() < timeLimit; iterations += BLOCK_SIZE)
-            {
-                for (var i = 0; i < BLOCK_SIZE; i++)
-                {
-                    var promisingNode = Select(rootNode);
-                    Expand(promisingNode);
-
-                    var nodeToExplore = promisingNode;
-                    if (promisingNode.Children.Count > 0)
-                        nodeToExplore = promisingNode.GetRandomChildNode();
                     var winningPlayer = SimulateGpu(nodeToExplore);
 
                     BackPropagation(nodeToExplore, winningPlayer);
-                    IncrementIteration();
+                    Interlocked.Increment(ref m_IterationsRun);
                 }
             }
             ReleaseBuffers();
-
-            var (bestNode, bestMove) = rootNode.SelectBestNode();
-            m_CachedNode = bestNode;
-            m_CachedNode.Parent = null;
-
-            var endTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-            SetWinPrediction(bestNode);
-            PrintSearchData(rootNode, startTime, bestNode, bestMove, endTime, board.IsWhiteToMove);
-            return bestMove;
         }
-
-        private void IncrementIteration()
-        {
-            if (m_CurrentPlayer == Piece.BLACK)
-                s_BlackIterationsRun++;
-            else
-                s_WhiteIterationsRun++;
-        }
-        
-        private void IncrementSimulation(int value)
-        {
-            if (m_CurrentPlayer == Piece.BLACK)
-                s_BlackSimulationsRun += value;
-            else
-                s_WhiteSimulationsRun += value;
-        }
-
 
         private void RunTree(Node rootNode, long timeLimit)
         {
@@ -262,7 +207,7 @@ namespace Othello.AI
                     var winningPlayer = Simulate(nodeToExplore);
 
                     BackPropagation(nodeToExplore, winningPlayer);
-                    IncrementIteration();
+                    Interlocked.Increment(ref m_IterationsRun);
                 }
             }
         }
@@ -323,13 +268,13 @@ namespace Othello.AI
             while (winningPlayer == IS_RUNNING)
             {
                 tempNode.RandomMove();
-                m_NodesVisited++;
+                Interlocked.Increment(ref m_NodesVisited);
                 winningPlayer = tempNode.Board.GetBoardState();
             }
-            IncrementSimulation(1);
+            Interlocked.Increment(ref m_SimulationsRun);
             return winningPlayer;
         }
-        
+
         private int SimulateGpu(Node node)
         {
             var blackPieces = node.Board.GetPiecesBitBoard(Player.BLACK);
@@ -343,7 +288,7 @@ namespace Othello.AI
             m_ComputeShader.SetBuffer(0, m_CurrentPlayerId, m_CurrentPlayerBuffer);
             m_SeedBuffer.SetData(new[] { m_Rng.Next() });
             m_ComputeShader.SetBuffer(0, m_SeedId, m_SeedBuffer);
-            
+
             // Output buffers
             m_ComputeShader.SetBuffer(0, m_WinsId, m_WinBuffer);
             m_ComputeShader.SetBuffer(0, m_DrawsId, m_DrawBuffer);
@@ -362,8 +307,8 @@ namespace Othello.AI
                 winningPlayer = 0;
             else
                 winningPlayer = node.Board.GetCurrentPlayer();
-            
-            IncrementSimulation(NUM_GPU_SIMS);
+
+            Interlocked.Add(ref m_SimulationsRun, NUM_GPU_SIMS);
             return winningPlayer;
         }
 
@@ -380,26 +325,19 @@ namespace Othello.AI
             return selectedNode;
         }
 
-        private void PrintSearchData(Node rootNode, long startTime, Node bestNode, Move bestMove, long endTime, bool isWhiteToMove)
+        private static void PrintSearchData(Board board, SearchResult result)
         {
-            Console.Log("■■■■■■■■■■■■■■■■■■■■■■■■■■■■", isWhiteToMove ? Color.white : Color.black);
-            Console.Log(rootNode.Board.GetCurrentPlayerAsString() + " plays " + bestMove);
-            Console.Log("Tree size: " + bestNode.NumVisits);
-            Console.Log("Search time: " + (endTime - startTime) + " ms");
-            Console.Log("Iterations: " + (m_CurrentPlayer == Piece.BLACK ? s_BlackIterationsRun : s_WhiteIterationsRun));
-            Console.Log("Nodes visited: " + m_NodesVisited);
-            Console.Log("Win prediction: " + (bestNode.NumWins / bestNode.NumVisits * 100).ToString("0.##") + " %");
-            Console.Log("■■■■■■■■■■■■■■■■■■■■■■■■■■■■", isWhiteToMove ? Color.white : Color.black);
+            var logColor = board.IsWhiteToMove ? Color.white : Color.black;
+            Console.Log("■■■■■■■■■■■■■■■■■■■■■■■■■■■■", logColor);
+            Console.Log(board.GetCurrentPlayerAsString() + " plays " + result.BestMove);
+            Console.Log("Tree size: " + result.TreeSize);
+            Console.Log("Search time: " + result.TimeMs + " ms");
+            Console.Log("Iterations: " + result.IterationsRun);
+            Console.Log("Nodes visited: " + result.NodesVisited);
+            Console.Log("Win prediction: " + result.WinPrediction.ToString("0.##") + " %");
+            Console.Log("■■■■■■■■■■■■■■■■■■■■■■■■■■■■", logColor);
         }
 
-        private void SetWinPrediction(Node bestNode)
-        {
-            if (m_CurrentPlayer == Piece.BLACK)
-                s_BlackWinPrediction = bestNode.NumWins / bestNode.NumVisits * 100;
-            else
-                s_WhiteWinPrediction = bestNode.NumWins / bestNode.NumVisits * 100;
-        }
-        
         private void InitializeBuffers()
         {
             m_PieceBuffer = new ComputeBuffer(2, sizeof(ulong), ComputeBufferType.Default);
@@ -408,7 +346,7 @@ namespace Othello.AI
             m_WinBuffer = new ComputeBuffer(1, sizeof(int), ComputeBufferType.Default);
             m_DrawBuffer = new ComputeBuffer(1, sizeof(int), ComputeBufferType.Default);
         }
-        
+
         private void ReleaseBuffers()
         {
             m_PieceBuffer.Release();

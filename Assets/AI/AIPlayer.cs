@@ -11,9 +11,9 @@ namespace Othello.AI
 {
     public class AIPlayer : Player
     {
-        public static Stopwatch s_BlackTimeElapsed = new();
-        public static Stopwatch s_WhiteTimeElapsed = new();
-        
+        public readonly Stopwatch TimeElapsed = new();
+        public SearchResult LastResult { get; private set; }
+
         public readonly CancellationTokenSource Cts = new();
 
         private bool m_MoveFound;
@@ -71,7 +71,8 @@ namespace Othello.AI
         private void Search()
         {
             StartStopwatch();
-            m_ChosenMove = m_SearchEngine.StartSearch(m_Board);
+            LastResult = m_SearchEngine.StartSearch(m_Board);
+            m_ChosenMove = LastResult.BestMove;
             StopStopwatch();
             m_MoveFound = true;
         }
@@ -79,31 +80,19 @@ namespace Othello.AI
         private void StopStopwatch()
         {
             if (m_Board.GetCurrentPlayer() == Piece.BLACK)
-            {
                 BoardUI.Instance.BlackAiPlayerCalculating = false;
-                s_BlackTimeElapsed.Stop();
-            }
             else
-            {
                 BoardUI.Instance.WhiteAiPlayerCalculating = false;
-                s_WhiteTimeElapsed.Stop();
-            }
+            TimeElapsed.Stop();
         }
 
         private void StartStopwatch()
         {
             if (m_Board.GetCurrentPlayer() == Piece.BLACK)
-            {
                 BoardUI.Instance.BlackAiPlayerCalculating = true;
-                s_BlackTimeElapsed.Reset();
-                s_BlackTimeElapsed.Start();
-            }
             else
-            {
                 BoardUI.Instance.WhiteAiPlayerCalculating = true;
-                s_WhiteTimeElapsed.Reset();
-                s_WhiteTimeElapsed.Start();
-            }
+            TimeElapsed.Restart();
         }
     }
 }
