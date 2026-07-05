@@ -218,7 +218,7 @@ namespace Othello.AI
             return 0;
         }
 
-        private static int EvaluateBoard(Board board)
+        public static int EvaluateBoard(Board board)
         {
             int blackValue = 0;
             var positionsBlack = board.GetPieces(Piece.BLACK);

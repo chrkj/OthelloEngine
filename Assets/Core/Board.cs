@@ -11,6 +11,23 @@ namespace Othello.Core
         private ulong m_BlackPieces;
         private ulong m_WhitePieces;
 
+        public Board()
+        {
+        }
+
+        /// <summary>
+        /// Creates a board from explicit bitboards. Useful for setting up specific positions in tests.
+        /// </summary>
+        /// <param name="blackPieces">Bitboard of the black pieces.</param>
+        /// <param name="whitePieces">Bitboard of the white pieces.</param>
+        /// <param name="isWhiteToMove">Whether white is the player to move.</param>
+        public Board(ulong blackPieces, ulong whitePieces, bool isWhiteToMove)
+        {
+            m_BlackPieces = blackPieces;
+            m_WhitePieces = whitePieces;
+            IsWhiteToMove = isWhiteToMove;
+        }
+
         /// <summary>
         /// Creates a deep copy of the current board.
         /// </summary>
@@ -228,10 +245,13 @@ namespace Othello.Core
         /// <returns>The hash value of the board.</returns>
         public ulong GetHash()
         {
-            ulong hash = 5648423;
+            // Combine the bitboards asymmetrically: a plain XOR of the two would collapse
+            // to "occupied squares", making color-swapped positions collide.
+            ulong hash = m_BlackPieces;
+            hash ^= m_WhitePieces + 0x9E3779B97F4A7C15UL + (hash << 6) + (hash >> 2);
             if (IsWhiteToMove)
-                hash = 4239784;
-            return m_BlackPieces ^ m_WhitePieces ^ hash;
+                hash ^= 0x9E3779B97F4A7C15UL;
+            return hash;
         }
 
         /// <summary>
