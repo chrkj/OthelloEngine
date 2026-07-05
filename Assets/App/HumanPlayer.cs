@@ -3,9 +3,10 @@ using System.Linq;
 using UnityEngine;
 
 using Othello.UI;
+using Othello.Core;
 using Console = Othello.UI.Console;
 
-namespace Othello.Core
+namespace Othello.App
 {
     public class HumanPlayer : Player
     {

@@ -1,8 +1,9 @@
 ﻿using System;
 using UnityEngine;
+using Othello.Core;
 using Console = Othello.UI.Console;
 
-namespace Othello.Core
+namespace Othello.App
 {
     public abstract class Player : ICloneable
     {

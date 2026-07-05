@@ -2,10 +2,11 @@
 using UnityEngine;
 
 using Othello.UI;
+using Othello.Core;
 using Othello.Utility;
 using Console = Othello.UI.Console;
 
-namespace Othello.Core
+namespace Othello.App
 {
     public class GameManager : SingletonMono<GameManager>
     {

@@ -4,10 +4,12 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using UnityEngine;
 
+using Othello.AI;
 using Othello.Core;
 using Othello.UI;
+using Console = Othello.UI.Console;
 
-namespace Othello.AI
+namespace Othello.App
 {
     public class AIPlayer : Player
     {
@@ -74,7 +76,31 @@ namespace Othello.AI
             LastResult = m_SearchEngine.StartSearch(m_Board);
             m_ChosenMove = LastResult.BestMove;
             StopStopwatch();
+            PrintSearchData(LastResult);
             m_MoveFound = true;
+        }
+
+        private void PrintSearchData(SearchResult result)
+        {
+            var logColor = m_Board.IsWhiteToMove ? Color.white : Color.black;
+            Console.Log("■■■■■■■■■■■■■■■■■■■■■■■■■■■■", logColor);
+            Console.Log(m_Board.GetCurrentPlayerAsString() + " plays " + result.BestMove);
+            switch (m_SearchEngine)
+            {
+                case MiniMax:
+                    Console.Log("Search time: " + result.TimeMs + " ms");
+                    Console.Log("Positions examined: " + result.PositionsEvaluated);
+                    Console.Log("Best eval: " + result.Eval);
+                    break;
+                case Mcts:
+                    Console.Log("Tree size: " + result.TreeSize);
+                    Console.Log("Search time: " + result.TimeMs + " ms");
+                    Console.Log("Iterations: " + result.IterationsRun);
+                    Console.Log("Nodes visited: " + result.NodesVisited);
+                    Console.Log("Win prediction: " + result.WinPrediction.ToString("0.##") + " %");
+                    break;
+            }
+            Console.Log("■■■■■■■■■■■■■■■■■■■■■■■■■■■■", logColor);
         }
 
         private void StopStopwatch()

@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.UI;
 
 using Othello.AI;
+using Othello.App;
 using Othello.Core;
 using Othello.Utility;
 

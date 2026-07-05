@@ -2,10 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
-using UnityEngine;
 using Othello.Core;
 using Othello.Utility;
-using Console = Othello.UI.Console;
 
 namespace Othello.AI
 {
@@ -64,7 +62,6 @@ namespace Othello.AI
                 ZobristSize = m_Zobrist.Count,
                 TimeMs = DateTimeOffset.Now.ToUnixTimeMilliseconds() - start
             };
-            PrintSearchData(board, result);
             return result;
         }
 
@@ -85,7 +82,7 @@ namespace Othello.AI
         {
             m_PositionsEvaluated = 0;
             var currentPlayer = board.GetCurrentPlayer();
-            if (currentPlayer == Player.BLACK)
+            if (currentPlayer == Piece.BLACK)
             {
                 var maxEval = int.MinValue;
                 Span<Move> legalMoves = stackalloc Move[Board.MAX_LEGAL_MOVES];
@@ -214,9 +211,9 @@ namespace Othello.AI
 
         private int EvaluateTerminalBoardState(Board board)
         {
-            if (board.GetPieceCount(Player.BLACK) > board.GetPieceCount(Player.WHITE))
+            if (board.GetPieceCount(Piece.BLACK) > board.GetPieceCount(Piece.WHITE))
                 return int.MaxValue - 1;
-            if (board.GetPieceCount(Player.BLACK) < board.GetPieceCount(Player.WHITE))
+            if (board.GetPieceCount(Piece.BLACK) < board.GetPieceCount(Piece.WHITE))
                 return int.MinValue + 1;
             return 0;
         }
@@ -224,12 +221,12 @@ namespace Othello.AI
         private static int EvaluateBoard(Board board)
         {
             int blackValue = 0;
-            var positionsBlack = board.GetPieces(Player.BLACK);
+            var positionsBlack = board.GetPieces(Piece.BLACK);
             for (int i = 0; i < positionsBlack.Count; i++)
                 blackValue += Move.s_CellWeight[positionsBlack[i]];
 
             int whiteValue = 0;
-            var positionsWhite = board.GetPieces(Player.WHITE);
+            var positionsWhite = board.GetPieces(Piece.WHITE);
             for (int i = 0; i < positionsWhite.Count; i++)
                 whiteValue += Move.s_CellWeight[positionsWhite[i]];
 
@@ -268,17 +265,6 @@ namespace Othello.AI
         {
             if (DateTimeOffset.Now.ToUnixTimeMilliseconds() > m_TimeLimit)
                 m_TerminationFlag = true;
-        }
-
-        private static void PrintSearchData(Board board, SearchResult result)
-        {
-            var logColor = board.IsWhiteToMove ? Color.white : Color.black;
-            Console.Log("■■■■■■■■■■■■■■■■■■■■■■■■■■■■", logColor);
-            Console.Log(board.GetCurrentPlayerAsString() + " plays " + result.BestMove);
-            Console.Log("Search time: " + result.TimeMs + " ms");
-            Console.Log("Positions examined: " + result.PositionsEvaluated);
-            Console.Log("Best eval: " + result.Eval);
-            Console.Log("■■■■■■■■■■■■■■■■■■■■■■■■■■■■", logColor);
         }
     }
 }

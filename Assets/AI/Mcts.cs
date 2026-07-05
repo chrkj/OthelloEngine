@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using Othello.Core;
 using UnityEngine;
 using Random = System.Random;
-using Console = Othello.UI.Console;
 
 namespace Othello.AI
 {
@@ -94,7 +93,6 @@ namespace Othello.AI
                 TreeSize = (int)bestNode.NumVisits,
                 WinPrediction = bestNode.NumVisits > 0 ? bestNode.NumWins / bestNode.NumVisits * 100 : 0
             };
-            PrintSearchData(board, result);
             return result;
         }
 
@@ -277,8 +275,8 @@ namespace Othello.AI
 
         private int SimulateGpu(Node node)
         {
-            var blackPieces = node.Board.GetPiecesBitBoard(Player.BLACK);
-            var whitePieces = node.Board.GetPiecesBitBoard(Player.WHITE);
+            var blackPieces = node.Board.GetPiecesBitBoard(Piece.BLACK);
+            var whitePieces = node.Board.GetPiecesBitBoard(Piece.WHITE);
             var currentPlayer = node.Board.GetCurrentPlayer() == 2 ? 0 : 1;
 
             // Input buffers
@@ -323,19 +321,6 @@ namespace Othello.AI
             }
 
             return selectedNode;
-        }
-
-        private static void PrintSearchData(Board board, SearchResult result)
-        {
-            var logColor = board.IsWhiteToMove ? Color.white : Color.black;
-            Console.Log("■■■■■■■■■■■■■■■■■■■■■■■■■■■■", logColor);
-            Console.Log(board.GetCurrentPlayerAsString() + " plays " + result.BestMove);
-            Console.Log("Tree size: " + result.TreeSize);
-            Console.Log("Search time: " + result.TimeMs + " ms");
-            Console.Log("Iterations: " + result.IterationsRun);
-            Console.Log("Nodes visited: " + result.NodesVisited);
-            Console.Log("Win prediction: " + result.WinPrediction.ToString("0.##") + " %");
-            Console.Log("■■■■■■■■■■■■■■■■■■■■■■■■■■■■", logColor);
         }
 
         private void InitializeBuffers()

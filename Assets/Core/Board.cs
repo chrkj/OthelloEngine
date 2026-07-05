@@ -150,10 +150,10 @@ namespace Othello.Core
         /// <summary>
         /// Gets the current player.
         /// </summary>
-        /// <returns>The current player. Returns Player.WHITE if it's the white player's turn, otherwise returns Player.BLACK.</returns>
+        /// <returns>The current player. Returns Piece.WHITE if it's the white player's turn, otherwise returns Piece.BLACK.</returns>
         public int GetCurrentPlayer()
         {
-            return IsWhiteToMove ? Player.WHITE : Player.BLACK;
+            return IsWhiteToMove ? Piece.WHITE : Piece.BLACK;
         }
         /// <summary>
         /// Gets the current opponent.
@@ -161,7 +161,7 @@ namespace Othello.Core
         /// <returns>The current opponent.</returns>
         public int GetCurrentOpponent()
         {
-            return IsWhiteToMove ? Player.BLACK : Player.WHITE;
+            return IsWhiteToMove ? Piece.BLACK : Piece.WHITE;
         }
 
         /// <summary>
@@ -211,7 +211,7 @@ namespace Othello.Core
         public List<int> GetPieces(int player)
         {
             var positions = new List<int>();
-            var pieces = (player == Player.BLACK) ? m_BlackPieces : m_WhitePieces;
+            var pieces = (player == Piece.BLACK) ? m_BlackPieces : m_WhitePieces;
             for (int i = 0; i < 64; i++)
                 if ((pieces & (1UL << i)) != 0)
                     positions.Add(i);
@@ -220,7 +220,7 @@ namespace Othello.Core
         
         public ulong GetPiecesBitBoard(int player)
         {
-            if (player == Player.BLACK)
+            if (player == Piece.BLACK)
                 return m_BlackPieces;
             else
                 return m_WhitePieces;
