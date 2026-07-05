@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -14,7 +15,8 @@ namespace Othello.AI
     {
         private const int BLOCK_SIZE = 50;
         private const int IS_RUNNING = -1;
-        private const int NUM_GPU_SIMS = 100;
+        private const int NUM_GPU_SIMS = 128; // Rollouts per board. Must match numthreads in MctsCompute.compute
+        private const int MAX_GPU_BATCH = Board.MAX_LEGAL_MOVES; // Max boards per dispatch
 
         private Node m_CachedNode;
         private int m_NodesVisited;
@@ -34,6 +36,13 @@ namespace Othello.AI
         private ComputeBuffer m_SeedBuffer;
         private ComputeBuffer m_WinBuffer;
         private ComputeBuffer m_DrawBuffer;
+
+        // Reused upload/readback arrays to avoid per-dispatch allocations
+        private readonly ulong[] m_PieceData = new ulong[MAX_GPU_BATCH * 2];
+        private readonly int[] m_CurrentPlayerData = new int[MAX_GPU_BATCH];
+        private readonly int[] m_WinData = new int[MAX_GPU_BATCH];
+        private readonly int[] m_DrawData = new int[MAX_GPU_BATCH];
+        private readonly int[] m_SeedData = new int[1];
 
         private readonly int m_DrawsId = Shader.PropertyToID("_Draws");
         private readonly int m_WinsId = Shader.PropertyToID("_Wins");
@@ -167,23 +176,19 @@ namespace Othello.AI
         private void RunGpuParallel(Node rootNode, long timeLimit)
         {
             InitializeBuffers();
-            for (var iterations = 0;
-                 (iterations < m_MaxIterations) & DateTimeOffset.Now.ToUnixTimeMilliseconds() < timeLimit;
-                 iterations += BLOCK_SIZE)
+            var iterations = 0;
+            while (iterations < m_MaxIterations && DateTimeOffset.Now.ToUnixTimeMilliseconds() < timeLimit)
             {
-                for (var i = 0; i < BLOCK_SIZE; i++)
-                {
-                    var promisingNode = Select(rootNode);
-                    Expand(promisingNode);
+                var promisingNode = Select(rootNode);
+                Expand(promisingNode);
 
-                    var nodeToExplore = promisingNode;
-                    if (promisingNode.Children.Count > 0)
-                        nodeToExplore = promisingNode.GetRandomChildNode();
-                    var winningPlayer = SimulateGpu(nodeToExplore);
-
-                    BackPropagation(nodeToExplore, winningPlayer);
-                    Interlocked.Increment(ref m_IterationsRun);
-                }
+                // Simulate every child of the expanded node in a single dispatch to amortize
+                // the dispatch + readback latency; terminal leaves are simulated directly.
+                var batch = promisingNode.Children.Count > 0
+                    ? promisingNode.Children
+                    : new List<Node> { promisingNode };
+                SimulateGpuBatch(batch);
+                iterations += batch.Count;
             }
             ReleaseBuffers();
         }
@@ -280,44 +285,46 @@ namespace Othello.AI
             return winningPlayer;
         }
 
-        private int SimulateGpu(Node node)
+        private void SimulateGpuBatch(List<Node> batch)
         {
-            var blackPieces = node.Board.GetPiecesBitBoard(Piece.BLACK);
-            var whitePieces = node.Board.GetPiecesBitBoard(Piece.WHITE);
-            // The shader's Player enum is BLACK = 0, WHITE = 1
-            var currentPlayer = node.Board.GetCurrentPlayer() == Piece.WHITE ? 1 : 0;
+            var count = batch.Count;
+            for (var i = 0; i < count; i++)
+            {
+                var board = batch[i].Board;
+                m_PieceData[i * 2] = board.GetPiecesBitBoard(Piece.BLACK);
+                m_PieceData[i * 2 + 1] = board.GetPiecesBitBoard(Piece.WHITE);
+                // The shader's Player enum is BLACK = 0, WHITE = 1
+                m_CurrentPlayerData[i] = board.GetCurrentPlayer() == Piece.WHITE ? 1 : 0;
+            }
 
-            // Input buffers
-            m_PieceBuffer.SetData(new[] { blackPieces, whitePieces });
-            m_ComputeShader.SetBuffer(0, m_PiecesId, m_PieceBuffer);
-            m_CurrentPlayerBuffer.SetData(new[] { currentPlayer });
-            m_ComputeShader.SetBuffer(0, m_CurrentPlayerId, m_CurrentPlayerBuffer);
-            m_SeedBuffer.SetData(new[] { m_Rng.Next() });
-            m_ComputeShader.SetBuffer(0, m_SeedId, m_SeedBuffer);
+            m_PieceBuffer.SetData(m_PieceData, 0, 0, count * 2);
+            m_CurrentPlayerBuffer.SetData(m_CurrentPlayerData, 0, 0, count);
+            m_SeedData[0] = m_Rng.Next();
+            m_SeedBuffer.SetData(m_SeedData);
 
-            // Output buffers
-            m_ComputeShader.SetBuffer(0, m_WinsId, m_WinBuffer);
-            m_ComputeShader.SetBuffer(0, m_DrawsId, m_DrawBuffer);
+            // One thread group per board
+            m_ComputeShader.Dispatch(0, count, 1, 1);
 
-            m_ComputeShader.Dispatch(0, 1, 1, 1);
+            m_WinBuffer.GetData(m_WinData, 0, 0, count);
+            m_DrawBuffer.GetData(m_DrawData, 0, 0, count);
 
-            var simWins = new int[1];
-            m_WinBuffer.GetData(simWins);
-            var simDraws = new int[1];
-            m_DrawBuffer.GetData(simDraws);
+            for (var i = 0; i < count; i++)
+            {
+                var node = batch[i];
+                // The shader counts rollouts won by the node's current player; majority vote decides the result
+                var simLosses = NUM_GPU_SIMS - m_WinData[i] - m_DrawData[i];
+                int winningPlayer;
+                if (m_WinData[i] > simLosses)
+                    winningPlayer = node.Board.GetCurrentPlayer();
+                else if (m_WinData[i] == simLosses)
+                    winningPlayer = 0;
+                else
+                    winningPlayer = node.Board.GetCurrentOpponent();
 
-            // The shader counts rollouts won by the node's current player; majority vote decides the result
-            int winningPlayer;
-            var simLosses = NUM_GPU_SIMS - simWins[0] - simDraws[0];
-            if (simWins[0] > simLosses)
-                winningPlayer = node.Board.GetCurrentPlayer();
-            else if (simWins[0] == simLosses)
-                winningPlayer = 0;
-            else
-                winningPlayer = node.Board.GetCurrentOpponent();
-
-            Interlocked.Add(ref m_SimulationsRun, NUM_GPU_SIMS);
-            return winningPlayer;
+                BackPropagation(node, winningPlayer);
+                Interlocked.Increment(ref m_IterationsRun);
+            }
+            Interlocked.Add(ref m_SimulationsRun, count * NUM_GPU_SIMS);
         }
 
         private static Node SelectNodeWithUct(Node node)
@@ -335,11 +342,18 @@ namespace Othello.AI
 
         private void InitializeBuffers()
         {
-            m_PieceBuffer = new ComputeBuffer(2, sizeof(ulong), ComputeBufferType.Default);
-            m_CurrentPlayerBuffer = new ComputeBuffer(1, sizeof(int), ComputeBufferType.Default);
+            m_PieceBuffer = new ComputeBuffer(MAX_GPU_BATCH * 2, sizeof(ulong), ComputeBufferType.Default);
+            m_CurrentPlayerBuffer = new ComputeBuffer(MAX_GPU_BATCH, sizeof(int), ComputeBufferType.Default);
             m_SeedBuffer = new ComputeBuffer(1, sizeof(int), ComputeBufferType.Default);
-            m_WinBuffer = new ComputeBuffer(1, sizeof(int), ComputeBufferType.Default);
-            m_DrawBuffer = new ComputeBuffer(1, sizeof(int), ComputeBufferType.Default);
+            m_WinBuffer = new ComputeBuffer(MAX_GPU_BATCH, sizeof(int), ComputeBufferType.Default);
+            m_DrawBuffer = new ComputeBuffer(MAX_GPU_BATCH, sizeof(int), ComputeBufferType.Default);
+
+            // Buffer bindings persist across dispatches, so bind once here instead of per batch
+            m_ComputeShader.SetBuffer(0, m_PiecesId, m_PieceBuffer);
+            m_ComputeShader.SetBuffer(0, m_CurrentPlayerId, m_CurrentPlayerBuffer);
+            m_ComputeShader.SetBuffer(0, m_SeedId, m_SeedBuffer);
+            m_ComputeShader.SetBuffer(0, m_WinsId, m_WinBuffer);
+            m_ComputeShader.SetBuffer(0, m_DrawsId, m_DrawBuffer);
         }
 
         private void ReleaseBuffers()

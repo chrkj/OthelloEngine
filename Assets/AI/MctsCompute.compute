@@ -14,11 +14,11 @@ struct Board
 };
 
 StructuredBuffer<int> _Seed;
-StructuredBuffer<int> _CurrentPlayer;
-StructuredBuffer<uint64_t> _Pieces;
+StructuredBuffer<int> _CurrentPlayer;   // one entry per board
+StructuredBuffer<uint64_t> _Pieces;     // two entries per board: [2i + BLACK] and [2i + WHITE]
 
-RWStructuredBuffer<int> _Wins;
-RWStructuredBuffer<int> _Draws;
+RWStructuredBuffer<int> _Wins;          // one entry per board
+RWStructuredBuffer<int> _Draws;         // one entry per board
 
 groupshared int sharedWinResult;
 groupshared int sharedDrawResult;
@@ -251,10 +251,14 @@ int GetWinner(uint64_t blackPieces, uint64_t whitePieces)
     return blackPieceCount > whitePieceCount ? BLACK : WHITE;
 }
 
-[numthreads(10,10,1)]
-void CSMain(uint3 id : SV_DispatchThreadID)
+// One thread group per board: each group runs 128 rollouts of _Pieces[groupId.x].
+// A single dispatch therefore simulates groupCount boards in parallel.
+[numthreads(128,1,1)]
+void CSMain(uint3 groupId : SV_GroupID, uint3 threadId : SV_GroupThreadID)
 {
-    if (id.x == 0 && id.y == 0)
+    uint boardIndex = groupId.x;
+
+    if (threadId.x == 0)
     {
         sharedWinResult = 0;
         sharedDrawResult = 0;
@@ -264,12 +268,13 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     GroupMemoryBarrierWithGroupSync();
 
     // Set local parameters
-    bool isWhiteToMove = _CurrentPlayer[0] == WHITE;
-    uint64_t blackPieces = _Pieces[BLACK];
-    uint64_t whitePieces = _Pieces[WHITE];
+    int currentPlayer = _CurrentPlayer[boardIndex];
+    bool isWhiteToMove = currentPlayer == WHITE;
+    uint64_t blackPieces = _Pieces[boardIndex * 2 + BLACK];
+    uint64_t whitePieces = _Pieces[boardIndex * 2 + WHITE];
 
     // Seed a per-thread RNG so every thread plays a distinct rollout
-    uint rngState = Hash(uint(_Seed[0]) ^ (id.x * 73856093u) ^ (id.y * 19349663u));
+    uint rngState = Hash(uint(_Seed[0]) ^ (threadId.x * 73856093u) ^ ((boardIndex + 1u) * 19349663u));
     if (rngState == 0)
         rngState = 1;
 
@@ -301,9 +306,9 @@ void CSMain(uint3 id : SV_DispatchThreadID)
         isWhiteToMove = !isWhiteToMove;
     }
     
-    // Check if winner is the same as _CurrentPlayer, if so increment sharedResult by 1
+    // Check if winner is the same as the board's current player, if so increment sharedResult by 1
     int winner = GetWinner(blackPieces, whitePieces);
-    if (winner == _CurrentPlayer[0])
+    if (winner == currentPlayer)
         InterlockedAdd(sharedWinResult, 1);
     if (winner == -1)
         InterlockedAdd(sharedDrawResult, 1);
@@ -311,11 +316,11 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     // Ensure all threads have completed the addition
     GroupMemoryBarrierWithGroupSync();
 
-    // Write the shared result to the result buffer by the first thread of the group
-    if (id.x == 0 && id.y == 0)
+    // Write the shared result to this board's slot by the first thread of the group
+    if (threadId.x == 0)
     {
-        _Wins[0] = sharedWinResult;
-        _Draws[0] = sharedDrawResult;
+        _Wins[boardIndex] = sharedWinResult;
+        _Draws[boardIndex] = sharedDrawResult;
     }
 }
 
