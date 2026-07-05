@@ -13,7 +13,6 @@ namespace Othello.UI
     {
         public bool BlackAiPlayerCalculating;
         public bool WhiteAiPlayerCalculating;
-        public readonly string[] FileChars = { "A", "B", "C", "D", "E", "F", "G", "H" };
         
         [SerializeField] private PieceTheme pieceTheme;
         [SerializeField] private float pieceScale = 1.5f;
@@ -32,6 +31,7 @@ namespace Othello.UI
         private SpriteRenderer[] m_PieceRenderers;
         private List<Move> m_CurrentLegalMoves = new();
         private const float BOARD_OFFSET = -3.5f;
+        private readonly string[] FileChars = { "A", "B", "C", "D", "E", "F", "G", "H" };
 
         public void InitBoard()
         {
@@ -42,9 +42,13 @@ namespace Othello.UI
                     DrawSquare(file, rank);
         }
 
-        public void UpdateBoard(Board board)
+        private void Update()
         {
             UpdateLoadingWidget();
+        }
+
+        public void UpdateBoard(Board board)
+        {
             for (var rank = 0; rank < 8; rank++)
                 for (var file = 0; file < 8; file++)
                 {
