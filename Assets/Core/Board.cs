@@ -180,11 +180,7 @@ namespace Othello.Core
         /// <returns>The number of pieces owned by the specified player.</returns>
         public int GetPieceCount(int player)
         {
-            var count = 0;
-            for (var i = 0; i < 64; i++)
-                if (!IsEmpty(i) && GetPieceColor(i) == player)
-                    count++;
-            return count;
+            return PopCount(player == Piece.BLACK ? m_BlackPieces : m_WhitePieces);
         }
 
         /// <summary>
@@ -282,6 +278,19 @@ namespace Othello.Core
         }
 
         /// <summary>
+        /// Counts the number of set bits in a bitboard (SWAR popcount).
+        /// </summary>
+        /// <param name="bitboard">The bitboard to count.</param>
+        /// <returns>The number of set bits.</returns>
+        public static int PopCount(ulong bitboard)
+        {
+            bitboard -= (bitboard >> 1) & 0x5555555555555555UL;
+            bitboard = (bitboard & 0x3333333333333333UL) + ((bitboard >> 2) & 0x3333333333333333UL);
+            bitboard = (bitboard + (bitboard >> 4)) & 0x0F0F0F0F0F0F0F0FUL;
+            return (int)((bitboard * 0x0101010101010101UL) >> 56);
+        }
+
+        /// <summary>
         /// Converts an index to a bit mask.
         /// </summary>
         /// <param name="id">The index to convert.</param>
@@ -314,21 +323,6 @@ namespace Othello.Core
                     m_BlackPieces &= ~(1UL << index);
                     break;
             }
-        }
-
-        /// <summary>
-        /// Gets the color of the piece at the specified position on the board.
-        /// </summary>
-        /// <param name="index">The index of the position on the board.</param>
-        /// <returns>
-        /// The color of the piece at the specified position on the board.
-        /// Returns 0 for an empty position, 1 for a black piece, and 2 for a white piece.
-        /// </returns>
-        private int GetPieceColor(int index)
-        {
-            if (IsEmpty(index))
-                return 0;
-            return (m_BlackPieces & (1UL << index)) == 0 ? Piece.WHITE : Piece.BLACK;
         }
 
         /// <summary>
