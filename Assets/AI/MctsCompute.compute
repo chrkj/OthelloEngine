@@ -115,13 +115,33 @@ int CountSetBits(uint64_t number)
     return count;
 }
 
+// Hash to decorrelate per-thread RNG seeds
+uint Hash(uint x)
+{
+    x ^= x >> 16;
+    x *= 0x7feb352d;
+    x ^= x >> 15;
+    x *= 0x846ca68b;
+    x ^= x >> 16;
+    return x;
+}
+
+// Xorshift PRNG; each thread carries its own state
+uint NextRandom(inout uint state)
+{
+    state ^= state << 13;
+    state ^= state >> 17;
+    state ^= state << 5;
+    return state;
+}
+
 // Function to get the index of a random set bit in a uint64_t
-int GetRandomMoveIndex(uint64_t legalMovesBitBoard, uint3 threadGroupX)
+int GetRandomMoveIndex(uint64_t legalMovesBitBoard, uint randomValue)
 {
     int bitCount = CountSetBits(legalMovesBitBoard);
 
     // Map randomValue to range [0, bitCount - 1]
-    int randomBitPosition = (_Seed[0] + threadGroupX) % bitCount;
+    int randomBitPosition = int(randomValue % uint(bitCount));
 
     int index = 0;
     for (int i = 0; i < 64; i++)
@@ -240,12 +260,12 @@ int GetWinner(uint64_t blackPieces, uint64_t whitePieces)
 [numthreads(10,10,1)]
 void CSMain(uint3 id : SV_DispatchThreadID)
 {
-    if (id.x == 0)
+    if (id.x == 0 && id.y == 0)
     {
         sharedWinResult = 0;
         sharedDrawResult = 0;
     }
-    
+
     // Ensure all threads see the initialized value
     GroupMemoryBarrierWithGroupSync();
 
@@ -253,7 +273,12 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     bool isWhiteToMove = _CurrentPlayer[0] == WHITE;
     uint64_t blackPieces = _Pieces[BLACK];
     uint64_t whitePieces = _Pieces[WHITE];
-    
+
+    // Seed a per-thread RNG so every thread plays a distinct rollout
+    uint rngState = Hash(uint(_Seed[0]) ^ (id.x * 73856093u) ^ (id.y * 19349663u));
+    if (rngState == 0)
+        rngState = 1;
+
     // Sim loop
     while (true)
     {
@@ -271,8 +296,7 @@ void CSMain(uint3 id : SV_DispatchThreadID)
         }
         
         // Get the random set bit index
-        int uniqueValue = id.x;
-        int randomMove = GetRandomMoveIndex(legalMovesBitBoard, uniqueValue);
+        int randomMove = GetRandomMoveIndex(legalMovesBitBoard, NextRandom(rngState));
         
         // Make random move update board state
         Board pieces = PlacePieces(randomMove, blackPieces, whitePieces, isWhiteToMove);
@@ -294,7 +318,7 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     GroupMemoryBarrierWithGroupSync();
 
     // Write the shared result to the result buffer by the first thread of the group
-    if (id.x == 0)
+    if (id.x == 0 && id.y == 0)
     {
         _Wins[0] = sharedWinResult;
         _Draws[0] = sharedDrawResult;

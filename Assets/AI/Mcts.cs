@@ -284,7 +284,8 @@ namespace Othello.AI
         {
             var blackPieces = node.Board.GetPiecesBitBoard(Piece.BLACK);
             var whitePieces = node.Board.GetPiecesBitBoard(Piece.WHITE);
-            var currentPlayer = node.Board.GetCurrentPlayer() == 2 ? 0 : 1;
+            // The shader's Player enum is BLACK = 0, WHITE = 1
+            var currentPlayer = node.Board.GetCurrentPlayer() == Piece.WHITE ? 1 : 0;
 
             // Input buffers
             m_PieceBuffer.SetData(new[] { blackPieces, whitePieces });
@@ -305,13 +306,15 @@ namespace Othello.AI
             var simDraws = new int[1];
             m_DrawBuffer.GetData(simDraws);
 
+            // The shader counts rollouts won by the node's current player; majority vote decides the result
             int winningPlayer;
-            if (simWins[0] > (NUM_GPU_SIMS - simWins[0] - simDraws[0]))
-                winningPlayer = node.Board.GetCurrentOpponent();
-            else if (simWins[0] == (NUM_GPU_SIMS - simWins[0] - simDraws[0]))
+            var simLosses = NUM_GPU_SIMS - simWins[0] - simDraws[0];
+            if (simWins[0] > simLosses)
+                winningPlayer = node.Board.GetCurrentPlayer();
+            else if (simWins[0] == simLosses)
                 winningPlayer = 0;
             else
-                winningPlayer = node.Board.GetCurrentPlayer();
+                winningPlayer = node.Board.GetCurrentOpponent();
 
             Interlocked.Add(ref m_SimulationsRun, NUM_GPU_SIMS);
             return winningPlayer;
