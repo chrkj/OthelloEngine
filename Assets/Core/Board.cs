@@ -6,7 +6,7 @@ namespace Othello.Core
     public class Board
     {
         public bool IsWhiteToMove;
-        public const int MAX_LEGAL_MOVES = 30;
+        public const int MAX_LEGAL_MOVES = 64;
 
         private ulong m_BlackPieces;
         private ulong m_WhitePieces;
@@ -57,14 +57,14 @@ namespace Othello.Core
             if ((m_BlackPieces | m_WhitePieces) == 0xFFFFFFFFFFFFFFFF)
                 return true;
 
-            Span<Move> legalMovesCurrentPlayer = stackalloc Move[256];
+            Span<Move> legalMovesCurrentPlayer = stackalloc Move[Board.MAX_LEGAL_MOVES];
             GenerateLegalMoves(ref legalMovesCurrentPlayer);
             var numLegalMovesCurrentPlayer = legalMovesCurrentPlayer.Length;
             if (numLegalMovesCurrentPlayer != 0)
                 return false;
 
             ChangePlayer();
-            Span<Move> legalMovesCurrentOpponent = stackalloc Move[256];
+            Span<Move> legalMovesCurrentOpponent = stackalloc Move[Board.MAX_LEGAL_MOVES];
             GenerateLegalMoves(ref legalMovesCurrentOpponent);
             var numLegalMovesCurrentOpponent = legalMovesCurrentOpponent.Length;
             ChangePlayer();

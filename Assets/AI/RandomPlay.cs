@@ -11,7 +11,7 @@ namespace Othello.AI
 
         public SearchResult StartSearch(Board board)
         {
-            Span<Move> legalMoves = stackalloc Move[256];
+            Span<Move> legalMoves = stackalloc Move[Board.MAX_LEGAL_MOVES];
             board.GenerateLegalMoves(ref legalMoves);
             var move = legalMoves[m_Random.Next(legalMoves.Length)];
             return new SearchResult { BestMove = move };
