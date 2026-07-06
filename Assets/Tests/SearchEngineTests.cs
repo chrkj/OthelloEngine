@@ -51,6 +51,23 @@ namespace Othello.Tests
         }
 
         [Test]
+        public void MiniMax_ReportsTheEvalOfTheChosenMove()
+        {
+            // Black on C3 (18), white on B2 (9) and B3 (17). Black has exactly two moves:
+            // A1 (0) captures B2 for eval 18, A3 (16) captures B3 for eval 12.
+            // The better move is searched first, so an engine that reports the eval of the
+            // last searched move instead of the chosen one returns 12 here.
+            var board = new Board(blackPieces: 1UL << 18, whitePieces: (1UL << 9) | (1UL << 17), isWhiteToMove: false);
+            var engine = new MiniMax(depth: 1, timeLimit: 60000, moveOrderingEnabled: false,
+                iterativeDeepeningEnabled: false, zobristHashingEnabled: false);
+
+            var result = engine.StartSearch(board);
+
+            Assert.AreEqual(0, result.BestMove.Index);
+            Assert.AreEqual(18, result.Eval);
+        }
+
+        [Test]
         public void MctsSequential_ReturnsLegalMove_FromStartPosition()
         {
             var engine = new Mcts(maxIterations: 500, maxTime: 10000, MctsType.Sequential);

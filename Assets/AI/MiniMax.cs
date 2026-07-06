@@ -93,14 +93,16 @@ namespace Othello.AI
                     if (m_TerminationFlag)
                         break;
                     var possibleNextState = MakeMove(board, legalMove);
-                    bestEvalThisIteration = MinValue(possibleNextState, depth - 1, int.MinValue, int.MaxValue);
-                    if (bestEvalThisIteration <= maxEval)
+                    var eval = MinValue(possibleNextState, depth - 1, int.MinValue, int.MaxValue);
+                    if (m_TerminationFlag)
+                        break;
+                    if (eval <= maxEval)
                         continue;
-                    maxEval = bestEvalThisIteration;
+                    maxEval = eval;
                     bestMoveThisIteration = legalMove;
+                    bestEvalThisIteration = eval;
                 }
             }
-
             else
             {
                 var minEval = int.MaxValue;
@@ -112,11 +114,14 @@ namespace Othello.AI
                     if (m_TerminationFlag)
                         break;
                     var possibleNextState = MakeMove(board, legalMove);
-                    bestEvalThisIteration = MaxValue(possibleNextState, depth - 1, int.MinValue, int.MaxValue);
-                    if (bestEvalThisIteration >= minEval)
+                    var eval = MaxValue(possibleNextState, depth - 1, int.MinValue, int.MaxValue);
+                    if (m_TerminationFlag)
+                        break;
+                    if (eval >= minEval)
                         continue;
-                    minEval = bestEvalThisIteration;
+                    minEval = eval;
                     bestMoveThisIteration = legalMove;
+                    bestEvalThisIteration = eval;
                 }
             }
         }
