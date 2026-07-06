@@ -17,7 +17,7 @@ namespace Othello.UI
         public int PlayerToStartNextGame => m_PlayerToStartNextGame;
         public Player WhitePlayerNextGame => m_WhitePlayerNextGame;
         public Player BlackPlayerNextGame => m_BlackPlayerNextGame;
-        public int NumSimsToRun => int.Parse(m_NumGamesForSim.text);
+        public int NumSimsToRun => int.TryParse(m_NumGamesForSim.text, out var n) ? n : 1;
 
         private Board m_Board;
         private Player m_WhitePlayerNextGame;
