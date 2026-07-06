@@ -53,8 +53,7 @@ namespace Othello.App
                 return;
             
             var selectedIndex = Board.GetIndex(selectedFile, selectedRank);
-            var isValidSquare = !Board.IsOutOfBounds(selectedFile, selectedRank) || !m_Board.IsEmpty(selectedIndex);
-            if (!isValidSquare)
+            if (!m_Board.IsEmpty(selectedIndex))
                 return;
 
             if (!m_LegalMoves.Contains(new Move(selectedIndex))) 
