@@ -103,6 +103,20 @@ namespace Othello.App
             Console.Log("■■■■■■■■■■■■■■■■■■■■■■■■■■■■", logColor);
         }
 
+        public static string FormatEval(int eval)
+        {
+            // The eval is absolute: positive favors Black, negative favors White.
+            if (eval == int.MaxValue - 1)
+                return "forced win for Black";
+            if (eval == int.MinValue + 1)
+                return "forced win for White";
+            if (eval > 0)
+                return "+" + eval + " (Black ahead)";
+            if (eval < 0)
+                return eval + " (White ahead)";
+            return "0 (even)";
+        }
+
         private void StopStopwatch()
         {
             if (m_Board.GetCurrentPlayer() == Piece.BLACK)
