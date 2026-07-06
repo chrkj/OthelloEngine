@@ -90,7 +90,7 @@ namespace Othello.App
                 case MiniMax:
                     Console.Log("Search time: " + result.TimeMs + " ms");
                     Console.Log("Positions examined: " + result.PositionsEvaluated);
-                    Console.Log("Best eval: " + result.Eval);
+                    Console.Log("Best eval: " + FormatEval(result.Eval));
                     break;
                 case Mcts:
                     Console.Log("Tree size: " + result.TreeSize);

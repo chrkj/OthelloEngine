@@ -56,6 +56,8 @@ namespace Othello.UI
         [SerializeField] private TMP_Text m_WhitePositionsEvaluated;
         [SerializeField] private TMP_Text m_BlackCurrentWinPrediction;
         [SerializeField] private TMP_Text m_WhiteCurrentWinPrediction;
+        [SerializeField] private TMP_Text m_BlackCurrentEval;
+        [SerializeField] private TMP_Text m_WhiteCurrentEval;
         [SerializeField] private TMP_Text m_BlackBranchesPruned;
         [SerializeField] private TMP_Text m_WhiteBranchesPruned;
         [SerializeField] private TMP_Text m_BlackWins;
@@ -109,6 +111,7 @@ namespace Othello.UI
             SetZobristSize(player, result.ZobristSize);
             SetCurrentSimulationCount(player, result.SimulationsRun);
             SetWinPrediction(player, result.WinPrediction);
+            SetCurrentEval(player, result.Eval);
         }
 
         public void PlayerSelection(int player)
@@ -126,6 +129,7 @@ namespace Othello.UI
             var currentSimulation = isBlack ? m_BlackCurrentSimulation : m_WhiteCurrentSimulation;
             var currentPositionsEvaluated = isBlack ? m_BlackPositionsEvaluated : m_WhitePositionsEvaluated;
             var currentWinPrediction = isBlack ? m_BlackCurrentWinPrediction : m_WhiteCurrentWinPrediction;
+            var currentEval = isBlack ? m_BlackCurrentEval : m_WhiteCurrentEval;
             var branchesPruned = isBlack ? m_BlackBranchesPruned : m_WhiteBranchesPruned;
             var mctsTypeInput = isBlack ? m_BlackMctsMode : m_WhiteMtcsMode;
             var mctsType = isBlack ? m_BlackMctsMode.value : m_WhiteMtcsMode.value;
@@ -153,6 +157,8 @@ namespace Othello.UI
                         currentSimulation.gameObject.SetActive(false);
                         currentPositionsEvaluated.gameObject.SetActive(false);
                         currentWinPrediction.gameObject.SetActive(false);
+                        if (currentEval)
+                            currentEval.gameObject.SetActive(false);
                         currentDepth.gameObject.SetActive(false);
                         branchesPruned.gameObject.SetActive(false);
                         mctsTypeInput.gameObject.SetActive(false);
@@ -176,6 +182,8 @@ namespace Othello.UI
                         currentSimulation.gameObject.SetActive(false);
                         currentPositionsEvaluated.gameObject.SetActive(true);
                         currentWinPrediction.gameObject.SetActive(false);
+                        if (currentEval)
+                            currentEval.gameObject.SetActive(true);
                         currentDepth.gameObject.SetActive(true);
                         branchesPruned.gameObject.SetActive(true);
                         mctsTypeInput.gameObject.SetActive(false);
@@ -199,10 +207,11 @@ namespace Othello.UI
                         currentSimulation.gameObject.SetActive(true);
                         currentPositionsEvaluated.gameObject.SetActive(false);
                         currentWinPrediction.gameObject.SetActive(true);
+                        if (currentEval)
+                            currentEval.gameObject.SetActive(false);
                         currentDepth.gameObject.SetActive(false);
                         branchesPruned.gameObject.SetActive(false);
                         mctsTypeInput.gameObject.SetActive(true);
-                        zobristHashing.gameObject.SetActive(false);
                         zobristHashing.gameObject.SetActive(false);
                         zobristSize.gameObject.SetActive(false);
                     }
@@ -219,6 +228,8 @@ namespace Othello.UI
                         currentSimulation.gameObject.SetActive(false);
                         currentPositionsEvaluated.gameObject.SetActive(false);
                         currentWinPrediction.gameObject.SetActive(false);
+                        if (currentEval)
+                            currentEval.gameObject.SetActive(false);
                         currentDepth.gameObject.SetActive(false);
                         branchesPruned.gameObject.SetActive(false);
                         mctsTypeInput.gameObject.SetActive(false);
@@ -316,6 +327,18 @@ namespace Othello.UI
                 _ => throw new NotImplementedException("Invalid player.")
             };
             winPredictionDisplay.text = "Current Win Prediction: " + winPrediction.ToString("0.##") + "%";
+        }
+
+        private void SetCurrentEval(int player, int eval)
+        {
+            var evalDisplay = player switch
+            {
+                Player.BLACK => m_BlackCurrentEval,
+                Player.WHITE => m_WhiteCurrentEval,
+                _ => throw new NotImplementedException("Invalid player.")
+            };
+            if (evalDisplay)
+                evalDisplay.text = "Eval: " + AIPlayer.FormatEval(eval);
         }
 
         private void SetCurrentSimulationCount(int player, int currentSimCount)
