@@ -77,8 +77,8 @@ namespace Othello.UI
             m_WhiteDepth.text = "8";
             m_BlackIterations.text = "10000";
             m_WhiteIterations.text = "10000";
-            m_BlackTimeLimit.text = "10000";
-            m_WhiteTimeLimit.text = "10000";
+            m_BlackTimeLimit.text = "1000";
+            m_WhiteTimeLimit.text = "1000";
             PlayerSelection(Piece.BLACK);
             PlayerSelection(Piece.WHITE);
         }
