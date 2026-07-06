@@ -30,6 +30,7 @@ namespace Othello.AI
 
         private Random m_Rng;
         private readonly ComputeShader m_ComputeShader;
+        private readonly object m_TreeLock = new();
 
         private ComputeBuffer m_PieceBuffer;
         private ComputeBuffer m_CurrentPlayerBuffer;
@@ -133,7 +134,7 @@ namespace Othello.AI
                 (_, loopState) =>
                 {
                     Node promisingNode;
-                    lock (this)
+                    lock (m_TreeLock)
                     {
                         promisingNode = Select(rootNode);
                         Expand(promisingNode);
@@ -330,13 +331,16 @@ namespace Othello.AI
         private static Node SelectNodeWithUct(Node node)
         {
             var selectedNode = node.Children[0];
+            var bestUct = selectedNode.CalculateUct();
             for (var i = 1; i < node.Children.Count; i++)
             {
-                var currentNode = node.Children[i];
-                if (currentNode.CalculateUct() > selectedNode.CalculateUct())
-                    selectedNode = currentNode;
+                var currentUct = node.Children[i].CalculateUct();
+                if (currentUct > bestUct)
+                {
+                    bestUct = currentUct;
+                    selectedNode = node.Children[i];
+                }
             }
-
             return selectedNode;
         }
 
