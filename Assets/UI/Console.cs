@@ -2,6 +2,7 @@ using TMPro;
 using System;
 using System.Collections.Concurrent;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace Othello.UI
@@ -13,6 +14,8 @@ namespace Othello.UI
         public GameObject textObject;
 
         private ScrollRect m_ScrollRect;
+        private RectTransform m_ConsoleRect;
+        private Camera m_UiCamera;
         private static GameObject m_ChatPanel;
         private static readonly ConcurrentQueue<(string text, Color color)> m_MessagesToLog = new();
         private static readonly Color m_StandardColor = new(0.96f, 0.67f, 0.39f);
@@ -21,13 +24,51 @@ namespace Othello.UI
         {
             m_ChatPanel = chatPanel;
             m_ScrollRect = console.GetComponent<ScrollRect>();
+            m_ConsoleRect = console.GetComponent<RectTransform>();
+            var canvas = console.GetComponentInParent<Canvas>();
+            m_UiCamera = canvas && canvas.worldCamera ? canvas.worldCamera : Camera.main;
         }
 
         private void Update()
         {
+            ClearScrollbarSelection();
+
+            // The view only moves when a new message arrives; otherwise the scroll position is left alone
             if (!m_MessagesToLog.TryDequeue(out var message)) return;
             LogMessage(message.text, message.color);
-            m_ScrollRect.velocity = new Vector2(0f, 1000f);
+            // Don't fight the user: no auto-jump while the mouse is held down over the console
+            if (!IsUserScrolling())
+                ScrollToBottom();
+        }
+
+        private void ClearScrollbarSelection()
+        {
+            // A selected scrollbar keeps reacting to navigation input (arrow keys, gamepad
+            // axis drift) and scrolls the console on its own. Deselect it once the mouse
+            // is released so only deliberate dragging moves the view.
+            if (Input.GetMouseButton(0))
+                return;
+            var eventSystem = EventSystem.current;
+            var selected = eventSystem ? eventSystem.currentSelectedGameObject : null;
+            if (selected && selected.transform.IsChildOf(console.transform))
+                eventSystem.SetSelectedGameObject(null);
+        }
+
+        private bool IsUserScrolling()
+        {
+            if (!Input.GetMouseButton(0))
+                return false;
+
+            // Pressing the scrollbar selects it, so a held press on anything under the
+            // console hierarchy means the user is scrolling manually
+            var eventSystem = EventSystem.current;
+            var selected = eventSystem ? eventSystem.currentSelectedGameObject : null;
+            if (selected && selected.transform.IsChildOf(console.transform))
+                return true;
+
+            // Fallback for dragging the log content directly (needs the canvas camera,
+            // since this UI lives on a world space canvas)
+            return RectTransformUtility.RectangleContainsScreenPoint(m_ConsoleRect, Input.mousePosition, m_UiCamera);
         }
 
         private void LogMessage(string text, Color color)
@@ -39,7 +80,20 @@ namespace Othello.UI
             newMessage.TextObject = newText.GetComponent<TMP_Text>();
             newMessage.TextObject.text = newMessage.Text;
             newMessage.TextObject.color = color;
-            m_ScrollRect.verticalNormalizedPosition = 0f;
+        }
+
+        private void ScrollToBottom()
+        {
+            // Position the content directly instead of via verticalNormalizedPosition: the content
+            // is pivoted at the top, so offsetting it upward by the overflow height shows the
+            // newest line at the bottom of the viewport.
+            Canvas.ForceUpdateCanvases();
+            m_ScrollRect.velocity = Vector2.zero;
+            var content = m_ScrollRect.content;
+            var overflow = content.rect.height - m_ScrollRect.viewport.rect.height;
+            var position = content.anchoredPosition;
+            position.y = Mathf.Max(0f, overflow);
+            content.anchoredPosition = position;
         }
 
         public static void Log(string text)
