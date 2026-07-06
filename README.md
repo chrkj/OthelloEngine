@@ -40,7 +40,7 @@ I originally created the project to learn more about game AI. It has since grown
 * Human vs. AI, AI vs. AI or Human vs. Human play
 * Four selectable engines per color: Human, Minimax, MCTS and Random
 * Per-engine settings in the UI: search depth, time limit, iteration cap, move ordering, iterative deepening and transposition table toggles, MCTS variant selection
-* Live search diagnostics: search time, positions evaluated, branches pruned, tree size, simulations run and win prediction
+* Live search diagnostics: search time, positions evaluated, branches pruned, tree size, simulations run, win prediction and evaluation score (with forced-win detection)
 * Automated match simulation — run N games back-to-back and track wins/draws per engine
 * Auto-move toggle, or step through AI moves manually with Space
 * Legal move highlighting, last-move highlighting and a color-coded in-game console log
@@ -85,10 +85,11 @@ Assets/
 ├── Core/   Othello.Core — pure C# game engine: board, bitboards, moves (no Unity dependencies)
 ├── AI/     Othello.AI   — search engines: MiniMax, Mcts (+ compute shader), RandomPlay, SearchResult
 ├── App/    Othello.App  — Unity orchestration: GameManager, player types, game loop
-└── UI/     Othello.UI   — board rendering, menus, console log
+├── UI/     Othello.UI   — board rendering, menus, console log
+└── Tests/  Othello.Tests — EditMode test suite (perft, board mechanics, evaluation, engines)
 ```
 
-Dependencies point downward only: the engine layers know nothing about Unity's UI, and engines report their results through a `SearchResult` rather than shared state.
+Dependencies point downward only: the engine layers know nothing about Unity's UI, and engines report their results through a `SearchResult` rather than shared state. The layering is enforced at compile time with assembly definitions — `Othello.Core` compiles with engine references disabled, so it cannot acquire a Unity dependency.
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
@@ -101,6 +102,8 @@ Dependencies point downward only: the engine layers know nothing about Unity's U
 2. Open the project in Unity **2022.3 LTS** (developed with 2022.3.19f1)
 3. Open `Assets/Scenes/GameScene.unity` and press Play
 4. Pick an engine for each color, adjust the settings and start a new game
+
+To run the test suite, open **Window → General → Test Runner** and run the EditMode tests. The perft tests validate move generation against the known Othello node counts, so any board-logic regression fails immediately.
 
 The GPU MCTS variant requires a platform with compute shader support.
 
@@ -122,9 +125,11 @@ Engine:
 - ✅ Iterative deepening, move ordering and transposition table for MiniMax
 - ✅ Multithreaded MCTS (root parallel and tree parallel)
 - ✅ GPU-accelerated MCTS rollouts with batched dispatches
+- ✅ Unit test suite (perft, board mechanics, evaluation, engines)
+- ✅ Assembly definitions enforcing the engine/UI layering
 - ⬜ Weighted backpropagation of GPU rollout counts
 - ⬜ Mobility term in the minimax evaluation function
-- ⬜ Unit tests (perft, evaluation, CPU/GPU rollout parity)
+- ⬜ CPU/GPU rollout parity test
 
 UI:
 - ✅ Better UI
