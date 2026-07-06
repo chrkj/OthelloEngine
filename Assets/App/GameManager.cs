@@ -146,32 +146,33 @@ namespace Othello.App
             if (!m_LastPlayerHadNoMove) 
                 return false;
             m_GameState = State.GameOver;
-            var winner = "";
+            var winnerText = "";
+            var winner = m_Board.GetWinner();
             var winnerColor = Color.yellow;
-            if (m_Board.GetWinner() == Piece.BLACK)
+            if (winner == Piece.BLACK)
             {
                 winnerColor = Color.black;
-                winner = "Black";
+                winnerText = "Black";
                 BlackWins++;
             }
-            else if (m_Board.GetWinner() == Piece.WHITE)
+            else if (winner == Piece.WHITE)
             {
                 winnerColor = Color.white;
-                winner = "White";
+                winnerText = "White";
                 WhiteWins++;
             }
-            else if (m_Board.GetWinner() == 0)
+            else if (winner == Piece.EMPTY)
             { 
-                winner = "Draw";
+                winnerText = "Draw";
                 Draws++;
             }
             
             
             Console.Log("■■■■■■■■■■■■■■■■■■■■■■■■■■■■", winnerColor);
-            if (winner == "Draw")
+            if (winner == 0)
                 Console.Log("■■■■■■■■■■■■ Draw ■■■■■■■■■■■", winnerColor);
             else
-                Console.Log("■■■■■■■■ Winner: " + winner + " ■■■■■■■■", winnerColor);
+                Console.Log("■■■■■■■■ Winner: " + winnerText + " ■■■■■■■■", winnerColor);
             Console.Log("■■■■■■■■■■■■■■■■■■■■■■■■■■■■", winnerColor);
             return true;
         }
