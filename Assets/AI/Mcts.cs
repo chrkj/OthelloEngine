@@ -88,6 +88,11 @@ namespace Othello.AI
                     throw new NotImplementedException();
             }
 
+            // A very small time limit can end the search before any iteration expands the root;
+            // expand it here so there is always a legal child to choose from.
+            if (rootNode.Children.Count == 0)
+                Expand(rootNode);
+
             var (bestNode, bestMove) = rootNode.SelectBestNode();
             m_CachedNode = bestNode;
             m_CachedNode.Parent = null;

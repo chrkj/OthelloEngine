@@ -101,6 +101,27 @@ namespace Othello.Tests
         }
 
         [Test]
+        public void MiniMax_ReturnsLegalMove_WhenTimeLimitAlreadyExpired()
+        {
+            // Negative time limit forces immediate termination before any move is fully searched.
+            var engine = new MiniMax(depth: 8, timeLimit: -1, moveOrderingEnabled: false,
+                iterativeDeepeningEnabled: false, zobristHashingEnabled: false);
+            var result = engine.StartSearch(CreateStartBoard());
+            Assert.AreNotEqual(Move.NULLMOVE, result.BestMove);
+            CollectionAssert.Contains(s_StartPositionMoves, result.BestMove.Index);
+        }
+
+        [Test]
+        public void Mcts_ReturnsLegalMove_WhenNoIterationsRun()
+        {
+            // Negative time limit means the search loop never runs, so the root is never expanded.
+            var engine = new Mcts(maxIterations: 1000, maxTime: -1, MctsType.Sequential);
+            var result = engine.StartSearch(CreateStartBoard());
+            Assert.AreNotEqual(Move.NULLMOVE, result.BestMove);
+            CollectionAssert.Contains(s_StartPositionMoves, result.BestMove.Index);
+        }
+
+        [Test]
         public void RandomPlay_ReturnsLegalMove_FromStartPosition()
         {
             var engine = new RandomPlay();

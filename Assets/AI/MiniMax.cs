@@ -43,7 +43,10 @@ namespace Othello.AI
             m_TimeLimit = start + m_MaxTime;
 
             int bestEvalThisIteration = 0;
-            Move bestMoveThisIteration = Move.NULLMOVE;
+            // Seed with a real legal move so an aborted search (e.g. a very small time limit) still
+            // returns a playable move instead of NULLMOVE. StartSearch is only called when at least
+            // one legal move exists, and the search only ever replaces this with a better move.
+            Move bestMoveThisIteration = FirstLegalMove(board);
             if (m_IterativeDeepeningEnabled)
                 IterativeSearch(board, ref bestMoveThisIteration, ref bestEvalThisIteration);
             else
@@ -129,6 +132,8 @@ namespace Othello.AI
         private int MinValue(Board board, int depth, int alpha, int beta)
         {
             CheckTimelimit();
+            if (m_TerminationFlag)
+                return 0; // abandoned: CalculateMove discards any eval produced after termination
             if (IsTerminal(board, depth))
                 return GetEval(board);
 
@@ -157,6 +162,8 @@ namespace Othello.AI
         private int MaxValue(Board board, int depth, int alpha, int beta)
         {
             CheckTimelimit();
+            if (m_TerminationFlag)
+                return 0; // abandoned: CalculateMove discards any eval produced after termination
             if (IsTerminal(board, depth))
                 return GetEval(board);
 
@@ -249,6 +256,13 @@ namespace Othello.AI
             nextBoardState.MakeMove(legalMove);
             nextBoardState.ChangePlayer();
             return nextBoardState;
+        }
+
+        private static Move FirstLegalMove(Board board)
+        {
+            Span<Move> legalMoves = stackalloc Move[Board.MAX_LEGAL_MOVES];
+            board.GenerateLegalMoves(ref legalMoves);
+            return legalMoves.Length > 0 ? legalMoves[0] : Move.NULLMOVE;
         }
 
         private void SwapBestMoveToFront(Move bestMove, ref Span<Move> legalMoves)
