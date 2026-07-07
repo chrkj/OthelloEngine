@@ -127,7 +127,7 @@ Engine:
 - ✅ GPU-accelerated MCTS rollouts with batched dispatches
 - ✅ Unit test suite (perft, board mechanics, evaluation, engines)
 - ✅ Assembly definitions enforcing the engine/UI layering
-- ⬜ Weighted backpropagation of GPU rollout counts
+- ✅ Weighted backpropagation of GPU rollout counts
 - ⬜ Mobility term in the minimax evaluation function
 - ⬜ CPU/GPU rollout parity test
 

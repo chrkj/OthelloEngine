@@ -272,6 +272,24 @@ namespace Othello.AI
             }
         }
 
+        private static void BackPropagateCounts(Node node, int winsForLeafPlayer, int draws, int leafPlayer)
+        {
+            // Weighted backpropagation of a whole GPU batch result. A node is credited with the
+            // rollouts won by the player who moved into it, so the credited count flips
+            // perspective at every level. Comparing each node's player to the leaf's player
+            // (rather than assuming strict alternation) keeps pass moves correct.
+            var losses = NUM_GPU_SIMS - winsForLeafPlayer - draws;
+            var currentNode = node;
+            while (currentNode != null)
+            {
+                var credited = currentNode.Board.GetCurrentPlayer() == leafPlayer ? losses : winsForLeafPlayer;
+                Interlocked.Add(ref currentNode.NumVisits, NUM_GPU_SIMS);
+                Interlocked.Add(ref currentNode.NumWins, credited + draws);   // draws count as non-losses, matching BackPropagation
+                Interlocked.Add(ref currentNode.Score, 2 * credited + draws); // Score is doubled, so a draw adds one half
+                currentNode = currentNode.Parent;
+            }
+        }
+
         private int Simulate(Node node)
         {
             var tempNode = node.Copy();
@@ -312,17 +330,9 @@ namespace Othello.AI
             for (var i = 0; i < count; i++)
             {
                 var node = batch[i];
-                // The shader counts rollouts won by the node's current player; majority vote decides the result
-                var simLosses = NUM_GPU_SIMS - m_WinData[i] - m_DrawData[i];
-                int winningPlayer;
-                if (m_WinData[i] > simLosses)
-                    winningPlayer = node.Board.GetCurrentPlayer();
-                else if (m_WinData[i] == simLosses)
-                    winningPlayer = 0;
-                else
-                    winningPlayer = node.Board.GetCurrentOpponent();
-
-                BackPropagation(node, winningPlayer);
+                // The shader counts rollouts won by the node's current player; back-propagate the
+                // full counts so the tree banks all the samples instead of a single majority vote
+                BackPropagateCounts(node, m_WinData[i], m_DrawData[i], node.Board.GetCurrentPlayer());
                 Interlocked.Increment(ref m_IterationsRun);
             }
             Interlocked.Add(ref m_SimulationsRun, count * NUM_GPU_SIMS);
