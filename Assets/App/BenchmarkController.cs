@@ -1,15 +1,15 @@
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 using Othello.AI;
 using Othello.Core;
-using Console = Othello.UI.Console;
 
 namespace Othello.App
 {
@@ -42,6 +42,11 @@ namespace Othello.App
         [Tooltip("Spinner GameObject (e.g. with a SimpleRotate) shown while the benchmark runs.")]
         [SerializeField] private GameObject m_Spinner;
 
+        [Header("Log")]
+        [SerializeField] private TMP_Text m_LogText;
+        [Tooltip("Optional ScrollRect wrapping the log text, to auto-scroll to the newest line.")]
+        [SerializeField] private ScrollRect m_LogScroll;
+
         [Header("GPU")]
         [Tooltip("Assign Assets/AI/MctsCompute so GPU MCTS engines can run.")]
         [SerializeField] private ComputeShader m_ComputeShader;
@@ -56,6 +61,9 @@ namespace Othello.App
         private int m_GamesTotal;
         private List<EngineEntry> m_PendingPool;
         private Task<List<MatchResult>> m_BackgroundTask;
+        private readonly ConcurrentQueue<MatchResult> m_CompletedMatches = new();
+        private readonly List<string> m_LogLines = new();
+        private const int MAX_LOG_LINES = 200;
 
         private void Start()
         {
@@ -64,6 +72,7 @@ namespace Othello.App
             if (m_CancelButton != null) m_CancelButton.onClick.AddListener(() => m_Cancel = true);
             if (m_Panel != null) m_Panel.SetActive(false);
             if (m_Spinner != null) m_Spinner.SetActive(false);
+            ClearLog();
             SetStatus("");
         }
 
@@ -118,6 +127,12 @@ namespace Othello.App
             if (m_RunButton != null)
                 m_RunButton.interactable = false;
             if (m_Spinner != null) m_Spinner.SetActive(true);
+
+            ClearLog();
+            AppendLog("── Benchmark started ──");
+            AppendLog($"Mode: {(mode == Mode.RoundRobin ? "Round-robin" : "Head-to-head")}   {gamesPerPair} games/pair");
+            AppendLog("Engines: " + string.Join(", ", pool.ConvertAll(e => e.Name)));
+            AppendLog($"Pairings: {pairings.Count}   Total games: {m_GamesTotal}");
 
             if (RequiresGpu(configs))
                 StartCoroutine(RunRoutine(pool, pairings, gamesPerPair)); // GPU: main thread, ply by ply
@@ -213,11 +228,13 @@ namespace Othello.App
                     m_GamesDone++;
                 }
 
-                matches.Add(new MatchResult
+                var match = new MatchResult
                 {
                     EntrantA = pool[ai], EntrantB = pool[bi], Games = gamesPerPair,
                     AWins = aWins, BWins = bWins, Draws = draws
-                });
+                };
+                matches.Add(match);
+                m_CompletedMatches.Enqueue(match);
                 if (m_Cancel)
                     break;
             }
@@ -246,11 +263,13 @@ namespace Othello.App
                     Interlocked.Increment(ref m_GamesDone);
                 });
 
-                matches.Add(new MatchResult
+                var match = new MatchResult
                 {
                     EntrantA = pool[ai], EntrantB = pool[bi], Games = gamesPerPair,
                     AWins = aWins, BWins = bWins, Draws = draws
-                });
+                };
+                matches.Add(match);
+                m_CompletedMatches.Enqueue(match); // drained onto the log by the main thread in Update
                 if (m_Cancel)
                     break;
             }
@@ -259,6 +278,8 @@ namespace Othello.App
 
         private void Update()
         {
+            ClearScrollbarSelection();
+            DrainCompletedMatches();
             if (m_Running)
                 UpdateProgress();
 
@@ -285,8 +306,10 @@ namespace Othello.App
             m_Running = false;
             if (m_RunButton != null) m_RunButton.interactable = true;
             if (m_Spinner != null) m_Spinner.SetActive(false);
+            DrainCompletedMatches(); // make sure the last match lines are shown before the summary
             if (m_Cancel)
             {
+                AppendLog("Cancelled.");
                 SetStatus("Cancelled.");
                 return;
             }
@@ -312,15 +335,61 @@ namespace Othello.App
         private void ShowResults(List<Standing> standings)
         {
             SetStatus("Done.");
-            Console.Log("■■■ Benchmark complete ■■■", Color.cyan);
+            AppendLog("── Leaderboard ──");
+            var rank = 1;
             foreach (var s in standings)
-                Console.Log($"{s.Name}: {s.Wins}-{s.Draws}-{s.Losses} ({s.Score * 100:0.#}%)", Color.cyan);
+                AppendLog($"{rank++}. {s.Name}   {s.Wins}-{s.Draws}-{s.Losses}   {s.Score * 100:0.#}%");
         }
 
         private void SetStatus(string text)
         {
             if (m_StatusText != null)
                 m_StatusText.text = text;
+        }
+
+        private void DrainCompletedMatches()
+        {
+            while (m_CompletedMatches.TryDequeue(out var match))
+                AppendLog($"{match.EntrantA.Name} vs {match.EntrantB.Name}:   " +
+                          $"{match.AWins}-{match.Draws}-{match.BWins}   ({match.AScore * 100:0.#}%)");
+        }
+
+        private void AppendLog(string line)
+        {
+            m_LogLines.Add(line);
+            if (m_LogLines.Count > MAX_LOG_LINES)
+                m_LogLines.RemoveRange(0, m_LogLines.Count - MAX_LOG_LINES);
+            if (m_LogText != null)
+                m_LogText.text = string.Join("\n", m_LogLines);
+            ScrollLogToBottom();
+        }
+
+        private void ClearLog()
+        {
+            m_LogLines.Clear();
+            if (m_LogText != null)
+                m_LogText.text = "";
+        }
+
+        private void ScrollLogToBottom()
+        {
+            if (m_LogScroll == null)
+                return;
+            Canvas.ForceUpdateCanvases();
+            m_LogScroll.verticalNormalizedPosition = 0f;
+        }
+
+        // A selected scrollbar keeps reacting to navigation input (gamepad axis drift, held keys) and
+        // scrolls the log on its own. Deselect it once the mouse is released so only dragging moves it.
+        private void ClearScrollbarSelection()
+        {
+            if (Input.GetMouseButton(0) || m_LogScroll == null || m_LogScroll.verticalScrollbar == null)
+                return;
+            var eventSystem = EventSystem.current;
+            if (eventSystem == null)
+                return;
+            if (eventSystem.currentSelectedGameObject == m_LogScroll.verticalScrollbar.gameObject)
+                eventSystem.SetSelectedGameObject(null);
         }
     }
 }
