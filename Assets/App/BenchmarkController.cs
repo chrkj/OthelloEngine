@@ -5,7 +5,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using TMPro;
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 using Othello.AI;
@@ -278,7 +277,6 @@ namespace Othello.App
 
         private void Update()
         {
-            ClearScrollbarSelection();
             DrainCompletedMatches();
             if (m_Running)
                 UpdateProgress();
@@ -377,19 +375,6 @@ namespace Othello.App
                 return;
             Canvas.ForceUpdateCanvases();
             m_LogScroll.verticalNormalizedPosition = 0f;
-        }
-
-        // A selected scrollbar keeps reacting to navigation input (gamepad axis drift, held keys) and
-        // scrolls the log on its own. Deselect it once the mouse is released so only dragging moves it.
-        private void ClearScrollbarSelection()
-        {
-            if (Input.GetMouseButton(0) || m_LogScroll == null || m_LogScroll.verticalScrollbar == null)
-                return;
-            var eventSystem = EventSystem.current;
-            if (eventSystem == null)
-                return;
-            if (eventSystem.currentSelectedGameObject == m_LogScroll.verticalScrollbar.gameObject)
-                eventSystem.SetSelectedGameObject(null);
         }
     }
 }

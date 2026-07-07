@@ -31,21 +31,10 @@ namespace Othello.UI
 
         private void Update()
         {
-            ClearScrollbarSelection();
             if (!m_MessagesToLog.TryDequeue(out var message)) return;
             LogMessage(message.text, message.color);
             if (!IsUserScrolling())
                 ScrollToBottom();
-        }
-
-        private void ClearScrollbarSelection()
-        {
-            if (Input.GetMouseButton(0))
-                return;
-            var eventSystem = EventSystem.current;
-            var selected = eventSystem ? eventSystem.currentSelectedGameObject : null;
-            if (selected && selected.transform.IsChildOf(console.transform))
-                eventSystem.SetSelectedGameObject(null);
         }
 
         private bool IsUserScrolling()
