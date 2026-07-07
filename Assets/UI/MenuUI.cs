@@ -22,7 +22,7 @@ namespace Othello.UI
         private Board m_Board;
         private Player m_WhitePlayerNextGame;
         private Player m_BlackPlayerNextGame;
-        private int m_PlayerToStartNextGame = Piece.BLACK;
+        private int m_PlayerToStartNextGame = Player.BLACK;
         private bool m_AutoMove;
         private enum PlayerType { Human = 0, Minimax = 1, Mcts = 2, Random = 3 }
 
@@ -79,8 +79,8 @@ namespace Othello.UI
             m_WhiteIterations.text = "10000";
             m_BlackTimeLimit.text = "1000";
             m_WhiteTimeLimit.text = "1000";
-            PlayerSelection(Piece.BLACK);
-            PlayerSelection(Piece.WHITE);
+            PlayerSelection(Player.BLACK);
+            PlayerSelection(Player.WHITE);
         }
 
         public void UpdateMenu(Board board)
@@ -116,7 +116,7 @@ namespace Othello.UI
 
         public void PlayerSelection(int player)
         {
-            var isBlack = player == Piece.BLACK;
+            var isBlack = player == Player.BLACK;
             ref Player playerRef = ref isBlack ? ref m_BlackPlayerNextGame : ref m_WhitePlayerNextGame;
             var playerType = isBlack ? m_BlackPlayer.value : m_WhitePlayer.value;
             var inputFieldIterations = isBlack ? m_BlackIterations : m_WhiteIterations;
@@ -260,7 +260,7 @@ namespace Othello.UI
 
         public void SetStartingPlayer()
         {
-            m_PlayerToStartNextGame = (m_PlayerToStart.value == 0) ? Piece.BLACK : Piece.WHITE;
+            m_PlayerToStartNextGame = (m_PlayerToStart.value == 0) ? Player.BLACK : Player.WHITE;
         }
 
         private void SetCurrentSimCount(int count)

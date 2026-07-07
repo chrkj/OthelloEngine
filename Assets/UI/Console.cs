@@ -32,20 +32,14 @@ namespace Othello.UI
         private void Update()
         {
             ClearScrollbarSelection();
-
-            // The view only moves when a new message arrives; otherwise the scroll position is left alone
             if (!m_MessagesToLog.TryDequeue(out var message)) return;
             LogMessage(message.text, message.color);
-            // Don't fight the user: no auto-jump while the mouse is held down over the console
             if (!IsUserScrolling())
                 ScrollToBottom();
         }
 
         private void ClearScrollbarSelection()
         {
-            // A selected scrollbar keeps reacting to navigation input (arrow keys, gamepad
-            // axis drift) and scrolls the console on its own. Deselect it once the mouse
-            // is released so only deliberate dragging moves the view.
             if (Input.GetMouseButton(0))
                 return;
             var eventSystem = EventSystem.current;

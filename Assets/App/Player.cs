@@ -10,8 +10,12 @@ namespace Othello.App
         public event Action OnNoLegalMove;
         public event Action<Move> OnMoveChosen;
         
-        public const byte BLACK = 0b01;
-        public const byte WHITE = 0b10;
+        // Player identity shares the engine's piece color encoding (see Othello.Core.Piece),
+        // derived here so the two can never diverge. Use Player.* when referring to a player,
+        // Piece.* when referring to the contents of a square.
+        public const byte NONE = Piece.EMPTY;
+        public const byte BLACK = Piece.BLACK;
+        public const byte WHITE = Piece.WHITE;
         
         protected readonly Board m_Board;
 

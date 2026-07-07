@@ -119,7 +119,7 @@ namespace Othello.App
 
         private void StopStopwatch()
         {
-            if (m_Board.GetCurrentPlayer() == Piece.BLACK)
+            if (m_Board.GetCurrentPlayer() == Player.BLACK)
                 BoardUI.Instance.BlackAiPlayerCalculating = false;
             else
                 BoardUI.Instance.WhiteAiPlayerCalculating = false;
@@ -128,7 +128,7 @@ namespace Othello.App
 
         private void StartStopwatch()
         {
-            if (m_Board.GetCurrentPlayer() == Piece.BLACK)
+            if (m_Board.GetCurrentPlayer() == Player.BLACK)
                 BoardUI.Instance.BlackAiPlayerCalculating = true;
             else
                 BoardUI.Instance.WhiteAiPlayerCalculating = true;

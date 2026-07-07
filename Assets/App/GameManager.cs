@@ -77,12 +77,12 @@ namespace Othello.App
             BoardUI.Instance.UnhighlightAll();
             Console.Clear();
             TryUnsubscribeEvents();
-            MenuUI.Instance.PlayerSelection(Piece.WHITE);
-            MenuUI.Instance.PlayerSelection(Piece.BLACK);
+            MenuUI.Instance.PlayerSelection(Player.WHITE);
+            MenuUI.Instance.PlayerSelection(Player.BLACK);
             m_WhitePlayer = (Player)MenuUI.Instance.WhitePlayerNextGame.Clone();
             m_BlackPlayer = (Player)MenuUI.Instance.BlackPlayerNextGame.Clone();
             SubscribeEvents();
-            m_PlayerToMove = (MenuUI.Instance.PlayerToStartNextGame == Piece.WHITE) ? m_WhitePlayer : m_BlackPlayer;
+            m_PlayerToMove = (MenuUI.Instance.PlayerToStartNextGame == Player.WHITE) ? m_WhitePlayer : m_BlackPlayer;
             m_GameState = State.Playing;
             m_PlayerToMove.NotifyTurnToMove();
         }
@@ -149,27 +149,27 @@ namespace Othello.App
             var winnerText = "";
             var winner = m_Board.GetWinner();
             var winnerColor = Color.yellow;
-            if (winner == Piece.BLACK)
+            if (winner == Player.BLACK)
             {
                 winnerColor = Color.black;
                 winnerText = "Black";
                 BlackWins++;
             }
-            else if (winner == Piece.WHITE)
+            else if (winner == Player.WHITE)
             {
                 winnerColor = Color.white;
                 winnerText = "White";
                 WhiteWins++;
             }
-            else if (winner == Piece.EMPTY)
-            { 
+            else if (winner == Player.NONE)
+            {
                 winnerText = "Draw";
                 Draws++;
             }
-            
-            
+
+
             Console.Log("■■■■■■■■■■■■■■■■■■■■■■■■■■■■", winnerColor);
-            if (winner == 0)
+            if (winner == Player.NONE)
                 Console.Log("■■■■■■■■■■■■ Draw ■■■■■■■■■■■", winnerColor);
             else
                 Console.Log("■■■■■■■■ Winner: " + winnerText + " ■■■■■■■■", winnerColor);
@@ -180,7 +180,7 @@ namespace Othello.App
         private void ChangePlayer()
         {
             m_Board.ChangePlayer();
-            m_PlayerToMove = (m_Board.GetCurrentPlayer() == Piece.WHITE) ? m_WhitePlayer : m_BlackPlayer;
+            m_PlayerToMove = (m_Board.GetCurrentPlayer() == Player.WHITE) ? m_WhitePlayer : m_BlackPlayer;
             m_PlayerToMove.NotifyTurnToMove();
         }
     }
