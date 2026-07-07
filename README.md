@@ -42,6 +42,7 @@ I originally created the project to learn more about game AI. It has since grown
 * Per-engine settings in the UI: search depth, time limit, iteration cap, move ordering, iterative deepening and transposition table toggles, MCTS variant selection
 * Live search diagnostics: search time, positions evaluated, branches pruned, tree size, simulations run, win prediction and evaluation score (with forced-win detection)
 * Automated match simulation — run N games back-to-back and track wins/draws per engine
+* In-app benchmark arena — build a pool of engine configs and run round-robin or head-to-head matches with a live leaderboard; runs in a build (so you can measure real release-mode strength) and supports the GPU engine
 * Auto-move toggle, or step through AI moves manually with Space
 * Legal move highlighting, last-move highlighting and a color-coded in-game console log
 
@@ -128,6 +129,7 @@ Engine:
 - ✅ Unit test suite (perft, board mechanics, evaluation, engines)
 - ✅ Assembly definitions enforcing the engine/UI layering
 - ✅ Weighted backpropagation of GPU rollout counts
+- ✅ In-app benchmark arena (round-robin / head-to-head, GPU-capable)
 - ⬜ Mobility term in the minimax evaluation function
 - ⬜ CPU/GPU rollout parity test
 
