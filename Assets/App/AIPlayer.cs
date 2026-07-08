@@ -102,10 +102,10 @@ namespace Othello.App
                     Console.Log("Best eval: " + FormatEval(result.Eval));
                     break;
                 case Mcts:
-                    Console.Log("Tree size: " + result.TreeSize);
+                    Console.Log("Tree size: " + result.TreeSize + " nodes");
                     Console.Log("Search time: " + result.TimeMs + " ms");
-                    Console.Log("Iterations: " + result.IterationsRun);
-                    Console.Log("Nodes visited: " + result.NodesVisited);
+                    Console.Log("Iterations (tree cycles): " + result.IterationsRun);
+                    Console.Log("Simulations (playouts): " + result.SimulationsRun);
                     Console.Log("Win prediction: " + result.WinPrediction.ToString("0.##") + " %");
                     break;
             }

@@ -351,7 +351,7 @@ namespace Othello.UI
                 Player.WHITE => m_WhiteCurrentSimulation,
                 _ => throw new NotImplementedException("Invalid player.")
             };
-            simCountDisplay.text = "Current Simulation: " + currentSimCount;
+            simCountDisplay.text = "Simulations (playouts): " + currentSimCount;
         }
 
         private void SetPositionEvalCount(int player, int posEvalCount)
