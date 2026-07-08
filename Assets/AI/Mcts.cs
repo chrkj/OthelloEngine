@@ -9,7 +9,7 @@ using Random = System.Random;
 
 namespace Othello.AI
 {
-    public enum MctsType { Sequential = 0, RootParallel = 1, TreeParallel = 2, GpuParallel = 3 }
+    public enum MctsType { Sequential = 0, Root = 1, Tree = 2, Gpu = 3 }
 
     public class Mcts : ISearchEngine
     {
@@ -34,6 +34,7 @@ namespace Othello.AI
         private readonly int m_MaxTime;
         private readonly int m_MaxIterations;
         public readonly MctsType Variant;
+        private readonly RolloutPolicy m_RolloutPolicy;
 
         private Random m_Rng;
         private readonly ComputeShader m_ComputeShader;
@@ -58,13 +59,15 @@ namespace Othello.AI
         private readonly int m_CurrentPlayerId = Shader.PropertyToID("_CurrentPlayer");
         private readonly int m_PiecesId = Shader.PropertyToID("_Pieces");
 
-        public Mcts(int maxIterations, int maxTime, MctsType mctsType, ComputeShader computeShader = null)
+        public Mcts(int maxIterations, int maxTime, MctsType mctsType, ComputeShader computeShader = null,
+            bool heuristicRollout = false, float rolloutEpsilon = 0.2f)
         {
             m_MaxTime = maxTime;
             m_MaxIterations = maxIterations;
             Variant = mctsType;
             m_ComputeShader = computeShader;
             m_Rng = new Random();
+            m_RolloutPolicy = new RolloutPolicy(heuristicRollout, rolloutEpsilon);
         }
 
         public SearchResult StartSearch(Board board)
@@ -82,13 +85,13 @@ namespace Othello.AI
                 case MctsType.Sequential:
                     RunSequential(rootNode, timeLimit);
                     break;
-                case MctsType.RootParallel:
+                case MctsType.Root:
                     RunRootParallel(rootNode, timeLimit);
                     break;
-                case MctsType.TreeParallel:
+                case MctsType.Tree:
                     RunTreeParallel(rootNode, timeLimit);
                     break;
-                case MctsType.GpuParallel:
+                case MctsType.Gpu:
                     RunGpuParallel(rootNode, timeLimit);
                     break;
                 default:
@@ -349,7 +352,7 @@ namespace Othello.AI
             var winningPlayer = tempNode.Board.GetBoardState();
             while (winningPlayer == IS_RUNNING)
             {
-                tempNode.RandomMove();
+                tempNode.RandomMove(m_RolloutPolicy);
                 Interlocked.Increment(ref m_NodesVisited);
                 winningPlayer = tempNode.Board.GetBoardState();
             }

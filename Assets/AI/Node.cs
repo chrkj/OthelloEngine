@@ -76,7 +76,7 @@ namespace Othello.AI
             return notes;
         }
             
-        public void RandomMove() 
+        public void RandomMove(RolloutPolicy policy)
         {
             Span<Move> legalMoves = stackalloc Move[Board.MAX_LEGAL_MOVES];
             Board.GenerateLegalMoves(ref legalMoves);
@@ -85,9 +85,9 @@ namespace Othello.AI
                 Board.ChangePlayer();
                 return;
             }
-            
-            var randomMove = legalMoves[m_Random.Next(legalMoves.Length)];
-            Board.MakeMove(randomMove);
+
+            var move = policy.Pick(legalMoves, m_Random);
+            Board.MakeMove(move);
             Board.ChangePlayer();
         }
         

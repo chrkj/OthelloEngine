@@ -18,8 +18,10 @@ namespace Othello.App
         public bool MoveOrdering = true;
         public bool IterativeDeepening;
         public bool ZobristHashing;
+        public bool UseHeuristicRollout; // epsilon-greedy positional rollouts (CPU MCTS variants)
+        public float RolloutEpsilon = 0.2f;
 
-        public bool RequiresGpu => Kind == EngineKind.Mcts && MctsVariant == MctsType.GpuParallel;
+        public bool RequiresGpu => Kind == EngineKind.Mcts && MctsVariant == MctsType.Gpu;
 
         public string DisplayName()
         {
@@ -32,7 +34,8 @@ namespace Othello.App
                                 (ZobristHashing ? "+zb" : "");
                     return $"Minimax d{Depth}{flags}";
                 case EngineKind.Mcts:
-                    return $"MCTS {MctsVariant} {Iterations}";
+                    var rollout = UseHeuristicRollout ? $" h{RolloutEpsilon:0.##}" : "";
+                    return $"MCTS {MctsVariant} {Iterations}{rollout}";
                 default:
                     return "Engine";
             }
@@ -50,7 +53,8 @@ namespace Othello.App
                 case EngineKind.Mcts:
                     var gpu = RequiresGpu;
                     return new EngineEntry(uniqueName,
-                        () => new Mcts(Mathf.Max(1, Iterations), TimeLimitMs, MctsVariant, gpu ? gpuShader : null));
+                        () => new Mcts(Mathf.Max(1, Iterations), TimeLimitMs, MctsVariant, gpu ? gpuShader : null,
+                            UseHeuristicRollout, RolloutEpsilon));
                 default:
                     throw new ArgumentOutOfRangeException();
             }

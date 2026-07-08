@@ -79,7 +79,7 @@ namespace Othello.Tests
         [Test]
         public void MctsRootParallel_ReturnsLegalMove_FromStartPosition()
         {
-            var engine = new Mcts(maxIterations: 500, maxTime: 10000, MctsType.RootParallel);
+            var engine = new Mcts(maxIterations: 500, maxTime: 10000, MctsType.Root);
             var result = engine.StartSearch(CreateStartBoard());
             CollectionAssert.Contains(s_StartPositionMoves, result.BestMove.Index);
         }
@@ -87,7 +87,7 @@ namespace Othello.Tests
         [Test]
         public void MctsTreeParallel_ReturnsLegalMove_FromStartPosition()
         {
-            var engine = new Mcts(maxIterations: 500, maxTime: 10000, MctsType.TreeParallel);
+            var engine = new Mcts(maxIterations: 500, maxTime: 10000, MctsType.Tree);
             var result = engine.StartSearch(CreateStartBoard());
             CollectionAssert.Contains(s_StartPositionMoves, result.BestMove.Index);
         }

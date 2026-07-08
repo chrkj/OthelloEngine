@@ -21,6 +21,15 @@ namespace Othello.App
 
         public int Value => m_Value;
 
+        // Sets the value from code and refreshes the "<number> <unit>" display.
+        public void SetValue(int value)
+        {
+            m_Value = value;
+            if (m_Field == null)
+                m_Field = GetComponent<TMP_InputField>();
+            Format();
+        }
+
         private void Awake()
         {
             m_Field = GetComponent<TMP_InputField>();

@@ -58,7 +58,7 @@ namespace Othello.App
             }
             BoardUI.Instance.SetLegalMoves(legalMoves);
             
-            if (m_SearchEngine is Mcts { Variant: MctsType.GpuParallel } gpuMcts)
+            if (m_SearchEngine is Mcts { Variant: MctsType.Gpu } gpuMcts)
                 // GPU dispatch must stay on the main thread; drive it in slices via a coroutine so the
                 // app keeps rendering (spinner spinning, board drawing) while the AI thinks.
                 GameManager.Instance.StartCoroutine(RunGpuSearch(gpuMcts));
