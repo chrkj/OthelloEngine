@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Text;
 
 using Othello.Core;
 
@@ -105,6 +107,36 @@ namespace Othello.AI
             var standings = new List<Standing>(byName.Values);
             standings.Sort((x, y) => y.Score.CompareTo(x.Score));
             return standings;
+        }
+
+        public static string MatchesToCsv(IEnumerable<MatchResult> matches)
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("EntrantA,EntrantB,Games,A_Wins,B_Wins,Draws,A_Score");
+            foreach (var m in matches)
+                sb.AppendLine($"{Escape(m.EntrantA.Name)},{Escape(m.EntrantB.Name)},{m.Games}," +
+                              $"{m.AWins},{m.BWins},{m.Draws},{Num(m.AScore)}");
+            return sb.ToString();
+        }
+
+        public static string StandingsToCsv(IEnumerable<Standing> standings)
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("Rank,Name,Games,Wins,Draws,Losses,Points,Score");
+            var rank = 1;
+            foreach (var s in standings)
+                sb.AppendLine($"{rank++},{Escape(s.Name)},{s.Games},{s.Wins},{s.Draws}," +
+                              $"{s.Losses},{Num(s.Points)},{Num(s.Score)}");
+            return sb.ToString();
+        }
+
+        private static string Num(double value) => value.ToString("0.###", CultureInfo.InvariantCulture);
+
+        private static string Escape(string field)
+        {
+            if (field.IndexOf(',') < 0 && field.IndexOf('"') < 0 && field.IndexOf('\n') < 0)
+                return field;
+            return "\"" + field.Replace("\"", "\"\"") + "\"";
         }
     }
 }

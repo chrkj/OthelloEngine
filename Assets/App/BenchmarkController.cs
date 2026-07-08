@@ -1,6 +1,8 @@
+using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using TMPro;
@@ -46,6 +48,11 @@ namespace Othello.App
         [Tooltip("Optional ScrollRect wrapping the log text, to auto-scroll to the newest line.")]
         [SerializeField] private ScrollRect m_LogScroll;
 
+        [Header("CSV export")]
+        [SerializeField] private Toggle m_ExportCsvToggle;
+        [Tooltip("Folder the CSV files are written to. Defaults to a BenchmarkResults folder in the app workspace.")]
+        [SerializeField] private TMP_InputField m_SavePathInput;
+
         [Header("GPU")]
         [Tooltip("Assign Assets/AI/MctsCompute so GPU MCTS engines can run.")]
         [SerializeField] private ComputeShader m_ComputeShader;
@@ -72,6 +79,8 @@ namespace Othello.App
             if (m_Panel != null) m_Panel.SetActive(false);
             if (m_Spinner != null) m_Spinner.SetActive(false);
             ClearLog();
+            if (m_SavePathInput != null && string.IsNullOrEmpty(m_SavePathInput.text))
+                m_SavePathInput.text = DefaultResultsFolder();
             SetStatus("");
         }
 
@@ -312,7 +321,10 @@ namespace Othello.App
                 return;
             }
             UpdateProgress();
-            ShowResults(Arena.BuildStandings(m_PendingPool, matches));
+            var standings = Arena.BuildStandings(m_PendingPool, matches);
+            ShowResults(standings);
+            if (m_ExportCsvToggle != null && m_ExportCsvToggle.isOn)
+                ExportCsv(matches, standings);
         }
 
         private static bool RequiresGpu(List<EngineConfig> configs)
@@ -337,6 +349,38 @@ namespace Othello.App
             var rank = 1;
             foreach (var s in standings)
                 AppendLog($"{rank++}. {s.Name}   {s.Wins}-{s.Draws}-{s.Losses}   {s.Score * 100:0.#}%");
+        }
+
+        private void ExportCsv(List<MatchResult> matches, List<Standing> standings)
+        {
+            try
+            {
+                var folder = ResolveSaveFolder();
+                Directory.CreateDirectory(folder);
+                var stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                File.WriteAllText(Path.Combine(folder, $"standings_{stamp}.csv"), Arena.StandingsToCsv(standings));
+                File.WriteAllText(Path.Combine(folder, $"matches_{stamp}.csv"), Arena.MatchesToCsv(matches));
+                AppendLog($"Saved CSV to {folder}");
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+                AppendLog("CSV export failed — see console.");
+            }
+        }
+
+        private string ResolveSaveFolder()
+        {
+            var path = m_SavePathInput != null ? m_SavePathInput.text : null;
+            return string.IsNullOrWhiteSpace(path) ? DefaultResultsFolder() : path.Trim();
+        }
+
+        // Editor: <project>/BenchmarkResults. Build: a BenchmarkResults folder next to the executable.
+        private static string DefaultResultsFolder()
+        {
+            var parent = Directory.GetParent(Application.dataPath);
+            var baseDir = parent != null ? parent.FullName : Application.persistentDataPath;
+            return Path.Combine(baseDir, "BenchmarkResults");
         }
 
         private void SetStatus(string text)
