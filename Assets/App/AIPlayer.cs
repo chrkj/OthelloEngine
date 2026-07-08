@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Threading;
 using System.Diagnostics;
 using System.Threading.Tasks;
@@ -57,23 +58,31 @@ namespace Othello.App
             }
             BoardUI.Instance.SetLegalMoves(legalMoves);
             
-            if (m_SearchEngine is Mcts mcts)
-            {
-                if (mcts.Variant == MctsType.GpuParallel)
-                    Search();
-                else
-                    Task.Factory.StartNew(Search, Cts.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
-            }
+            if (m_SearchEngine is Mcts { Variant: MctsType.GpuParallel } gpuMcts)
+                // GPU dispatch must stay on the main thread; drive it in slices via a coroutine so the
+                // app keeps rendering (spinner spinning, board drawing) while the AI thinks.
+                GameManager.Instance.StartCoroutine(RunGpuSearch(gpuMcts));
             else
-            {
                 Task.Factory.StartNew(Search, Cts.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
-            }
         }
 
         private void Search()
         {
             StartStopwatch();
             LastResult = m_SearchEngine.StartSearch(m_Board);
+            m_ChosenMove = LastResult.BestMove;
+            StopStopwatch();
+            PrintSearchData(LastResult);
+            m_MoveFound = true;
+        }
+
+        private IEnumerator RunGpuSearch(Mcts mcts)
+        {
+            StartStopwatch();
+            mcts.BeginGpuSearch(m_Board);
+            while (!mcts.StepGpuSearch())
+                yield return null; // hand control back so a frame renders between GPU slices
+            LastResult = mcts.EndGpuSearch();
             m_ChosenMove = LastResult.BestMove;
             StopStopwatch();
             PrintSearchData(LastResult);

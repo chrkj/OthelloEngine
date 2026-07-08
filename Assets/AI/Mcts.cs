@@ -17,12 +17,19 @@ namespace Othello.AI
         private const int IS_RUNNING = -1;
         private const int NUM_GPU_SIMS = 128; // Rollouts per board. Must match numthreads in MctsCompute.compute
         private const int MAX_GPU_BATCH = Board.MAX_LEGAL_MOVES; // Max boards per dispatch
+        private const float GPU_FRAME_BUDGET = 0.005f; // Seconds of GPU work per frame before a stepped search yields
 
         private Node m_CachedNode;
         private int m_NodesVisited;
         private int m_IterationsRun;
         private int m_SimulationsRun;
         private int m_NumTrees;
+
+        // In-progress state for the stepped (coroutine-driven) GPU search.
+        private Node m_GpuRoot;
+        private long m_GpuStartTime;
+        private long m_GpuTimeLimit;
+        private int m_GpuIterations;
 
         private readonly int m_MaxTime;
         private readonly int m_MaxIterations;
@@ -88,6 +95,12 @@ namespace Othello.AI
                     throw new NotImplementedException();
             }
 
+            return BuildResult(rootNode, startTime);
+        }
+
+        // Expands the root if the search never got to, picks the best child, caches it, and packages the result.
+        private SearchResult BuildResult(Node rootNode, long startTime)
+        {
             // A very small time limit can end the search before any iteration expands the root;
             // expand it here so there is always a legal child to choose from.
             if (rootNode.Children.Count == 0)
@@ -96,19 +109,17 @@ namespace Othello.AI
             var (bestNode, bestMove) = rootNode.SelectBestNode();
             m_CachedNode = bestNode;
             m_CachedNode.Parent = null;
-            var endTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
 
-            var result = new SearchResult
+            return new SearchResult
             {
                 BestMove = bestMove,
-                TimeMs = endTime - startTime,
+                TimeMs = DateTimeOffset.Now.ToUnixTimeMilliseconds() - startTime,
                 IterationsRun = m_IterationsRun,
                 SimulationsRun = m_SimulationsRun,
                 NodesVisited = m_NodesVisited,
                 TreeSize = bestNode.NumVisits,
                 WinPrediction = bestNode.NumVisits > 0 ? 100.0 * bestNode.NumWins / bestNode.NumVisits : 0
             };
-            return result;
         }
 
         private void RunSequential(Node rootNode, long timeLimit)
@@ -179,24 +190,61 @@ namespace Othello.AI
             Task.WaitAll(tasks);
         }
 
+        // Blocking GPU run, used by the synchronous StartSearch path (e.g. the benchmark).
         private void RunGpuParallel(Node rootNode, long timeLimit)
         {
             InitializeBuffers();
             var iterations = 0;
             while (iterations < m_MaxIterations && DateTimeOffset.Now.ToUnixTimeMilliseconds() < timeLimit)
-            {
-                var promisingNode = Select(rootNode);
-                Expand(promisingNode);
-
-                // Simulate every child of the expanded node in a single dispatch to amortize
-                // the dispatch + readback latency; terminal leaves are simulated directly.
-                var batch = promisingNode.Children.Count > 0
-                    ? promisingNode.Children
-                    : new List<Node> { promisingNode };
-                SimulateGpuBatch(batch);
-                iterations += batch.Count;
-            }
+                iterations += GpuBatchStep(rootNode);
             ReleaseBuffers();
+        }
+
+        // One expansion's worth of GPU simulation: every child of the expanded node is simulated in a
+        // single dispatch to amortize the dispatch + readback latency. Returns the batch size.
+        private int GpuBatchStep(Node rootNode)
+        {
+            var promisingNode = Select(rootNode);
+            Expand(promisingNode);
+            var batch = promisingNode.Children.Count > 0
+                ? promisingNode.Children
+                : new List<Node> { promisingNode };
+            SimulateGpuBatch(batch);
+            return batch.Count;
+        }
+
+        // Stepped GPU search so a coroutine can drive it, yielding between slices to let the app render.
+        // GPU dispatch must stay on the main thread, so this is how gameplay stays responsive during a move.
+        public void BeginGpuSearch(Board board)
+        {
+            m_NodesVisited = 0;
+            m_IterationsRun = 0;
+            m_SimulationsRun = 0;
+            m_GpuStartTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+            m_GpuTimeLimit = m_GpuStartTime + m_MaxTime;
+            m_GpuRoot = SetRootNode(board);
+            m_GpuIterations = 0;
+            InitializeBuffers();
+        }
+
+        // Runs GPU batches back to back until the frame-time budget elapses. Returns true when the whole
+        // search is finished (iteration cap or time limit reached).
+        public bool StepGpuSearch()
+        {
+            var sliceStart = Time.realtimeSinceStartup;
+            while (m_GpuIterations < m_MaxIterations && DateTimeOffset.Now.ToUnixTimeMilliseconds() < m_GpuTimeLimit)
+            {
+                m_GpuIterations += GpuBatchStep(m_GpuRoot);
+                if (Time.realtimeSinceStartup - sliceStart > GPU_FRAME_BUDGET)
+                    return false;
+            }
+            return true;
+        }
+
+        public SearchResult EndGpuSearch()
+        {
+            ReleaseBuffers();
+            return BuildResult(m_GpuRoot, m_GpuStartTime);
         }
 
         private void RunTree(Node rootNode, long timeLimit)
