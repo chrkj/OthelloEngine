@@ -64,6 +64,7 @@ namespace Othello.UI
         public void SetLegalMoves(Span<Move> legalMoves)
         {
             m_CurrentLegalMoves = legalMoves.ToArray().ToList();
+            HighlightLegalMoves(m_CurrentLegalMoves);
         }
 
         public void HighlightLastMove(Move move)

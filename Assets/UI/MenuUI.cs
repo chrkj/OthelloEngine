@@ -79,6 +79,8 @@ namespace Othello.UI
             m_WhiteIterations.text = "10000";
             m_BlackTimeLimit.text = "1000";
             m_WhiteTimeLimit.text = "1000";
+            m_ShowLegalMoves.SetIsOnWithoutNotify(true);
+            ToggleLegalMoves();
             PlayerSelection(Player.BLACK);
             PlayerSelection(Player.WHITE);
         }
