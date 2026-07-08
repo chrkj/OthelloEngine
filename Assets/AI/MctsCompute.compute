@@ -20,6 +20,22 @@ StructuredBuffer<uint64_t> _Pieces;     // two entries per board: [2i + BLACK] a
 RWStructuredBuffer<int> _Wins;          // one entry per board
 RWStructuredBuffer<int> _Draws;         // one entry per board
 
+float _RandomProb; // Probability of a uniform-random rollout move (1.0 = always random)
+
+// Positional weights, mirrored from Move.s_CellWeight. The table is symmetric, so indexing by the
+// same bit position the CPU uses gives identical choices.
+static const int s_CellWeight[64] =
+{
+    30, -12, 0, -1, -1, 0, -12, 30,
+    -12, -15, -3, -3, -3, -3, -15, -12,
+    0, -3, 0, -1, -1, 0, -3, 0,
+    -1, -3, -1, -1, -1, -1, -3, -1,
+    -1, -3, -1, -1, -1, -1, -3, -1,
+    0, -3, 0, -1, -1, 0, -3, 0,
+    -12, -15, -3, -3, -3, -3, -15, -12,
+    30, -12, 0, -1, -1, 0, -12, 30
+};
+
 groupshared int sharedWinResult;
 groupshared int sharedDrawResult;
 
@@ -151,6 +167,23 @@ int GetRandomMoveIndex(uint64_t legalMovesBitBoard, uint randomValue)
     }
 
     return -1; // Should never reach here
+}
+
+// Highest cell-weight legal move (greedy heuristic rollout). Ties keep the lowest bit index, matching
+// the CPU RolloutPolicy so both make identical greedy choices.
+int GetGreedyMoveIndex(uint64_t legalMovesBitBoard)
+{
+    int best = -1;
+    int bestWeight = -2147483647;
+    for (int i = 0; i < 64; i++)
+    {
+        if ((legalMovesBitBoard & ((uint64_t)1 << i)) != 0 && s_CellWeight[i] > bestWeight)
+        {
+            bestWeight = s_CellWeight[i];
+            best = i;
+        }
+    }
+    return best;
 }
 
 uint64_t MoveDir(uint64_t id, int dir)
@@ -294,11 +327,15 @@ void CSMain(uint3 groupId : SV_GroupID, uint3 threadId : SV_GroupThreadID)
             continue;
         }
         
-        // Get the random set bit index
-        int randomMove = GetRandomMoveIndex(legalMovesBitBoard, NextRandom(rngState));
-        
-        // Make random move update board state
-        Board pieces = PlacePieces(randomMove, blackPieces, whitePieces, isWhiteToMove);
+        // Epsilon-greedy rollout: mostly the best cell-weight move, sometimes uniform-random.
+        int chosenMove;
+        if (float(NextRandom(rngState)) * (1.0 / 4294967296.0) < _RandomProb)
+            chosenMove = GetRandomMoveIndex(legalMovesBitBoard, NextRandom(rngState));
+        else
+            chosenMove = GetGreedyMoveIndex(legalMovesBitBoard);
+
+        // Make the move and update the board state
+        Board pieces = PlacePieces(chosenMove, blackPieces, whitePieces, isWhiteToMove);
         whitePieces = pieces.WhitePieces;
         blackPieces = pieces.BlackPieces;
 

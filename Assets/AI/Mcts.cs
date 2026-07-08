@@ -58,6 +58,7 @@ namespace Othello.AI
         private readonly int m_SeedId = Shader.PropertyToID("_Seed");
         private readonly int m_CurrentPlayerId = Shader.PropertyToID("_CurrentPlayer");
         private readonly int m_PiecesId = Shader.PropertyToID("_Pieces");
+        private readonly int m_RandomProbId = Shader.PropertyToID("_RandomProb");
 
         public Mcts(int maxIterations, int maxTime, MctsType mctsType, ComputeShader computeShader = null,
             bool heuristicRollout = false, float rolloutEpsilon = 0.2f)
@@ -424,6 +425,8 @@ namespace Othello.AI
             m_ComputeShader.SetBuffer(0, m_SeedId, m_SeedBuffer);
             m_ComputeShader.SetBuffer(0, m_WinsId, m_WinBuffer);
             m_ComputeShader.SetBuffer(0, m_DrawsId, m_DrawBuffer);
+            // Heuristic off -> always random (1.0), matching the CPU RolloutPolicy's uniform behavior.
+            m_ComputeShader.SetFloat(m_RandomProbId, m_RolloutPolicy.UseHeuristic ? m_RolloutPolicy.Epsilon : 1f);
         }
 
         private void ReleaseBuffers()
